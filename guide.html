@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HR Bot — Финальный гайд</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+:root {
+  --bg: #f6f5f0;
+  --surface: #ffffff;
+  --surface2: #f0ede6;
+  --border: #e2ddd4;
+  --text: #1a1814;
+  --muted: #7a7468;
+  --accent: #c84b0f;       /* rust orange */
+  --accent2: #1d6b4f;      /* forest green */
+  --accent3: #2c4a8c;      /* deep blue */
+  --python: #2b6cb0;
+  --next: #111111;
+  --neon: #1d6b4f;
+  --redis: #c0392b;
+  --minio: #b94a00;
+  --code-bg: #16120e;
+  --code-text: #e8e0d4;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Geologica', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ── HERO ── */
+.hero {
+  background: var(--text);
+  color: #f6f5f0;
+  padding: 40px 40px 36px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,75,15,0.18) 0%, transparent 70%);
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: 30%;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(29,107,79,0.15) 0%, transparent 70%);
+}
+.hero-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 12px; font-family: 'JetBrains Mono', monospace;
+}
+.hero-title {
+  font-size: 42px; font-weight: 900; line-height: 1.05;
+  margin-bottom: 16px; letter-spacing: -1.5px;
+}
+.hero-title span { color: var(--accent); }
+.hero-desc {
+  font-size: 15px; color: #a89e92; line-height: 1.6;
+  max-width: 600px; margin-bottom: 28px; font-weight: 300;
+}
+.hero-stack {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.stack-chip {
+  background: rgba(246,245,240,0.08);
+  border: 1px solid rgba(246,245,240,0.15);
+  color: #d4cfc8; font-size: 12px; font-weight: 600;
+  padding: 5px 12px; border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.stack-chip.hi { background: rgba(200,75,15,0.15); border-color: rgba(200,75,15,0.4); color: #f4956a; }
+
+/* ── NAV ── */
+.nav {
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--border);
+  padding: 0 32px;
+  display: flex; gap: 0;
+  overflow-x: auto;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 12px rgba(0,0,0,0.06);
+}
+.nav-btn {
+  background: none; border: none;
+  border-bottom: 2.5px solid transparent;
+  color: var(--muted); font-weight: 600;
+  font-size: 12.5px; padding: 14px 18px;
+  cursor: pointer; white-space: nowrap;
+  font-family: 'Geologica', sans-serif;
+  transition: all 0.15s; letter-spacing: 0.2px;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── MAIN CONTENT ── */
+.main { max-width: 980px; margin: 0 auto; padding: 36px 32px 80px; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── TYPOGRAPHY ── */
+h2 {
+  font-size: 26px; font-weight: 900; letter-spacing: -0.8px;
+  color: var(--text); margin-bottom: 8px;
+}
+.section-sub {
+  font-size: 14px; color: var(--muted); margin-bottom: 28px;
+  font-weight: 300; line-height: 1.6;
+}
+h3 {
+  font-size: 11px; font-weight: 700; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--muted);
+  margin: 28px 0 12px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 14px;
+  line-height: 1.75; color: #3a3530;
+}
+.card-head {
+  font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card.accent-rust  { border-left: 4px solid var(--accent); }
+.card.accent-green { border-left: 4px solid var(--accent2); }
+.card.accent-blue  { border-left: 4px solid var(--accent3); }
+.card.accent-warn  { border-left: 4px solid #d97706; background: #fffbf0; }
+.card.accent-ok    { border-left: 4px solid var(--accent2); background: #f0faf5; }
+.card.dark {
+  background: var(--code-bg); color: var(--code-text);
+  border-color: #2a2520;
+}
+
+/* ── CODE ── */
+.code-wrap { margin: 10px 0 18px; }
+.code-label {
+  background: #2a2218;
+  color: #7a6e64;
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; padding: 6px 16px;
+  border-radius: 8px 8px 0 0;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.code-label .dot { width: 8px; height: 8px; border-radius: 50%; background: #3a3530; display: inline-block; margin-right: 3px; }
+pre {
+  background: var(--code-bg);
+  border: 1.5px solid #2a2218;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 18px 20px;
+  font-size: 12.5px;
+  overflow-x: auto;
+  line-height: 1.75;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--code-text);
+}
+pre.standalone {
+  border-radius: 8px; border-top: 1.5px solid #2a2218;
+}
+
+/* syntax */
+.kw  { color: #7dd3fc; }   /* blue — keywords */
+.str { color: #86efac; }   /* green — strings */
+.cmt { color: #4a4038; font-style: italic; }
+.fn  { color: #fbbf24; }   /* yellow — functions */
+.num { color: #f9a8d4; }   /* pink — numbers */
+.key { color: #fb923c; }   /* orange — keys */
+.dim { color: #6b5e52; }
+.grn { color: #6ee7b7; }
+.red { color: #fca5a5; }
+
+/* ── STEP LIST ── */
+.steps { counter-reset: step; }
+.step {
+  display: flex; gap: 18px;
+  margin-bottom: 20px;
+  counter-increment: step;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  background: var(--accent);
+  color: #fff; font-weight: 900; font-size: 14px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 2px;
+}
+.step-body { flex: 1; }
+.step-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.step-desc { font-size: 13.5px; color: #4a4540; line-height: 1.7; }
+
+/* ── FILE TREE ── */
+.tree {
+  background: var(--code-bg);
+  border: 1.5px solid #2a2218;
+  border-radius: 10px;
+  padding: 20px 22px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px; line-height: 2;
+  color: var(--code-text);
+  margin-bottom: 16px;
+}
+.td  { color: #7dd3fc; font-weight: 700; }  /* dir */
+.tf  { color: #e8e0d4; }                     /* file */
+.tc  { color: #4a4038; font-style: italic; } /* comment */
+.tpy { color: #fbbf24; }
+.tts { color: #93c5fd; }
+.tdock { color: #38bdf8; }
+.tcfg  { color: #c084fc; }
+.tnew  { color: #86efac; }
+
+/* ── SERVICE GRID ── */
+.svc-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 12px; margin-bottom: 20px;
+}
+.svc {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.svc-hd {
+  padding: 11px 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.svc-name { font-weight: 800; font-size: 13.5px; color: #fff; }
+.svc-port {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  background: rgba(255,255,255,0.15); color: #fff;
+  padding: 1px 8px; border-radius: 4px;
+}
+.svc-bd { padding: 10px 16px; }
+.svc-img { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+.svc-desc { font-size: 12.5px; color: #5a5450; line-height: 1.55; }
+
+/* ── FEATURE CARDS ── */
+.feat-grid { display: grid; gap: 12px; margin-bottom: 20px; }
+.feat {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.feat-hd {
+  padding: 10px 18px;
+  display: flex; align-items: center; gap: 12px;
+}
+.feat-num {
+  width: 26px; height: 26px; border-radius: 6px;
+  background: rgba(255,255,255,0.2);
+  font-weight: 900; font-size: 13px; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.feat-title { font-weight: 700; font-size: 14px; color: #fff; }
+.feat-bd { padding: 14px 18px; font-size: 13.5px; color: #3a3530; line-height: 1.75; }
+
+/* ── FLOW ── */
+.flow-row {
+  display: flex; align-items: center;
+  gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.fbox {
+  border-radius: 7px; padding: 8px 13px;
+  font-size: 12px; font-weight: 700;
+  text-align: center; border: 2px solid;
+  line-height: 1.3;
+}
+.farr {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 1px; flex-shrink: 0;
+}
+.farr-line { width: 28px; height: 1.5px; background: #cdc8c0; }
+.farr-lbl { font-size: 9px; color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+.farr-tip { font-size: 11px; color: var(--muted); }
+
+/* ── TABLE ── */
+.tbl {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px; margin-bottom: 16px;
+}
+.tbl th {
+  text-align: left; padding: 8px 12px;
+  color: var(--muted); font-size: 10.5px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  border-bottom: 2px solid var(--border);
+  font-weight: 700;
+}
+.tbl td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top; line-height: 1.5;
+}
+.tbl tr:last-child td { border-bottom: none; }
+.tbl td:first-child { font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.tbl tr:hover td { background: var(--surface2); }
+
+/* ── BADGE ── */
+.badge {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  padding: 2px 9px; border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  margin: 2px 3px; vertical-align: middle;
+}
+
+/* ── PROGRESS / PHASES ── */
+.phase {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+  margin-bottom: 12px;
+}
+.phase-hd {
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.phase-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  background: rgba(255,255,255,0.2); color: #fff;
+  padding: 2px 8px; border-radius: 4px;
+}
+.phase-title { font-weight: 800; font-size: 15px; color: #fff; }
+.phase-weeks { margin-left: auto; font-size: 11.5px; color: rgba(255,255,255,0.7); font-weight: 600; }
+.phase-bd {
+  padding: 12px 20px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px;
+}
+.phase-item {
+  font-size: 13px; color: #3a3530;
+  padding: 4px 0;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.phase-dot { flex-shrink: 0; margin-top: 6px; width: 6px; height: 6px; border-radius: 50%; }
+
+@media (max-width: 640px) {
+  .hero-title { font-size: 28px; }
+  .svc-grid { grid-template-columns: 1fr; }
+  .phase-bd { grid-template-columns: 1fr; }
+  .main { padding: 20px 16px 60px; }
+  .nav { padding: 0 12px; }
+  .hero { padding: 28px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Финальный гайд · v1.0 · 2025</div>
+  <h1 class="hero-title">HR Bot <span>Platform</span></h1>
+  <p class="hero-desc">Полная инструкция по разработке — от структуры монорепо до деплоя. Polyglot стек: Python FastAPI + Next.js 15, RAG на pgvector, хранилище в Neon + MinIO.</p>
+  <div class="hero-stack">
+    <span class="stack-chip hi">Next.js 15</span>
+    <span class="stack-chip hi">Python FastAPI</span>
+    <span class="stack-chip">RAG-Anything</span>
+    <span class="stack-chip">OpenAI gpt-4o</span>
+    <span class="stack-chip hi">Neon (pgvector)</span>
+    <span class="stack-chip">MinIO</span>
+    <span class="stack-chip">Redis</span>
+    <span class="stack-chip">shadcn/ui</span>
+    <span class="stack-chip">NextAuth v5</span>
+    <span class="stack-chip">Docker Compose</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="go('overview')">📋 Обзор</button>
+  <button class="nav-btn" onclick="go('structure')">📁 Структура</button>
+  <button class="nav-btn" onclick="go('setup')">🚀 Setup</button>
+  <button class="nav-btn" onclick="go('docker')">🐳 Docker</button>
+  <button class="nav-btn" onclick="go('backend')">🐍 Backend</button>
+  <button class="nav-btn" onclick="go('frontend')">⚡ Frontend</button>
+  <button class="nav-btn" onclick="go('features')">✨ Фичи</button>
+  <button class="nav-btn" onclick="go('db')">🗄️ База данных</button>
+  <button class="nav-btn" onclick="go('flow')">🔄 Flow</button>
+  <button class="nav-btn" onclick="go('roadmap')">📅 Роадмап</button>
+</nav>
+
+<div class="main">
+
+<!-- ═══════════ OVERVIEW ═══════════ -->
+<div class="section active" id="tab-overview">
+  <h2>Обзор проекта</h2>
+  <p class="section-sub">Ключевые решения, принятые на брейнсторме. Это финальная точка истины — все остальные вкладки опираются на этот стек.</p>
+
+  <h3>Финальный стек</h3>
+  <table class="tbl">
+    <thead><tr><th>Слой</th><th>Технология</th><th>Зачем</th></tr></thead>
+    <tbody>
+      <tr><td>Frontend</td><td>Next.js 15 App Router</td><td>SSR, Server Actions, Route Handlers как BFF-прокси</td></tr>
+      <tr><td>UI</td><td>shadcn/ui + tweakcn + Tailwind v4</td><td>Быстрая сборка UI, кастомизация темы</td></tr>
+      <tr><td>Auth</td><td>NextAuth.js v5</td><td>Роли ADMIN/USER, JWT, сессии</td></tr>
+      <tr><td>Backend</td><td>Python 3.12 + FastAPI</td><td>RAG pipeline, async streaming, AI логика</td></tr>
+      <tr><td>RAG</td><td>RAG-Anything</td><td>Парсинг PDF/DOCX/PPTX/XLSX/OCR из коробки</td></tr>
+      <tr><td>LLM</td><td>OpenAI gpt-4o</td><td>Ответы пользователю + gpt-4o-mini для judge</td></tr>
+      <tr><td>Embeddings</td><td>text-embedding-3-small</td><td>1536-мерные векторы, дешевле ada-002</td></tr>
+      <tr><td>Database</td><td>Neon (PostgreSQL + pgvector)</td><td>Serverless Postgres, pgvector встроен, branching</td></tr>
+      <tr><td>File storage</td><td>MinIO (Docker)</td><td>S3-совместимое хранилище оригиналов документов</td></tr>
+      <tr><td>Cache</td><td>Redis (Docker)</td><td>Кэш сессий, статус индексации, rate limiting</td></tr>
+      <tr><td>Infra</td><td>Docker Compose</td><td>Локальная разработка — 3 сервиса (без Postgres)</td></tr>
+      <tr><td>ORM (TS)</td><td>Prisma</td><td>Users, Sessions, Messages, Feedback, PromptTemplates</td></tr>
+      <tr><td>ORM (Python)</td><td>SQLAlchemy async + Alembic</td><td>VectorChunks, KnowledgeFiles</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Архитектурные решения</h3>
+  <div class="card accent-ok">
+    <div class="card-head" style="color:var(--accent2);">✅ Neon вместо Docker Postgres</div>
+    PostgreSQL живёт в облаке Neon — убираем один контейнер из Docker Compose. pgvector включается одной кнопкой в консоли. Branching — каждый разработчик получает свою ветку БД. В проде Neon масштабируется автоматически.
+  </div>
+  <div class="card accent-rust">
+    <div class="card-head" style="color:var(--accent);">🔐 Backend закрыт от внешнего мира</div>
+    Python FastAPI не имеет публичных портов. Браузер никогда не обращается к нему напрямую. Все запросы идут через Next.js Route Handlers → внутренняя Docker сеть → <code>http://backend:8000</code>.
+  </div>
+  <div class="card accent-blue">
+    <div class="card-head" style="color:var(--accent3);">📦 Два менеджера миграций</div>
+    <strong>Prisma</strong> управляет бизнес-схемой (users, sessions, messages). <strong>Alembic</strong> управляет <code>vector_chunks</code> — Prisma не умеет работать с pgvector типом данных напрямую.
+  </div>
+
+  <h3>Docker Compose — 3 сервиса</h3>
+  <div class="svc-grid">
+    <div class="svc">
+      <div class="svc-hd" style="background:#b94a00;"><span class="svc-name">minio</span><span class="svc-port">:9000 / :9001</span></div>
+      <div class="svc-bd"><div class="svc-img">minio/minio:latest</div><div class="svc-desc">Оригиналы загруженных файлов. API на :9000, веб-консоль на :9001</div></div>
+    </div>
+    <div class="svc">
+      <div class="svc-hd" style="background:#c0392b;"><span class="svc-name">redis</span><span class="svc-port">:6379</span></div>
+      <div class="svc-bd"><div class="svc-img">redis:7-alpine</div><div class="svc-desc">Кэш сессий, TTL статусов индексации файлов</div></div>
+    </div>
+    <div class="svc">
+      <div class="svc-hd" style="background:#1e3a5f;"><span class="svc-name">backend</span><span class="svc-port">internal only</span></div>
+      <div class="svc-bd"><div class="svc-img">./backend/Dockerfile</div><div class="svc-desc">FastAPI + RAG-Anything. Нет внешних портов — только docker network</div></div>
+    </div>
+    <div class="svc">
+      <div class="svc-hd" style="background:#111111;"><span class="svc-name">frontend</span><span class="svc-port">:3000</span></div>
+      <div class="svc-bd"><div class="svc-img">./frontend/Dockerfile</div><div class="svc-desc">Next.js 15. Единственный сервис доступный пользователям снаружи</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ STRUCTURE ═══════════ -->
+<div class="section" id="tab-structure">
+  <h2>Структура репозитория</h2>
+  <p class="section-sub">Один Git репо, три папки верхнего уровня: <code>frontend/</code>, <code>backend/</code>, <code>infra/</code>. Связь между сервисами — только через REST и Docker network.</p>
+
+  <div class="tree">
+<span class="td">hr-bot/</span>                              <span class="tc"># корень монорепо</span>
+<span class="tc">│</span>
+<span class="tc">├── </span><span class="td">frontend/</span>                           <span class="tc"># Next.js 15</span>
+<span class="tc">│   ├── </span><span class="td">app/</span>
+<span class="tc">│   │   ├── </span><span class="td">(auth)/</span>
+<span class="tc">│   │   │   ├── </span><span class="tts">login/page.tsx</span>
+<span class="tc">│   │   │   └── </span><span class="tts">register/page.tsx</span>
+<span class="tc">│   │   ├── </span><span class="td">(admin)/</span>                    <span class="tc"># guard: role=ADMIN</span>
+<span class="tc">│   │   │   ├── </span><span class="tts">layout.tsx</span>
+<span class="tc">│   │   │   ├── </span><span class="td">knowledge/</span>              <span class="tc"># CRUD файлов</span>
+<span class="tc">│   │   │   ├── </span><span class="td">prompts/</span>                <span class="tc"># prompt cards</span>
+<span class="tc">│   │   │   ├── </span><span class="td">feedback/</span>               <span class="tc"># аналитика</span>
+<span class="tc">│   │   │   └── </span><span class="td">health/</span>                 <span class="tc"># bot health</span>
+<span class="tc">│   │   ├── </span><span class="td">(user)/</span>                     <span class="tc"># guard: активная сессия</span>
+<span class="tc">│   │   │   ├── </span><span class="tts">layout.tsx</span>
+<span class="tc">│   │   │   └── </span><span class="td">chat/page.tsx</span>
+<span class="tc">│   │   └── </span><span class="td">api/</span>
+<span class="tc">│   │       ├── </span><span class="tts">auth/[...nextauth]/route.ts</span>
+<span class="tc">│   │       ├── </span><span class="tts">chat/route.ts</span>           <span class="tc"># proxy → python /chat</span>
+<span class="tc">│   │       ├── </span><span class="tts">upload/route.ts</span>         <span class="tc"># proxy → python /ingest</span>
+<span class="tc">│   │       ├── </span><span class="tts">health/route.ts</span>         <span class="tc"># proxy → python /health</span>
+<span class="tc">│   │       └── </span><span class="tts">session/terminate/route.ts</span>
+<span class="tc">│   ├── </span><span class="td">components/</span>
+<span class="tc">│   │   ├── </span><span class="td">ui/</span>                         <span class="tc"># shadcn компоненты</span>
+<span class="tc">│   │   ├── </span><span class="td">chat/</span>
+<span class="tc">│   │   │   ├── </span><span class="tts">ChatWindow.tsx</span>
+<span class="tc">│   │   │   ├── </span><span class="tts">MessageBubble.tsx</span>
+<span class="tc">│   │   │   ├── </span><span class="tts">SourceCard.tsx</span>         <span class="tc"># показывает источник из RAG</span>
+<span class="tc">│   │   │   ├── </span><span class="tts">PromptCards.tsx</span>        <span class="tc"># predefined templates</span>
+<span class="tc">│   │   │   ├── </span><span class="tts">FeedbackButtons.tsx</span>    <span class="tc"># 👍 👎</span>
+<span class="tc">│   │   │   └── </span><span class="tts">SessionToggle.tsx</span>      <span class="tc"># persistent on/off</span>
+<span class="tc">│   │   └── </span><span class="td">admin/</span>
+<span class="tc">│   │       ├── </span><span class="tts">FileTable.tsx</span>
+<span class="tc">│   │       ├── </span><span class="tts">FileUpload.tsx</span>
+<span class="tc">│   │       ├── </span><span class="tts">FeedbackChart.tsx</span>      <span class="tc"># recharts</span>
+<span class="tc">│   │       ├── </span><span class="tts">HealthPanel.tsx</span>
+<span class="tc">│   │       └── </span><span class="tts">PromptEditor.tsx</span>
+<span class="tc">│   ├── </span><span class="td">lib/</span>
+<span class="tc">│   │   ├── </span><span class="tts">auth.ts</span>                     <span class="tc"># NextAuth config</span>
+<span class="tc">│   │   ├── </span><span class="tts">db.ts</span>                       <span class="tc"># Prisma client singleton</span>
+<span class="tc">│   │   └── </span><span class="tts">session.ts</span>                  <span class="tc"># TTL логика 6ч + продление</span>
+<span class="tc">│   ├── </span><span class="td">prisma/</span>
+<span class="tc">│   │   ├── </span><span class="tcfg">schema.prisma</span>
+<span class="tc">│   │   └── </span><span class="tts">seed.ts</span>
+<span class="tc">│   ├── </span><span class="tts">middleware.ts</span>                   <span class="tc"># auth + role guard</span>
+<span class="tc">│   ├── </span><span class="tdock">Dockerfile</span>
+<span class="tc">│   ├── </span><span class="tcfg">next.config.ts</span>
+<span class="tc">│   ├── </span><span class="tcfg">package.json</span>
+<span class="tc">│   └── </span><span class="tcfg">tailwind.config.ts</span>
+<span class="tc">│</span>
+<span class="tc">├── </span><span class="td">backend/</span>                            <span class="tc"># Python FastAPI</span>
+<span class="tc">│   ├── </span><span class="td">app/</span>
+<span class="tc">│   │   ├── </span><span class="tpy">main.py</span>
+<span class="tc">│   │   ├── </span><span class="tpy">config.py</span>                   <span class="tc"># pydantic-settings</span>
+<span class="tc">│   │   ├── </span><span class="tpy">deps.py</span>                     <span class="tc"># DI: db, minio, redis</span>
+<span class="tc">│   │   ├── </span><span class="td">api/v1/</span>
+<span class="tc">│   │   │   ├── </span><span class="tpy">router.py</span>
+<span class="tc">│   │   │   ├── </span><span class="tpy">ingest.py</span>               <span class="tc"># загрузка + индексация</span>
+<span class="tc">│   │   │   ├── </span><span class="tpy">chat.py</span>                 <span class="tc"># SSE стриминг</span>
+<span class="tc">│   │   │   ├── </span><span class="tpy">health.py</span>               <span class="tc"># /health/detailed</span>
+<span class="tc">│   │   │   └── </span><span class="tpy">evaluate.py</span>             <span class="tc"># hallucination judge</span>
+<span class="tc">│   │   ├── </span><span class="td">core/</span>
+<span class="tc">│   │   │   ├── </span><span class="tpy">rag_pipeline.py</span>         <span class="tc"># RAG-Anything wrapper</span>
+<span class="tc">│   │   │   ├── </span><span class="tpy">embedder.py</span>             <span class="tc"># OpenAI embeddings</span>
+<span class="tc">│   │   │   ├── </span><span class="tpy">retriever.py</span>            <span class="tc"># pgvector search</span>
+<span class="tc">│   │   │   ├── </span><span class="tpy">streamer.py</span>             <span class="tc"># gpt-4o SSE</span>
+<span class="tc">│   │   │   └── </span><span class="tpy">hallucination.py</span>        <span class="tc"># gpt-4o-mini judge</span>
+<span class="tc">│   │   ├── </span><span class="td">db/</span>
+<span class="tc">│   │   │   ├── </span><span class="tpy">session.py</span>              <span class="tc"># SQLAlchemy async</span>
+<span class="tc">│   │   │   └── </span><span class="tpy">models.py</span>               <span class="tc"># VectorChunk, KnowledgeFile</span>
+<span class="tc">│   │   └── </span><span class="td">storage/</span>
+<span class="tc">│   │       └── </span><span class="tpy">minio.py</span>
+<span class="tc">│   ├── </span><span class="td">alembic/</span>
+<span class="tc">│   ├── </span><span class="tdock">Dockerfile</span>
+<span class="tc">│   ├── </span><span class="tpy">requirements.txt</span>
+<span class="tc">│   └── </span><span class="tcfg">pyproject.toml</span>
+<span class="tc">│</span>
+<span class="tc">├── </span><span class="td">infra/</span>
+<span class="tc">│   └── </span><span class="tdock">nginx.conf</span>                    <span class="tc"># (опционально, для прода)</span>
+<span class="tc">│</span>
+<span class="tc">├── </span><span class="tdock">docker-compose.yml</span>               <span class="tc"># minio + redis + backend + frontend</span>
+<span class="tc">├── </span><span class="tdock">docker-compose.prod.yml</span>          <span class="tc"># override для прода</span>
+<span class="tc">├── </span><span class="tcfg">.env.example</span>
+<span class="tc">├── </span><span class="tcfg">.env</span>                             <span class="tc"># в .gitignore!</span>
+<span class="tc">├── </span><span class="tnew">Makefile</span>
+<span class="tc">└── </span><span class="tcfg">README.md</span>
+  </div>
+</div>
+
+<!-- ═══════════ SETUP ═══════════ -->
+<div class="section" id="tab-setup">
+  <h2>Setup — с нуля до работающего</h2>
+  <p class="section-sub">Пошаговый гайд для нового разработчика. Занимает ~15 минут.</p>
+
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Клонировать репо и создать .env</div>
+        <div class="step-desc">Копируем шаблон и заполняем реальные значения.</div>
+        <div class="code-wrap">
+          <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>terminal</div>
+          <pre><span class="fn">git</span> clone https://github.com/your-org/hr-bot.git
+<span class="fn">cd</span> hr-bot
+<span class="fn">cp</span> .env.example .env
+<span class="cmt"># Открыть .env и вставить OPENAI_API_KEY + DATABASE_URL из Neon</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Настроить Neon</div>
+        <div class="step-desc">Идём на <strong>neon.tech</strong> → New Project → Enable pgvector → копируем connection string.</div>
+        <div class="code-wrap">
+          <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>.env</div>
+          <pre><span class="cmt"># Из Neon Dashboard → Connection Details → Pooled connection</span>
+<span class="key">DATABASE_URL</span>=<span class="str">postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/hrbot?sslmode=require</span>
+
+<span class="cmt"># Для Python asyncpg:</span>
+<span class="key">DATABASE_URL_ASYNC</span>=<span class="str">postgresql+asyncpg://user:pass@ep-xxx.us-east-2.aws.neon.tech/hrbot?ssl=require</span></pre>
+        </div>
+        <div class="card accent-warn" style="margin-top:10px;">
+          <strong>⚠️ Важно:</strong> В Neon консоли зайди в Project Settings → Extensions → включи <strong>pgvector</strong>. Или выполни вручную: <code>CREATE EXTENSION IF NOT EXISTS vector;</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Поднять Docker сервисы</div>
+        <div class="step-desc">Запускаем MinIO, Redis и Python backend.</div>
+        <div class="code-wrap">
+          <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>terminal</div>
+          <pre><span class="fn">make</span> dev
+<span class="cmt"># или напрямую:</span>
+<span class="fn">docker</span> compose up --build</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">Применить миграции</div>
+        <div class="step-desc">Prisma создаёт таблицы в Neon. Alembic создаёт vector_chunks.</div>
+        <div class="code-wrap">
+          <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>terminal (новый таб, после старта Docker)</div>
+          <pre><span class="fn">make</span> migrate
+<span class="cmt"># Разворачивается в:</span>
+<span class="cmt"># docker compose exec frontend npx prisma migrate deploy</span>
+<span class="cmt"># docker compose exec backend alembic upgrade head</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <div class="step-title">Создать MinIO bucket</div>
+        <div class="step-desc">Открываем MinIO Console и создаём bucket для файлов.</div>
+        <div class="code-wrap">
+          <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>terminal</div>
+          <pre><span class="cmt"># MinIO Console: http://localhost:9001</span>
+<span class="cmt"># Login: MINIO_ROOT_USER / MINIO_ROOT_PASSWORD из .env</span>
+<span class="cmt"># Создать bucket: hrbot-documents</span>
+
+<span class="cmt"># Или через mc CLI:</span>
+<span class="fn">docker</span> compose exec minio mc alias set local http://localhost:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
+<span class="fn">docker</span> compose exec minio mc mb local/hrbot-documents</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <div class="step-title">Seed — создать первого Admin</div>
+        <div class="step-desc">Запускаем seed скрипт который создаёт admin пользователя.</div>
+        <div class="code-wrap">
+          <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>terminal</div>
+          <pre><span class="fn">make</span> seed
+<span class="cmt"># или:</span>
+<span class="fn">docker</span> compose exec frontend npx prisma db seed</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-body">
+        <div class="step-title">Открыть приложение</div>
+        <div class="step-desc">Всё готово!</div>
+        <div class="card accent-ok" style="margin-top:8px;">
+          🌐 <strong>App:</strong> <a href="http://localhost:3000" style="color:var(--accent2);">http://localhost:3000</a><br/>
+          🛠️ <strong>MinIO Console:</strong> <a href="http://localhost:9001" style="color:var(--accent2);">http://localhost:9001</a><br/>
+          🐍 <strong>FastAPI Docs:</strong> недоступны снаружи (внутренний сервис)
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <h3>Makefile — все команды</h3>
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>Makefile</div>
+    <pre><span class="key">dev</span>:            <span class="fn">docker</span> compose up --build
+<span class="key">stop</span>:           <span class="fn">docker</span> compose down
+<span class="key">build</span>:          <span class="fn">docker</span> compose build --no-cache
+<span class="key">logs</span>:           <span class="fn">docker</span> compose logs -f
+<span class="key">logs-backend</span>:   <span class="fn">docker</span> compose logs -f backend
+<span class="key">migrate</span>:        <span class="cmt">prisma migrate deploy + alembic upgrade head</span>
+<span class="key">migrate-dev</span>:    <span class="cmt">prisma migrate dev (создать новую миграцию)</span>
+<span class="key">seed</span>:           <span class="cmt">prisma db seed</span>
+<span class="key">shell-backend</span>:  <span class="fn">docker</span> compose exec backend bash
+<span class="key">shell-db</span>:       <span class="cmt">psql через Neon CLI или psql URL</span></pre>
+  </div>
+</div>
+
+<!-- ═══════════ DOCKER ═══════════ -->
+<div class="section" id="tab-docker">
+  <h2>Docker Compose</h2>
+  <p class="section-sub">Три сервиса — без Postgres (он в Neon). Backend закрыт от внешнего мира.</p>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>docker-compose.yml</div>
+    <pre><span class="kw">version</span>: <span class="str">"3.9"</span>
+
+<span class="kw">services</span>:
+
+  <span class="cmt"># ── Object Storage ─────────────────────────────────────</span>
+  <span class="key">minio</span>:
+    <span class="kw">image</span>: <span class="str">minio/minio:latest</span>
+    <span class="kw">restart</span>: <span class="str">unless-stopped</span>
+    <span class="kw">command</span>: <span class="str">server /data --console-address ":9001"</span>
+    <span class="kw">environment</span>:
+      <span class="kw">MINIO_ROOT_USER</span>: <span class="str">${MINIO_ROOT_USER}</span>
+      <span class="kw">MINIO_ROOT_PASSWORD</span>: <span class="str">${MINIO_ROOT_PASSWORD}</span>
+    <span class="kw">volumes</span>:
+      - <span class="str">minio_data:/data</span>
+    <span class="kw">ports</span>:
+      - <span class="str">"9000:9000"</span>   <span class="cmt"># S3 API (только внутри docker network в проде)</span>
+      - <span class="str">"9001:9001"</span>   <span class="cmt"># Console UI (закрыть в проде!)</span>
+    <span class="kw">healthcheck</span>:
+      <span class="kw">test</span>: [<span class="str">"CMD"</span>, <span class="str">"curl"</span>, <span class="str">"-f"</span>, <span class="str">"http://localhost:9000/minio/health/live"</span>]
+      <span class="kw">interval</span>: <span class="str">15s</span>
+      <span class="kw">timeout</span>: <span class="str">5s</span>
+      <span class="kw">retries</span>: <span class="str">3</span>
+
+  <span class="cmt"># ── Cache ───────────────────────────────────────────────</span>
+  <span class="key">redis</span>:
+    <span class="kw">image</span>: <span class="str">redis:7-alpine</span>
+    <span class="kw">restart</span>: <span class="str">unless-stopped</span>
+    <span class="kw">command</span>: <span class="str">redis-server --requirepass ${REDIS_PASSWORD}</span>
+    <span class="kw">volumes</span>:
+      - <span class="str">redis_data:/data</span>
+    <span class="kw">healthcheck</span>:
+      <span class="kw">test</span>: [<span class="str">"CMD"</span>, <span class="str">"redis-cli"</span>, <span class="str">"--pass"</span>, <span class="str">"${REDIS_PASSWORD}"</span>, <span class="str">"ping"</span>]
+      <span class="kw">interval</span>: <span class="str">10s</span>
+      <span class="kw">retries</span>: <span class="str">5</span>
+
+  <span class="cmt"># ── Python Backend ──────────────────────────────────────</span>
+  <span class="key">backend</span>:
+    <span class="kw">build</span>:
+      <span class="kw">context</span>: <span class="str">./backend</span>
+      <span class="kw">dockerfile</span>: <span class="str">Dockerfile</span>
+    <span class="kw">restart</span>: <span class="str">unless-stopped</span>
+    <span class="kw">env_file</span>: <span class="str">.env</span>
+    <span class="kw">environment</span>:
+      <span class="kw">DATABASE_URL</span>: <span class="str">${DATABASE_URL_ASYNC}</span>      <span class="cmt"># Neon asyncpg URL</span>
+      <span class="kw">MINIO_ENDPOINT</span>: <span class="str">minio:9000</span>              <span class="cmt"># внутренний hostname</span>
+      <span class="kw">REDIS_URL</span>: <span class="str">redis://:${REDIS_PASSWORD}@redis:6379/0</span>
+    <span class="kw">volumes</span>:
+      - <span class="str">./backend:/app</span>                         <span class="cmt"># hot-reload в dev</span>
+      - <span class="str">rag_tmp:/tmp/rag</span>
+    <span class="kw">depends_on</span>:
+      <span class="kw">minio</span>: { <span class="kw">condition</span>: <span class="str">service_healthy</span> }
+      <span class="kw">redis</span>: { <span class="kw">condition</span>: <span class="str">service_healthy</span> }
+    <span class="kw">healthcheck</span>:
+      <span class="kw">test</span>: [<span class="str">"CMD"</span>, <span class="str">"curl"</span>, <span class="str">"-f"</span>, <span class="str">"http://localhost:8000/health"</span>]
+      <span class="kw">interval</span>: <span class="str">20s</span>
+      <span class="kw">retries</span>: <span class="str">3</span>
+    <span class="cmt"># ⚠️ НЕТ ports: — недоступен снаружи!</span>
+
+  <span class="cmt"># ── Next.js Frontend ────────────────────────────────────</span>
+  <span class="key">frontend</span>:
+    <span class="kw">build</span>:
+      <span class="kw">context</span>: <span class="str">./frontend</span>
+      <span class="kw">dockerfile</span>: <span class="str">Dockerfile</span>
+    <span class="kw">restart</span>: <span class="str">unless-stopped</span>
+    <span class="kw">env_file</span>: <span class="str">.env</span>
+    <span class="kw">environment</span>:
+      <span class="kw">PYTHON_BACKEND_URL</span>: <span class="str">http://backend:8000</span>  <span class="cmt"># docker internal</span>
+    <span class="kw">ports</span>:
+      - <span class="str">"3000:3000"</span>
+    <span class="kw">depends_on</span>:
+      <span class="kw">backend</span>: { <span class="kw">condition</span>: <span class="str">service_healthy</span> }
+
+<span class="kw">volumes</span>:
+  minio_data:
+  redis_data:
+  rag_tmp:
+
+<span class="kw">networks</span>:
+  <span class="key">default</span>:
+    <span class="kw">name</span>: <span class="str">hrbot_network</span></pre>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>backend/Dockerfile</div>
+    <pre><span class="kw">FROM</span> python:<span class="num">3.12</span>-slim
+
+<span class="cmt"># Системные зависимости для RAG-Anything</span>
+<span class="cmt"># poppler-utils  → PDF парсинг</span>
+<span class="cmt"># tesseract-ocr  → OCR для сканированных документов</span>
+<span class="cmt"># libreoffice    → DOCX / PPTX / XLSX конвертация</span>
+<span class="kw">RUN</span> apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
+    libmagic1 poppler-utils tesseract-ocr libreoffice \
+    curl build-essential &amp;&amp; \
+    rm -rf /var/lib/apt/lists/*
+
+<span class="kw">WORKDIR</span> /app
+
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install --no-cache-dir -r requirements.txt
+
+<span class="kw">COPY</span> . .
+
+<span class="kw">CMD</span> [<span class="str">"uvicorn"</span>, <span class="str">"app.main:app"</span>, \
+     <span class="str">"--host"</span>, <span class="str">"0.0.0.0"</span>, \
+     <span class="str">"--port"</span>, <span class="str">"8000"</span>, \
+     <span class="str">"--reload"</span>]   <span class="cmt"># убрать --reload в проде</span></pre>
+  </div>
+</div>
+
+<!-- ═══════════ BACKEND ═══════════ -->
+<div class="section" id="tab-backend">
+  <h2>Python Backend</h2>
+  <p class="section-sub">FastAPI + RAG-Anything. Три ключевых модуля: ingest (загрузка), retriever (поиск), streamer (ответ).</p>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>backend/requirements.txt</div>
+    <pre><span class="cmt"># Web</span>
+fastapi==0.115.*
+uvicorn[standard]==0.30.*
+pydantic-settings==2.3.*
+python-multipart==0.0.*
+
+<span class="cmt"># Database (Neon)</span>
+sqlalchemy[asyncio]==2.0.*
+asyncpg==0.29.*
+alembic==1.13.*
+pgvector==0.3.*
+
+<span class="cmt"># RAG + AI</span>
+rag-anything
+openai==1.40.*
+tiktoken==0.7.*
+
+<span class="cmt"># Storage</span>
+boto3==1.34.*        <span class="cmt"># MinIO S3 API</span>
+
+<span class="cmt"># Cache</span>
+redis[asyncio]==5.0.*
+
+<span class="cmt"># Utils</span>
+structlog==24.*
+httpx==0.27.*</pre>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>backend/app/core/rag_pipeline.py</div>
+    <pre><span class="kw">import</span> asyncio
+<span class="kw">from</span> rag_anything <span class="kw">import</span> RAGAnything
+<span class="kw">from</span> app.core.embedder <span class="kw">import</span> embed_chunks
+<span class="kw">from</span> app.storage.minio <span class="kw">import</span> download_to_tmp
+<span class="kw">from</span> app.db.models <span class="kw">import</span> IndexStatus
+
+_rag = RAGAnything()   <span class="cmt"># singleton, инициализируется один раз</span>
+
+<span class="kw">async def</span> <span class="fn">ingest_document</span>(file_id: str, storage_path: str):
+    <span class="kw">await</span> set_status(file_id, IndexStatus.PROCESSING)
+    <span class="kw">try</span>:
+        <span class="cmt"># 1. Скачать оригинал из MinIO</span>
+        tmp_path = <span class="kw">await</span> download_to_tmp(storage_path)
+
+        <span class="cmt"># 2. RAG-Anything: автоопределение формата, парсинг</span>
+        <span class="cmt">#    Поддерживает: PDF, DOCX, PPTX, XLSX, MD, TXT, HTML, изображения</span>
+        raw_chunks = <span class="kw">await</span> asyncio.to_thread(
+            _rag.parse_document, str(tmp_path)
+        )
+        <span class="cmt"># raw_chunks: [{text, metadata: {page, type, bbox}}, ...]</span>
+
+        <span class="cmt"># 3. Батчевые embeddings (по 100 чанков, text-embedding-3-small)</span>
+        embedded = <span class="kw">await</span> embed_chunks(raw_chunks)
+
+        <span class="cmt"># 4. Сохранить векторы в Neon pgvector</span>
+        <span class="kw">await</span> bulk_insert_chunks(file_id, embedded)
+        <span class="kw">await</span> set_status(file_id, IndexStatus.READY, len(embedded))
+
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        <span class="kw">await</span> set_status(file_id, IndexStatus.ERROR)
+        <span class="kw">raise</span></pre>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>backend/app/core/retriever.py</div>
+    <pre><span class="kw">async def</span> <span class="fn">retrieve_chunks</span>(query: str, top_k: int = <span class="num">5</span>) -> list[dict]:
+    embedding = <span class="kw">await</span> embed_single(query)
+    embed_str = <span class="str">"["</span> + <span class="str">","</span>.join(map(str, embedding)) + <span class="str">"]"</span>
+
+    <span class="kw">async with</span> async_session() <span class="kw">as</span> db:
+        rows = <span class="kw">await</span> db.execute(text(<span class="str">"""
+            SELECT id, content, metadata,
+                   1 - (embedding &lt;=&gt; :emb::vector) AS similarity
+            FROM vector_chunks
+            WHERE 1 - (embedding &lt;=&gt; :emb::vector) > 0.7
+            ORDER BY embedding &lt;=&gt; :emb::vector
+            LIMIT :k
+        """</span>), {<span class="str">"emb"</span>: embed_str, <span class="str">"k"</span>: top_k})
+    <span class="kw">return</span> [dict(r) <span class="kw">for</span> r <span class="kw">in</span> rows.mappings()]</pre>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>backend/app/core/streamer.py — SSE с источниками</div>
+    <pre><span class="kw">import</span> json
+<span class="kw">from</span> openai <span class="kw">import</span> AsyncOpenAI
+
+client = AsyncOpenAI()
+
+<span class="kw">async def</span> <span class="fn">stream_response</span>(messages, chunks, session_id):
+    context = <span class="str">"\n\n---\n\n"</span>.join(
+        <span class="str">f"[{c['metadata'].get('filename')} · стр.{c['metadata'].get('page')}]\n{c['content']}"</span>
+        <span class="kw">for</span> c <span class="kw">in</span> chunks
+    )
+
+    <span class="cmt"># Сначала отправляем источники</span>
+    sources = [{<span class="str">"id"</span>: c[<span class="str">"id"</span>], <span class="str">"filename"</span>: c[<span class="str">"metadata"</span>].get(<span class="str">"filename"</span>),
+                <span class="str">"page"</span>: c[<span class="str">"metadata"</span>].get(<span class="str">"page"</span>), <span class="str">"sim"</span>: round(c[<span class="str">"similarity"</span>], <span class="num">3</span>)} <span class="kw">for</span> c <span class="kw">in</span> chunks]
+    <span class="kw">yield</span> <span class="str">f"data: {json.dumps({'type': 'sources', 'data': sources})}\n\n"</span>
+
+    <span class="cmt"># Стриминг токенов gpt-4o</span>
+    full = <span class="str">""</span>
+    stream = <span class="kw">await</span> client.chat.completions.create(
+        model=<span class="str">"gpt-4o"</span>, stream=<span class="kw">True</span>, temperature=<span class="num">0.1</span>,
+        messages=[{<span class="str">"role"</span>: <span class="str">"system"</span>, <span class="str">"content"</span>: HR_SYSTEM_PROMPT + context},
+                  *messages],
+    )
+    <span class="kw">async for</span> chunk <span class="kw">in</span> stream:
+        delta = chunk.choices[<span class="num">0</span>].delta.content <span class="kw">or</span> <span class="str">""</span>
+        full += delta
+        <span class="kw">yield</span> <span class="str">f"data: {json.dumps({'type': 'token', 'data': delta})}\n\n"</span>
+
+    <span class="cmt"># done — Next.js сохранит в БД</span>
+    <span class="kw">yield</span> <span class="str">f"data: {json.dumps({'type': 'done', 'data': full, 'session_id': session_id})}\n\n"</span></pre>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>backend/app/core/hallucination.py — LLM Judge</div>
+    <pre>JUDGE_PROMPT = <span class="str">"""Ты — система проверки качества RAG ответов.
+
+ОТВЕТ МОДЕЛИ:
+{answer}
+
+ИСТОЧНИКИ (retrieved chunks):
+{chunks}
+
+Оцени: содержит ли ответ информацию, которой НЕТ в источниках?
+Верни JSON: {{"score": 0.0-1.0, "reason": "..."}}
+0.0 = нет галлюцинаций, 1.0 = полностью выдуманный ответ"""</span>
+
+<span class="kw">async def</span> <span class="fn">check_hallucination</span>(answer: str, chunks: list[dict]) -> float:
+    chunks_text = <span class="str">"\n"</span>.join(c[<span class="str">"content"</span>] <span class="kw">for</span> c <span class="kw">in</span> chunks)
+    res = <span class="kw">await</span> client.chat.completions.create(
+        model=<span class="str">"gpt-4o-mini"</span>,   <span class="cmt"># дешевле для judge</span>
+        messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+                   <span class="str">"content"</span>: JUDGE_PROMPT.format(answer=answer, chunks=chunks_text)}],
+        response_format={<span class="str">"type"</span>: <span class="str">"json_object"</span>},
+    )
+    data = json.loads(res.choices[<span class="num">0</span>].message.content)
+    <span class="kw">return</span> data[<span class="str">"score"</span>]</pre>
+  </div>
+</div>
+
+<!-- ═══════════ FRONTEND ═══════════ -->
+<div class="section" id="tab-frontend">
+  <h2>Next.js Frontend</h2>
+  <p class="section-sub">App Router, Route Handlers как BFF-прокси, NextAuth v5 для ролей, Prisma для БД.</p>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>frontend/middleware.ts — защита роутов</div>
+    <pre><span class="kw">import</span> { auth } <span class="kw">from</span> <span class="str">"@/lib/auth"</span>
+<span class="kw">import</span> { NextResponse } <span class="kw">from</span> <span class="str">"next/server"</span>
+
+<span class="kw">export default</span> auth(<span class="kw">function</span> <span class="fn">middleware</span>(req) {
+  <span class="kw">const</span> { nextUrl, auth: session } = req
+
+  <span class="cmt">// Редирект неавторизованных</span>
+  <span class="kw">if</span> (!session &amp;&amp; nextUrl.pathname.startsWith(<span class="str">"/chat"</span>))
+    <span class="kw">return</span> NextResponse.redirect(<span class="kw">new</span> URL(<span class="str">"/login"</span>, req.url))
+
+  <span class="cmt">// Только ADMIN в /admin</span>
+  <span class="kw">if</span> (nextUrl.pathname.startsWith(<span class="str">"/admin"</span>) &amp;&amp; session?.user.role !== <span class="str">"ADMIN"</span>)
+    <span class="kw">return</span> NextResponse.redirect(<span class="kw">new</span> URL(<span class="str">"/chat"</span>, req.url))
+
+  <span class="cmt">// Проверка TTL сессии (async в middleware через Edge Runtime)</span>
+  <span class="kw">return</span> NextResponse.next()
+})
+
+<span class="kw">export const</span> config = { matcher: [<span class="str">"/chat/:path*"</span>, <span class="str">"/admin/:path*"</span>] }</pre>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>frontend/app/api/chat/route.ts — прокси + стриминг</div>
+    <pre><span class="kw">import</span> { getServerSession } <span class="kw">from</span> <span class="str">"next-auth"</span>
+<span class="kw">import</span> { extendSessionIfNeeded } <span class="kw">from</span> <span class="str">"@/lib/session"</span>
+<span class="kw">import</span> { saveMessage } <span class="kw">from</span> <span class="str">"@/lib/db/messages"</span>
+
+<span class="kw">export async function</span> <span class="fn">POST</span>(req: Request) {
+  <span class="kw">const</span> session = <span class="kw">await</span> getServerSession()
+  <span class="kw">if</span> (!session) <span class="kw">return new</span> Response(<span class="str">"Unauthorized"</span>, { status: <span class="num">401</span> })
+
+  <span class="cmt">// Продлить если < 1 часа</span>
+  <span class="kw">await</span> extendSessionIfNeeded(session.sessionId)
+
+  <span class="kw">const</span> body = <span class="kw">await</span> req.json()
+  <span class="kw">const</span> pythonRes = <span class="kw">await</span> fetch(
+    <span class="str">`${process.env.PYTHON_BACKEND_URL}/api/v1/chat`</span>,
+    { method: <span class="str">"POST"</span>, headers: { <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span> },
+      body: JSON.stringify({ messages: body.messages, session_id: session.sessionId }) }
+  )
+
+  <span class="kw">const</span> stream = <span class="kw">new</span> ReadableStream({
+    <span class="kw">async</span> start(controller) {
+      <span class="kw">const</span> reader = pythonRes.body!.getReader()
+      <span class="kw">let</span> buffer = <span class="str">""</span>
+      <span class="kw">while</span> (<span class="kw">true</span>) {
+        <span class="kw">const</span> { done, value } = <span class="kw">await</span> reader.read()
+        <span class="kw">if</span> (done) <span class="kw">break</span>
+        buffer += <span class="kw">new</span> TextDecoder().decode(value)
+        <span class="cmt">// Перехватить done-событие для сохранения в Neon</span>
+        <span class="kw">for</span> (<span class="kw">const</span> line <span class="kw">of</span> buffer.split(<span class="str">"\n"</span>)) {
+          <span class="kw">if</span> (!line.startsWith(<span class="str">"data: "</span>)) <span class="kw">continue</span>
+          <span class="kw">const</span> evt = JSON.parse(line.slice(<span class="num">6</span>))
+          <span class="kw">if</span> (evt.type === <span class="str">"done"</span>)
+            <span class="kw">await</span> saveMessage(session.sessionId, evt.data, evt.sources)
+        }
+        controller.enqueue(value)
+      }
+      controller.close()
+    }
+  })
+
+  <span class="kw">return new</span> Response(stream, {
+    headers: { <span class="str">"Content-Type"</span>: <span class="str">"text/event-stream"</span>, <span class="str">"Cache-Control"</span>: <span class="str">"no-cache"</span> }
+  })
+}</pre>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>frontend/lib/session.ts — TTL + toggle</div>
+    <pre><span class="kw">const</span> SIX_H = <span class="num">6</span> * <span class="num">3600</span> * <span class="num">1000</span>
+<span class="kw">const</span> ONE_H = <span class="num">1</span> * <span class="num">3600</span> * <span class="num">1000</span>
+<span class="kw">const</span> TWO_H = <span class="num">2</span> * <span class="num">3600</span> * <span class="num">1000</span>
+
+<span class="kw">export async function</span> <span class="fn">extendSessionIfNeeded</span>(sessionId: string) {
+  <span class="kw">const</span> s = <span class="kw">await</span> prisma.session.findUnique({ where: { id: sessionId } })
+  <span class="kw">if</span> (!s?.persistent) <span class="kw">return</span>             <span class="cmt">// ephemeral — не продлеваем</span>
+  <span class="kw">if</span> (s.expiresAt.getTime() - Date.now() < ONE_H)
+    <span class="kw">await</span> prisma.session.update({
+      where: { id: sessionId },
+      data: { expiresAt: <span class="kw">new</span> Date(Date.now() + TWO_H) }
+    })
+}
+
+<span class="cmt">// Ephemeral режим: закрыл вкладку — сессия умерла</span>
+<span class="kw">export function</span> <span class="fn">watchEphemeralSession</span>() {
+  document.addEventListener(<span class="str">"visibilitychange"</span>, () => {
+    <span class="kw">if</span> (document.visibilityState === <span class="str">"hidden"</span>)
+      fetch(<span class="str">"/api/session/terminate"</span>, { method: <span class="str">"POST"</span>, keepalive: <span class="kw">true</span> })
+  })
+}</pre>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>frontend/prisma/schema.prisma</div>
+    <pre><span class="kw">datasource</span> db {
+  provider = <span class="str">"postgresql"</span>
+  url      = env(<span class="str">"DATABASE_URL"</span>)
+}
+
+<span class="kw">enum</span> Role { <span class="grn">ADMIN</span> <span class="grn">USER</span> }
+<span class="kw">enum</span> IndexStatus { <span class="grn">PENDING</span> <span class="grn">PROCESSING</span> <span class="grn">READY</span> <span class="red">ERROR</span> }
+
+<span class="kw">model</span> User {
+  id           String    <span class="fn">@id @default(cuid())</span>
+  email        String    <span class="fn">@unique</span>
+  passwordHash String
+  role         Role      <span class="fn">@default(USER)</span>
+  sessions     Session[]
+  feedbacks    Feedback[]
+  createdAt    DateTime  <span class="fn">@default(now())</span>
+}
+
+<span class="kw">model</span> Session {
+  id           String    <span class="fn">@id @default(cuid())</span>
+  userId       String
+  user         User      <span class="fn">@relation(fields: [userId], references: [id])</span>
+  persistent   Boolean   <span class="fn">@default(true)</span>    <span class="cmt">// toggle on/off</span>
+  expiresAt    DateTime
+  terminatedAt DateTime?
+  messages     Message[]
+  createdAt    DateTime  <span class="fn">@default(now())</span>
+}
+
+<span class="kw">model</span> Message {
+  id         String    <span class="fn">@id @default(cuid())</span>
+  sessionId  String
+  session    Session   <span class="fn">@relation(fields: [sessionId], references: [id])</span>
+  role       String    <span class="cmt">// "user" | "assistant"</span>
+  content    String
+  sources    Json?     <span class="cmt">// retrieved chunk metadata</span>
+  hallScore  Float?    <span class="cmt">// 0-1, hallucination judge</span>
+  feedback   Feedback?
+  createdAt  DateTime  <span class="fn">@default(now())</span>
+}
+
+<span class="kw">model</span> Feedback {
+  id        String   <span class="fn">@id @default(cuid())</span>
+  messageId String   <span class="fn">@unique</span>
+  message   Message  <span class="fn">@relation(fields: [messageId], references: [id])</span>
+  userId    String
+  user      User     <span class="fn">@relation(fields: [userId], references: [id])</span>
+  rating    Int      <span class="cmt">// 1 = 👍, -1 = 👎</span>
+  comment   String?
+  createdAt DateTime <span class="fn">@default(now())</span>
+}
+
+<span class="kw">model</span> KnowledgeFile {
+  id          String      <span class="fn">@id @default(cuid())</span>
+  filename    String
+  mimeType    String
+  size        Int
+  storagePath String      <span class="cmt">// MinIO object key</span>
+  status      IndexStatus <span class="fn">@default(PENDING)</span>
+  chunkCount  Int?
+  uploadedBy  String
+  createdAt   DateTime    <span class="fn">@default(now())</span>
+  updatedAt   DateTime    <span class="fn">@updatedAt</span>
+}
+
+<span class="kw">model</span> PromptTemplate {
+  id       String   <span class="fn">@id @default(cuid())</span>
+  title    String
+  content  String   <span class="cmt">// текст шаблона</span>
+  category String?
+  order    Int      <span class="fn">@default(0)</span>
+  isActive Boolean  <span class="fn">@default(true)</span>
+  updatedAt DateTime <span class="fn">@updatedAt</span>
+}</pre>
+  </div>
+</div>
+
+<!-- ═══════════ FEATURES ═══════════ -->
+<div class="section" id="tab-features">
+  <h2>Реализация всех фич</h2>
+  <p class="section-sub">Детальное описание каждой из 7 фич с указанием где что живёт.</p>
+
+  <div class="feat-grid">
+
+    <div class="feat">
+      <div class="feat-hd" style="background:#1e3a5f;">
+        <div class="feat-num">1</div>
+        <div class="feat-title">Admin + User роли</div>
+      </div>
+      <div class="feat-bd">
+        <strong>NextAuth v5</strong> + Credentials provider. Поле <code>role: ADMIN | USER</code> в таблице <code>User</code>.<br/>
+        Middleware защищает <code>/admin/*</code> (только ADMIN) и <code>/chat/*</code> (активная сессия).<br/>
+        Admin создаётся через seed скрипт или invite-code механизм.<br/>
+        <span class="badge" style="background:#1e3a5f18;color:#2c4a8c;border:1px solid #2c4a8c40;">JWT strategy</span>
+        <span class="badge" style="background:#1e3a5f18;color:#2c4a8c;border:1px solid #2c4a8c40;">bcrypt</span>
+        <span class="badge" style="background:#1e3a5f18;color:#2c4a8c;border:1px solid #2c4a8c40;">role middleware</span>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-hd" style="background:#1d4a2f;">
+        <div class="feat-num">2</div>
+        <div class="feat-title">CRUD файлов базы знаний</div>
+      </div>
+      <div class="feat-bd">
+        Admin загружает файл → Next.js проксирует на <code>POST /api/v1/ingest</code> → FastAPI сохраняет в MinIO → background task запускает RAG-Anything pipeline → статус в Redis → клиент поллит <code>/ingest/{id}/status</code>.<br/><br/>
+        <strong>Форматы:</strong>
+        <span class="badge" style="background:#1d4a2f18;color:#1d6b4f;border:1px solid #1d6b4f40;">PDF</span>
+        <span class="badge" style="background:#1d4a2f18;color:#1d6b4f;border:1px solid #1d6b4f40;">DOCX</span>
+        <span class="badge" style="background:#1d4a2f18;color:#1d6b4f;border:1px solid #1d6b4f40;">PPTX</span>
+        <span class="badge" style="background:#1d4a2f18;color:#1d6b4f;border:1px solid #1d6b4f40;">XLSX</span>
+        <span class="badge" style="background:#1d4a2f18;color:#1d6b4f;border:1px solid #1d6b4f40;">TXT</span>
+        <span class="badge" style="background:#1d4a2f18;color:#1d6b4f;border:1px solid #1d6b4f40;">MD</span>
+        <span class="badge" style="background:#1d4a2f18;color:#1d6b4f;border:1px solid #1d6b4f40;">HTML</span><br/>
+        <strong>Delete:</strong> удаляет оригинал из MinIO + все vector_chunks из Neon.
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-hd" style="background:#4a1d6b;">
+        <div class="feat-num">3</div>
+        <div class="feat-title">Сессия 6 часов + автопродление</div>
+      </div>
+      <div class="feat-bd">
+        При логине создаётся запись в таблице <code>Session</code> с <code>expiresAt = now + 6h</code>.<br/>
+        На каждый запрос к <code>/api/chat</code>: если осталось <strong>&lt; 1 часа</strong> — продлеваем на <strong>+2 часа</strong>.<br/>
+        История чата привязана к сессии — при возврате в течение 6ч пользователь видит весь контекст.<br/>
+        Middleware проверяет <code>expiresAt</code> и редиректит если сессия истекла.
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-hd" style="background:#7a4a00;">
+        <div class="feat-num">4</div>
+        <div class="feat-title">Toggle: Persistent / Ephemeral сессия</div>
+      </div>
+      <div class="feat-bd">
+        Компонент <code>SessionToggle.tsx</code> — shadcn <code>&lt;Switch/&gt;</code> в шапке чата.<br/>
+        <strong>ON (persistent):</strong> сессия живёт 6ч, продлевается автоматически.<br/>
+        <strong>OFF (ephemeral):</strong> клиент слушает <code>visibilitychange</code> — при скрытии вкладки вызывает <code>POST /api/session/terminate</code> с <code>keepalive: true</code>.<br/>
+        Кнопка <strong>"Завершить сессию"</strong> — устанавливает <code>terminatedAt</code>, очищает cookie, редирект на <code>/login</code>.
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-hd" style="background:#6b1d4a;">
+        <div class="feat-num">5</div>
+        <div class="feat-title">Predefined Prompt Cards</div>
+      </div>
+      <div class="feat-bd">
+        Таблица <code>PromptTemplate</code> в Neon. Admin редактирует в <code>/admin/prompts</code> через CRUD интерфейс.<br/>
+        UI для пользователя: горизонтальный скролл карточек над полем ввода. Клик по карточке — вставляет текст в textarea.<br/>
+        Поля: <code>title</code>, <code>content</code> (шаблон с плейсхолдерами), <code>category</code>, <code>order</code>, <code>isActive</code>.
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-hd" style="background:#1a4a4a;">
+        <div class="feat-num">6</div>
+        <div class="feat-title">Feedback + Аналитика</div>
+      </div>
+      <div class="feat-bd">
+        После каждого ответа — кнопки 👍 / 👎 + опциональный текстовый комментарий (shadcn Popover).<br/>
+        Таблица <code>Feedback</code> в Neon, привязана к <code>Message</code> через <code>@unique</code>.<br/>
+        Admin Dashboard: общий % позитивных, recharts LineChart по дням, таблица негативных с контекстом вопроса, экспорт CSV.
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-hd" style="background:#4a1a1a;">
+        <div class="feat-num">7</div>
+        <div class="feat-title">Health Check + Оценка галлюцинаций</div>
+      </div>
+      <div class="feat-bd">
+        Страница <code>/admin/health</code>. Поллинг раз в 30 секунд к <code>GET /api/v1/health/detailed</code>.<br/>
+        <strong>Метрики FastAPI:</strong> ping OpenAI API (latency ms), кол-во чанков в pgvector, Redis ping.<br/>
+        <strong>Hallucination Judge:</strong> gpt-4o-mini оценивает каждый ответ асинхронно после стриминга. Score 0–1 сохраняется в поле <code>hallScore</code> таблицы <code>Message</code>. На дашборде — средний score за 24ч.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════ DB ═══════════ -->
+<div class="section" id="tab-db">
+  <h2>База данных — Neon</h2>
+  <p class="section-sub">Два ORM: Prisma (бизнес-данные) и Alembic (векторные данные). Обе миграции применяются через <code>make migrate</code>.</p>
+
+  <div class="card accent-ok">
+    <div class="card-head" style="color:var(--accent2);">Neon Setup — 3 шага</div>
+    1. Зайти на <strong>neon.tech</strong> → New Project → выбрать регион ближайший к серверу<br/>
+    2. В консоли: <strong>Project Settings → Extensions → Enable pgvector</strong><br/>
+    3. Connection Details → скопировать два URL: обычный (для Prisma) и asyncpg (для Python)
+  </div>
+
+  <div class="card accent-blue">
+    <div class="card-head" style="color:var(--accent3);">Neon Branching для команды</div>
+    Каждый разработчик создаёт свою ветку БД: <code>neon branches create --name dev-vasya</code><br/>
+    Получает отдельный DATABASE_URL. Изменения схемы не ломают коллег.<br/>
+    В CI/CD — автоматически создаётся ветка под каждый PR и удаляется после merge.
+  </div>
+
+  <h3>Разделение между Prisma и Alembic</h3>
+  <table class="tbl">
+    <thead><tr><th>Таблица</th><th>ORM</th><th>Кто использует</th></tr></thead>
+    <tbody>
+      <tr><td>users</td><td>Prisma</td><td>Next.js (NextAuth)</td></tr>
+      <tr><td>sessions</td><td>Prisma</td><td>Next.js</td></tr>
+      <tr><td>messages</td><td>Prisma</td><td>Next.js (сохранение после done-event)</td></tr>
+      <tr><td>feedbacks</td><td>Prisma</td><td>Next.js</td></tr>
+      <tr><td>knowledge_files</td><td>Prisma</td><td>Next.js (CRUD UI) + Python (статус)</td></tr>
+      <tr><td>prompt_templates</td><td>Prisma</td><td>Next.js</td></tr>
+      <tr><td>vector_chunks</td><td>Alembic</td><td>Python (insert + similarity search)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>backend/alembic/versions/001_vector_chunks.py</div>
+    <pre><span class="kw">def</span> <span class="fn">upgrade</span>():
+    op.execute(<span class="str">"CREATE EXTENSION IF NOT EXISTS vector"</span>)
+    op.create_table(<span class="str">"vector_chunks"</span>,
+        sa.Column(<span class="str">"id"</span>, sa.String, primary_key=<span class="kw">True</span>, default=str(uuid4)),
+        sa.Column(<span class="str">"file_id"</span>, sa.String, nullable=<span class="kw">False</span>),
+        sa.Column(<span class="str">"content"</span>, sa.Text, nullable=<span class="kw">False</span>),
+        sa.Column(<span class="str">"embedding"</span>, Vector(<span class="num">1536</span>), nullable=<span class="kw">False</span>),
+        sa.Column(<span class="str">"metadata"</span>, sa.JSON),
+        sa.Column(<span class="str">"created_at"</span>, sa.DateTime, server_default=sa.func.now()),
+    )
+    <span class="cmt"># IVFFLAT индекс для быстрого поиска</span>
+    op.execute(<span class="str">"""
+        CREATE INDEX ON vector_chunks
+        USING ivfflat (embedding vector_cosine_ops)
+        WITH (lists = 100)
+    """</span>)</pre>
+  </div>
+</div>
+
+<!-- ═══════════ FLOW ═══════════ -->
+<div class="section" id="tab-flow">
+  <h2>Request Flows</h2>
+  <p class="section-sub">Как данные движутся через систему — три главных сценария.</p>
+
+  <div class="card accent-green">
+    <div class="card-head" style="color:var(--accent2);">Flow 1 — Загрузка документа (Admin)</div>
+    <div class="flow-row">
+      <div class="fbox" style="background:#f0f4ff;border-color:#2c4a8c;color:#2c4a8c;">Admin<br/><small>drag & drop</small></div>
+      <div class="farr"><div class="farr-line"></div><div class="farr-lbl">POST multipart</div><div class="farr-tip">→</div></div>
+      <div class="fbox" style="background:#f5f5f5;border-color:#333;color:#333;">Next.js<br/><small>/api/upload</small></div>
+      <div class="farr"><div class="farr-line"></div><div class="farr-lbl">proxy FormData</div><div class="farr-tip">→</div></div>
+      <div class="fbox" style="background:#eff8ff;border-color:#2b6cb0;color:#2b6cb0;">FastAPI<br/><small>POST /ingest</small></div>
+      <div class="farr"><div class="farr-line"></div><div class="farr-lbl">store file</div><div class="farr-tip">→</div></div>
+      <div class="fbox" style="background:#fff5f0;border-color:#b94a00;color:#b94a00;">MinIO<br/><small>:9000</small></div>
+    </div>
+    <div style="color:var(--muted);font-size:12px;margin-top:6px;padding-left:8px;font-family:'JetBrains Mono',monospace;">
+      ↓ background_task<br/>
+      RAG-Anything → chunk → embed (text-embedding-3-small) → pgvector (Neon)
+    </div>
+  </div>
+
+  <div class="card accent-blue">
+    <div class="card-head" style="color:var(--accent3);">Flow 2 — Вопрос пользователя</div>
+    <div class="flow-row">
+      <div class="fbox" style="background:#f0f4ff;border-color:#2c4a8c;color:#2c4a8c;">User<br/><small>send message</small></div>
+      <div class="farr"><div class="farr-line"></div><div class="farr-lbl">POST /api/chat</div><div class="farr-tip">→</div></div>
+      <div class="fbox" style="background:#f5f5f5;border-color:#333;color:#333;">Next.js<br/><small>check TTL</small></div>
+      <div class="farr"><div class="farr-line"></div><div class="farr-lbl">proxy</div><div class="farr-tip">→</div></div>
+      <div class="fbox" style="background:#eff8ff;border-color:#2b6cb0;color:#2b6cb0;">FastAPI<br/><small>POST /chat</small></div>
+      <div class="farr"><div class="farr-line"></div><div class="farr-lbl">embed + search</div><div class="farr-tip">→</div></div>
+      <div class="fbox" style="background:#f0faf5;border-color:#1d6b4f;color:#1d6b4f;">Neon<br/><small>pgvector top-5</small></div>
+    </div>
+    <div class="flow-row" style="margin-top:6px;">
+      <div class="fbox" style="background:#f0faf5;border-color:#1d6b4f;color:#1d6b4f;">chunks<br/><small>context</small></div>
+      <div class="farr"><div class="farr-line"></div><div class="farr-lbl">prompt</div><div class="farr-tip">→</div></div>
+      <div class="fbox" style="background:#f5f0ff;border-color:#7c3aed;color:#7c3aed;">gpt-4o<br/><small>stream</small></div>
+      <div class="farr"><div class="farr-line"></div><div class="farr-lbl">SSE tokens</div><div class="farr-tip">→</div></div>
+      <div class="fbox" style="background:#f5f5f5;border-color:#333;color:#333;">Next.js<br/><small>intercept done</small></div>
+      <div class="farr"><div class="farr-line"></div><div class="farr-lbl">save + stream</div><div class="farr-tip">→</div></div>
+      <div class="fbox" style="background:#f0f4ff;border-color:#2c4a8c;color:#2c4a8c;">User<br/><small>realtime</small></div>
+    </div>
+    <div style="color:var(--muted);font-size:12px;margin-top:6px;font-family:'JetBrains Mono',monospace;">
+      Next.js перехватывает done → saveMessage(Neon) → async hallucination check (gpt-4o-mini)
+    </div>
+  </div>
+
+  <div class="card accent-rust">
+    <div class="card-head" style="color:var(--accent);">SSE событий — три типа</div>
+    <table class="tbl">
+      <thead><tr><th>Тип</th><th>Когда</th><th>Данные</th><th>Кто обрабатывает</th></tr></thead>
+      <tbody>
+        <tr><td>sources</td><td>До первого токена</td><td>Массив {filename, page, similarity}</td><td>Фронт: показывает карточки источников</td></tr>
+        <tr><td>token</td><td>Каждый токен gpt-4o</td><td>Строка с токеном</td><td>Фронт: append в bubble</td></tr>
+        <tr><td>done</td><td>После последнего токена</td><td>Полный текст + session_id</td><td>Next.js: saveMessage в Neon</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════ ROADMAP ═══════════ -->
+<div class="section" id="tab-roadmap">
+  <h2>Роадмап разработки</h2>
+  <p class="section-sub">10 недель от нуля до production. Каждая фаза заканчивается рабочим инкрементом.</p>
+
+  <div class="phase">
+    <div class="phase-hd" style="background:#1e3a5f;">
+      <span class="phase-tag">PHASE 1</span>
+      <span class="phase-title">Foundation</span>
+      <span class="phase-weeks">Недели 1–2</span>
+    </div>
+    <div class="phase-bd">
+      <div class="phase-item"><div class="phase-dot" style="background:#3b82f6;"></div>Структура монорепо, .env система, Makefile</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#3b82f6;"></div>Docker Compose: MinIO + Redis + backend</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#3b82f6;"></div>Neon setup: pgvector, Prisma schema, Alembic</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#3b82f6;"></div>NextAuth v5: login, register, роли ADMIN/USER</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#3b82f6;"></div>Middleware: защита /admin и /chat</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#3b82f6;"></div>Base layout: admin sidebar, user shell, shadcn/ui + tweakcn тема</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-hd" style="background:#1d4a2f;">
+      <span class="phase-tag">PHASE 2</span>
+      <span class="phase-title">Knowledge Base</span>
+      <span class="phase-weeks">Недели 3–4</span>
+    </div>
+    <div class="phase-bd">
+      <div class="phase-item"><div class="phase-dot" style="background:#10b981;"></div>FastAPI: POST /ingest, DELETE /ingest/{id}</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#10b981;"></div>MinIO: upload/download/delete</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#10b981;"></div>RAG-Anything pipeline + background task</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#10b981;"></div>OpenAI embeddings → Neon pgvector</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#10b981;"></div>Admin UI: FileTable + статус PENDING/PROCESSING/READY</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#10b981;"></div>Drag-and-drop загрузка, Re-index</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-hd" style="background:#4a1d6b;">
+      <span class="phase-tag">PHASE 3</span>
+      <span class="phase-title">Chat & RAG</span>
+      <span class="phase-weeks">Недели 5–6</span>
+    </div>
+    <div class="phase-bd">
+      <div class="phase-item"><div class="phase-dot" style="background:#8b5cf6;"></div>FastAPI: POST /chat → SSE streaming</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#8b5cf6;"></div>pgvector similarity search + context injection</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#8b5cf6;"></div>Chat UI + MessageBubble + SourceCard</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#8b5cf6;"></div>Session TTL 6ч + автопродление + toggle</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#8b5cf6;"></div>Predefined Prompt Cards (UI + Admin CRUD)</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#8b5cf6;"></div>Сохранение истории чата в Neon</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-hd" style="background:#7a4a00;">
+      <span class="phase-tag">PHASE 4</span>
+      <span class="phase-title">Feedback & Health</span>
+      <span class="phase-weeks">Недели 7–8</span>
+    </div>
+    <div class="phase-bd">
+      <div class="phase-item"><div class="phase-dot" style="background:#f59e0b;"></div>Feedback UI: 👍 👎 + текстовый комментарий</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#f59e0b;"></div>Admin: Feedback Dashboard (recharts + CSV)</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#f59e0b;"></div>Hallucination Judge (gpt-4o-mini async)</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#f59e0b;"></div>Bot Health Page: latency, OpenAI ping, chunk count</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#f59e0b;"></div>Avg hallucination score dashboard</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#f59e0b;"></div>Rate limiting (Redis)</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-hd" style="background:#4a1a1a;">
+      <span class="phase-tag">PHASE 5</span>
+      <span class="phase-title">Polish & Deploy</span>
+      <span class="phase-weeks">Недели 9–10</span>
+    </div>
+    <div class="phase-bd">
+      <div class="phase-item"><div class="phase-dot" style="background:#ef4444;"></div>Production Dockerfiles (multi-stage, no --reload)</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#ef4444;"></div>docker-compose.prod.yml (MinIO без :9001)</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#ef4444;"></div>Nginx reverse proxy (SSL, роутинг)</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#ef4444;"></div>GitHub Actions CI/CD pipeline</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#ef4444;"></div>Neon branching в CI (ветка БД под PR)</div>
+      <div class="phase-item"><div class="phase-dot" style="background:#ef4444;"></div>README, .env.example, документация</div>
+    </div>
+  </div>
+
+  <h3>.env.example — финальный</h3>
+  <div class="code-wrap">
+    <div class="code-label"><span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>.env.example</div>
+    <pre><span class="cmt"># ── Neon PostgreSQL ────────────────────────────────────</span>
+<span class="key">DATABASE_URL</span>=<span class="str">postgresql://user:pass@ep-xxx.neon.tech/hrbot?sslmode=require</span>
+<span class="key">DATABASE_URL_ASYNC</span>=<span class="str">postgresql+asyncpg://user:pass@ep-xxx.neon.tech/hrbot?ssl=require</span>
+
+<span class="cmt"># ── MinIO ──────────────────────────────────────────────</span>
+<span class="key">MINIO_ROOT_USER</span>=<span class="str">minioadmin</span>
+<span class="key">MINIO_ROOT_PASSWORD</span>=<span class="str">CHANGE_ME</span>
+<span class="key">MINIO_BUCKET</span>=<span class="str">hrbot-documents</span>
+<span class="key">MINIO_USE_SSL</span>=<span class="str">false</span>
+
+<span class="cmt"># ── Redis ──────────────────────────────────────────────</span>
+<span class="key">REDIS_PASSWORD</span>=<span class="str">CHANGE_ME</span>
+
+<span class="cmt"># ── OpenAI ─────────────────────────────────────────────</span>
+<span class="key">OPENAI_API_KEY</span>=<span class="str">sk-CHANGE_ME</span>
+
+<span class="cmt"># ── NextAuth ───────────────────────────────────────────</span>
+<span class="key">NEXTAUTH_SECRET</span>=<span class="str">CHANGE_ME_at_least_32_chars</span>
+<span class="key">NEXTAUTH_URL</span>=<span class="str">http://localhost:3000</span>
+
+<span class="cmt"># ── Internal (docker network) ──────────────────────────</span>
+<span class="key">PYTHON_BACKEND_URL</span>=<span class="str">http://backend:8000</span>
+<span class="key">WEB_ORIGIN</span>=<span class="str">http://frontend:3000</span></pre>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+function go(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

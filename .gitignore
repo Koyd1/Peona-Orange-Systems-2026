@@ -1,0 +1,21 @@
+# Env
+.env
+
+tasks/
+
+# OS / IDE
+.DS_Store
+.idea/
+
+# Node
+node_modules/
+.next/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Docker local volumes/tmp
+*.log
+
