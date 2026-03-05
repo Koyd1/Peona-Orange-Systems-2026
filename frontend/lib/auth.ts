@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 
 import { findUserByEmail, verifyUserPassword } from "@/lib/user-store";
-import { createAppSession, isSessionActive } from "@/lib/session";
+import { createAppSession, getSessionById, isSessionActive } from "@/lib/session";
 
 function asSessionId(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -70,6 +70,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const sessionId = asSessionId(token.sessionId);
       if (sessionId && !isSessionActive(sessionId)) {
         delete token.sessionId;
+        delete token.persistent;
+        delete token.expiresAt;
+      }
+
+      if (sessionId) {
+        const appSession = getSessionById(sessionId);
+        if (appSession) {
+          token.persistent = appSession.persistent;
+          token.expiresAt = appSession.expiresAt.toISOString();
+        }
       }
 
       return token;
@@ -77,6 +87,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       session.user.role = asRole(token.role);
       session.sessionId = asSessionId(token.sessionId);
+      session.persistent = token.persistent === true;
+      session.expiresAt =
+        typeof token.expiresAt === "string" ? token.expiresAt : undefined;
       return session;
     }
   }

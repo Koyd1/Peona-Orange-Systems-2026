@@ -1,12 +1,15 @@
 "use client";
 
 import SourceCard, { type ChatSource } from "@/components/chat/SourceCard";
+import FeedbackButtons from "@/components/chat/FeedbackButtons";
 
 export type ChatMessageVM = {
   id: string;
   role: "user" | "assistant";
   content: string;
   sources?: ChatSource[];
+  feedbackRating?: 1 | -1;
+  feedbackComment?: string | null;
 };
 
 export default function MessageBubble({ message }: { message: ChatMessageVM }) {
@@ -34,6 +37,14 @@ export default function MessageBubble({ message }: { message: ChatMessageVM }) {
             <SourceCard key={`${message.id}-src-${index}`} source={source} />
           ))}
         </div>
+      ) : null}
+
+      {!isUser && !message.id.startsWith("a-") ? (
+        <FeedbackButtons
+          messageId={message.id}
+          initialRating={message.feedbackRating}
+          initialComment={message.feedbackComment}
+        />
       ) : null}
     </div>
   );

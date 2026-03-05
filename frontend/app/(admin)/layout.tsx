@@ -21,7 +21,13 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <div className="card" style={{ marginBottom: 16 }}>
         <strong>Admin area</strong>
         <p>{session.user.email}</p>
-        <Link href="/chat">Back to chat</Link>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link href="/admin/knowledge">Knowledge</Link>
+          <Link href="/admin/prompts">Prompts</Link>
+          <Link href="/admin/feedback">Feedback</Link>
+          <Link href="/admin/health">Health</Link>
+          <Link href="/chat">Back to chat</Link>
+        </div>
       </div>
       {children}
     </main>

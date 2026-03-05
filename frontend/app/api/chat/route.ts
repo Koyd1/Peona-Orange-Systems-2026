@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import {
+  extendSessionIfNeeded,
+  isSessionActive
+} from "@/lib/session";
 
 export const runtime = "nodejs";
 
@@ -32,6 +36,8 @@ async function ensureUserAndSession(params: {
   email: string;
   role: "ADMIN" | "USER";
   sessionId: string;
+  persistent: boolean;
+  expiresAt: Date;
 }) {
   const user = await prisma.user.upsert({
     where: { email: params.email },
@@ -47,18 +53,54 @@ async function ensureUserAndSession(params: {
     where: { id: params.sessionId },
     update: {
       userId: user.id,
-      expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000),
-      persistent: true
+      expiresAt: params.expiresAt,
+      persistent: params.persistent
     },
     create: {
       id: params.sessionId,
       userId: user.id,
-      expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000),
-      persistent: true
+      expiresAt: params.expiresAt,
+      persistent: params.persistent
     }
   });
 
   return user;
+}
+
+async function backfillHallScore(params: {
+  messageId: string;
+  answer: string;
+  sources: SourcePayload[];
+}) {
+  try {
+    const response = await fetch(backendUrl("/api/v1/evaluate"), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        answer: params.answer,
+        contextBlocks: params.sources
+          .map((item) => (typeof item.snippet === "string" ? item.snippet : ""))
+          .filter((item) => item.length > 0)
+          .slice(0, 12)
+      })
+    });
+    if (!response.ok) return;
+
+    const payload = (await response.json()) as { hallScore?: unknown };
+    const score =
+      typeof payload.hallScore === "number" && Number.isFinite(payload.hallScore)
+        ? payload.hallScore
+        : null;
+
+    if (score === null) return;
+
+    await prisma.message.update({
+      where: { id: params.messageId },
+      data: { hallScore: score }
+    });
+  } catch {
+    return;
+  }
 }
 
 async function persistDoneFromSSE(
@@ -68,6 +110,8 @@ async function persistDoneFromSSE(
     userMessage: string;
     email: string;
     role: "ADMIN" | "USER";
+    persistent: boolean;
+    expiresAt: Date;
   }
 ) {
   const reader = stream.getReader();
@@ -79,7 +123,9 @@ async function persistDoneFromSSE(
     await ensureUserAndSession({
       email: ctx.email,
       role: ctx.role,
-      sessionId: ctx.sessionId
+      sessionId: ctx.sessionId,
+      persistent: ctx.persistent,
+      expiresAt: ctx.expiresAt
     });
 
     await prisma.message.create({
@@ -120,7 +166,7 @@ async function persistDoneFromSSE(
                 ? data.hallScore
                 : null;
 
-            await prisma.message.create({
+            const saved = await prisma.message.create({
               data: {
                 sessionId: ctx.sessionId,
                 role: "assistant",
@@ -129,6 +175,13 @@ async function persistDoneFromSSE(
                 hallScore
               }
             });
+            if (hallScore === null && answer.trim().length > 0) {
+              void backfillHallScore({
+                messageId: saved.id,
+                answer,
+                sources
+              });
+            }
 
             return;
           }
@@ -151,11 +204,18 @@ export async function GET() {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  if (!session.sessionId) {
+  if (!session.sessionId || !isSessionActive(session.sessionId)) {
     return NextResponse.json({ items: [] });
   }
 
-  const rows = await prisma.message.findMany({
+  const rows: Array<{
+    id: string;
+    role: string;
+    content: string;
+    sources: unknown;
+    createdAt: Date;
+    feedback: { rating: number; comment: string | null } | null;
+  }> = await prisma.message.findMany({
     where: { sessionId: session.sessionId },
     orderBy: { createdAt: "asc" },
     select: {
@@ -163,7 +223,13 @@ export async function GET() {
       role: true,
       content: true,
       sources: true,
-      createdAt: true
+      createdAt: true,
+      feedback: {
+        select: {
+          rating: true,
+          comment: true
+        }
+      }
     }
   });
 
@@ -173,7 +239,9 @@ export async function GET() {
       role: row.role,
       content: row.content,
       sources: row.sources,
-      createdAt: row.createdAt.toISOString()
+      createdAt: row.createdAt.toISOString(),
+      feedbackRating: row.feedback?.rating,
+      feedbackComment: row.feedback?.comment ?? null
     }))
   });
 }
@@ -188,10 +256,17 @@ export async function POST(request: Request) {
   if (!session.sessionId) {
     return NextResponse.json({ error: "Session is not active" }, { status: 401 });
   }
+  if (!isSessionActive(session.sessionId)) {
+    return NextResponse.json({ error: "Session expired" }, { status: 401 });
+  }
+
+  const appSession = extendSessionIfNeeded(session.sessionId);
+  if (!appSession || appSession.terminatedAt) {
+    return NextResponse.json({ error: "Session expired" }, { status: 401 });
+  }
 
   const payload = (await request.json()) as {
     messages?: InputMessage[];
-    sessionId?: string;
   };
 
   const messages = payload.messages ?? [];
@@ -203,7 +278,7 @@ export async function POST(request: Request) {
       "content-type": "application/json"
     },
     body: JSON.stringify({
-      session_id: payload.sessionId ?? session.sessionId,
+      session_id: session.sessionId,
       messages
     })
   });
@@ -216,10 +291,12 @@ export async function POST(request: Request) {
   const [clientStream, auditStream] = upstream.body.tee();
 
   void persistDoneFromSSE(auditStream, {
-    sessionId: payload.sessionId ?? session.sessionId,
+    sessionId: session.sessionId,
     userMessage: lastUserMessage,
     email: session.user.email ?? "unknown@hr.local",
-    role: session.user.role
+    role: session.user.role,
+    persistent: appSession.persistent,
+    expiresAt: appSession.expiresAt
   });
 
   return new Response(clientStream, {

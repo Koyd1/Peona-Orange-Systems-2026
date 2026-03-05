@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: |
+          npm install
+          npm run typecheck
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Backend syntax check
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m compileall app
+
+  migrations-smoke:
+    runs-on: ubuntu-latest
+    needs: quality
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hrbot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hrbot"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hrbot
+      DATABASE_URL_ASYNC: postgresql+asyncpg://postgres:postgres@localhost:5432/hrbot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prisma migrate deploy
+        working-directory: frontend
+        run: |
+          npm install
+          npx prisma generate
+          npx prisma migrate deploy
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Alembic upgrade
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          DATABASE_URL=${DATABASE_URL_ASYNC} alembic upgrade head
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build production images
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml build frontend backend nginx

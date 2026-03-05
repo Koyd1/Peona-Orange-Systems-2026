@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import FileTable, { type KnowledgeFileRow } from "@/components/admin/FileTable";
 import FileUpload from "@/components/admin/FileUpload";
@@ -98,6 +99,9 @@ export default function AdminKnowledgePage() {
         <h1 style={{ marginTop: 0 }}>Knowledge Base</h1>
         <p style={{ marginTop: 0 }}>
           Управление документами: upload, status polling, delete и re-index.
+        </p>
+        <p style={{ marginTop: 0 }}>
+          <Link href="/admin/prompts">Open prompt templates</Link>
         </p>
         {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
       </div>

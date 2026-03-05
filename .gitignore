@@ -18,4 +18,4 @@ __pycache__/
 
 # Docker local volumes/tmp
 *.log
-
+infra/certs/*.pem

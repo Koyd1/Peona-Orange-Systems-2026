@@ -7,7 +7,6 @@ asyncpg==0.29.*
 alembic==1.13.*
 pgvector==0.3.*
 psycopg[binary]==3.2.*
-raganything
 pypdf==5.9.*
 python-docx==1.1.*
 openai==1.40.*

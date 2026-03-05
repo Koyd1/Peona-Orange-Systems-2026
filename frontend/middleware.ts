@@ -5,24 +5,28 @@ import { isSessionActive } from "@/lib/session";
 
 export default auth((req) => {
   const session = req.auth;
+  const sessionId = session?.sessionId;
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith("/chat") && !session) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  if (pathname.startsWith("/chat") && (!sessionId || !isSessionActive(sessionId))) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
   if (pathname.startsWith("/admin")) {
-    if (!session) {
+    if (!session || !sessionId) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
     if (session.user.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/chat", req.url));
     }
-  }
-
-  if (session?.sessionId && !isSessionActive(session.sessionId)) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    if (!isSessionActive(sessionId)) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
   }
 
   return NextResponse.next();

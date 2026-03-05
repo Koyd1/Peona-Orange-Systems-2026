@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import ChatWindow from "@/components/chat/ChatWindow";
 import { auth } from "@/lib/auth";
+import { getSessionById } from "@/lib/session";
 
 export default async function ChatPage() {
   const session = await auth();
@@ -14,5 +15,16 @@ export default async function ChatPage() {
     redirect("/login");
   }
 
-  return <ChatWindow sessionId={session.sessionId} />;
+  const appSession = getSessionById(session.sessionId);
+  if (!appSession) {
+    redirect("/login");
+  }
+
+  return (
+    <ChatWindow
+      sessionId={session.sessionId}
+      initialPersistent={appSession.persistent}
+      initialExpiresAt={appSession.expiresAt.toISOString()}
+    />
+  );
 }

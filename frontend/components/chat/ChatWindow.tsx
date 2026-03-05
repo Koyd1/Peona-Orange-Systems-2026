@@ -3,10 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 import MessageBubble, { type ChatMessageVM } from "@/components/chat/MessageBubble";
+import PromptCards from "@/components/chat/PromptCards";
+import SessionToggle from "@/components/chat/SessionToggle";
 import type { ChatSource } from "@/components/chat/SourceCard";
 
 type Props = {
   sessionId: string;
+  initialPersistent: boolean;
+  initialExpiresAt?: string;
 };
 
 type SSEEvent =
@@ -39,7 +43,11 @@ function parseSSELines(buffer: string): { events: SSEEvent[]; rest: string } {
   return { events, rest: remaining };
 }
 
-export default function ChatWindow({ sessionId }: Props) {
+export default function ChatWindow({
+  sessionId,
+  initialPersistent,
+  initialExpiresAt
+}: Props) {
   const [messages, setMessages] = useState<ChatMessageVM[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,6 +68,8 @@ export default function ChatWindow({ sessionId }: Props) {
           role: "user" | "assistant" | "system";
           content: string;
           sources?: ChatSource[];
+          feedbackRating?: number | null;
+          feedbackComment?: string | null;
         }>;
       };
 
@@ -70,7 +80,12 @@ export default function ChatWindow({ sessionId }: Props) {
             id: item.id,
             role: item.role as "user" | "assistant",
             content: item.content,
-            sources: item.sources
+            sources: item.sources,
+            feedbackRating:
+              item.feedbackRating === 1 || item.feedbackRating === -1
+                ? item.feedbackRating
+                : undefined,
+            feedbackComment: item.feedbackComment ?? null
           }))
       );
     }
@@ -192,6 +207,15 @@ export default function ChatWindow({ sessionId }: Props) {
     <div className="card">
       <h1 style={{ marginTop: 0 }}>Chat</h1>
       <p style={{ marginTop: 0 }}>Session: {sessionId}</p>
+      <SessionToggle
+        initialPersistent={initialPersistent}
+        initialExpiresAt={initialExpiresAt}
+      />
+      <PromptCards
+        onPick={(content) => {
+          setInput(content);
+        }}
+      />
 
       {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
 

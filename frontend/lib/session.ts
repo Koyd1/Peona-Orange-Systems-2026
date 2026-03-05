@@ -1,4 +1,6 @@
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const EXTEND_BY_MS = 2 * 60 * 60 * 1000;
 
 export type AppSession = {
   id: string;
@@ -53,4 +55,39 @@ export function isSessionActive(sessionId: string): boolean {
 
 export function getSessionById(sessionId: string): AppSession | null {
   return getStore().get(sessionId) ?? null;
+}
+
+export function setSessionPersistent(sessionId: string, persistent: boolean): AppSession | null {
+  const store = getStore();
+  const found = store.get(sessionId);
+  if (!found) return null;
+
+  found.persistent = persistent;
+  store.set(sessionId, found);
+  return found;
+}
+
+export function getSessionRemainingMs(sessionId: string): number {
+  const found = getStore().get(sessionId);
+  if (!found) return 0;
+  return found.expiresAt.getTime() - Date.now();
+}
+
+export function extendSessionIfNeeded(sessionId: string): AppSession | null {
+  const store = getStore();
+  const found = store.get(sessionId);
+  if (!found) return null;
+  if (found.terminatedAt) return found;
+
+  if (!found.persistent) {
+    return found;
+  }
+
+  const remaining = found.expiresAt.getTime() - Date.now();
+  if (remaining < ONE_HOUR_MS) {
+    found.expiresAt = new Date(found.expiresAt.getTime() + EXTEND_BY_MS);
+    store.set(sessionId, found);
+  }
+
+  return found;
 }

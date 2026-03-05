@@ -1,6 +1,7 @@
 COMPOSE := docker compose
+COMPOSE_PROD := docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
-.PHONY: dev stop build logs logs-backend migrate migrate-dev seed shell-backend shell-db
+.PHONY: dev stop build logs logs-backend migrate migrate-dev seed shell-backend shell-db prod-up prod-down prod-build prod-preflight
 
 dev:
 	$(COMPOSE) up --build
@@ -32,3 +33,15 @@ shell-backend:
 
 shell-db:
 	@echo "Use your Neon DATABASE_URL with psql or Neon CLI"
+
+prod-build:
+	$(COMPOSE_PROD) build
+
+prod-up:
+	$(COMPOSE_PROD) up -d --build
+
+prod-down:
+	$(COMPOSE_PROD) down
+
+prod-preflight:
+	./scripts/preflight_prod.sh .env
