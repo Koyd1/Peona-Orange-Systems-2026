@@ -26,7 +26,7 @@ class Retriever:
     ) -> list[RetrievedSource]:
         vector_literal = "[" + ",".join(f"{value:.10f}" for value in query_embedding) + "]"
 
-        sql = text(
+        sql_with_threshold = text(
             """
             SELECT
               file_id,
@@ -40,8 +40,10 @@ class Retriever:
             """
         )
 
+        # Prefer ANN first, but with higher probes to reduce misses on small collections.
+        await db.execute(text("SET LOCAL ivfflat.probes = 100"))
         result = await db.execute(
-            sql,
+            sql_with_threshold,
             {
                 "embedding": vector_literal,
                 "threshold": self._similarity_threshold,
@@ -49,14 +51,34 @@ class Retriever:
             },
         )
 
+        rows = result.mappings().all()
+
+        if not rows:
+            # Fallback to exact scan when ANN returns nothing.
+            await db.execute(text("SET LOCAL enable_indexscan = off"))
+            await db.execute(text("SET LOCAL enable_bitmapscan = off"))
+            await db.execute(text("SET LOCAL enable_indexonlyscan = off"))
+
+            relaxed_threshold = min(self._similarity_threshold, 0.05)
+            fallback_result = await db.execute(
+                sql_with_threshold,
+                {
+                    "embedding": vector_literal,
+                    "threshold": relaxed_threshold,
+                    "limit": self._top_k,
+                },
+            )
+            rows = fallback_result.mappings().all()
+
         sources: list[RetrievedSource] = []
-        for row in result.mappings():
+        for row in rows:
+            similarity = float(row["similarity"])
             sources.append(
                 RetrievedSource(
                     file_id=str(row["file_id"]),
                     content=str(row["content"]),
                     metadata=row.get("metadata") if isinstance(row.get("metadata"), dict) else None,
-                    similarity=float(row["similarity"]),
+                    similarity=similarity,
                 )
             )
 

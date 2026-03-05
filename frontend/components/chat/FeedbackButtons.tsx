@@ -3,13 +3,17 @@
 import { useState } from "react";
 
 export default function FeedbackButtons({
+  sessionId,
   messageId,
   initialRating,
-  initialComment
+  initialComment,
+  onSaved
 }: {
+  sessionId: string;
   messageId: string;
   initialRating?: 1 | -1;
   initialComment?: string | null;
+  onSaved?: (payload: { rating: 1 | -1; comment: string | null }) => void;
 }) {
   const [rating, setRating] = useState<1 | -1 | undefined>(initialRating);
   const [comment, setComment] = useState(initialComment ?? "");
@@ -21,6 +25,12 @@ export default function FeedbackButtons({
       return;
     }
 
+    const nextComment = comment.trim() || null;
+    const previousRating = rating;
+    const previousComment = comment;
+
+    // Optimistic UI: mark as saved immediately and rollback on API error.
+    setRating(nextRating);
     setBusy(true);
     setError(null);
     try {
@@ -28,9 +38,10 @@ export default function FeedbackButtons({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          sessionId,
           messageId,
           rating: nextRating,
-          comment: comment.trim() || undefined
+          comment: nextComment ?? undefined
         })
       });
 
@@ -38,9 +49,10 @@ export default function FeedbackButtons({
         const text = await response.text();
         throw new Error(text || "Feedback submit failed");
       }
-
-      setRating(nextRating);
+      onSaved?.({ rating: nextRating, comment: nextComment });
     } catch (submitError) {
+      setRating(previousRating);
+      setComment(previousComment);
       setError(submitError instanceof Error ? submitError.message : "Feedback submit failed");
     } finally {
       setBusy(false);

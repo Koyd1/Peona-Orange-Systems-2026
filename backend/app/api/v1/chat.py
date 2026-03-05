@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -49,7 +50,9 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
             {
                 "fileId": source.file_id,
                 "filename": files_map.get(source.file_id, "unknown"),
-                "similarity": round(source.similarity, 4),
+                "similarity": round(source.similarity, 4)
+                if isinstance(source.similarity, float) and math.isfinite(source.similarity)
+                else 0.0,
                 "snippet": source.content[:220],
             }
             for source in sources
@@ -57,6 +60,23 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
         yield encode_sse({"type": "sources", "data": sources_payload})
 
         context_blocks = [source.content for source in sources]
+        if not context_blocks:
+            answer = (
+                "В базе знаний пока нет релевантной информации по этому вопросу. "
+                "Загрузите HR-документы в раздел Knowledge и повторите запрос."
+            )
+            yield encode_sse(
+                {
+                    "type": "done",
+                    "data": {
+                        "answer": answer,
+                        "session_id": request.session_id,
+                        "hallScore": 0.0,
+                    },
+                }
+            )
+            return
+
         full_answer_parts: list[str] = []
         async for token in chat_streamer.stream_answer(
             user_message=last_user.content,

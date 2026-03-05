@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 
 import { findUserByEmail, verifyUserPassword } from "@/lib/user-store";
-import { createAppSession, getSessionById, isSessionActive } from "@/lib/session";
+import { createAppSession } from "@/lib/session";
 
 function asSessionId(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -49,13 +49,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const session = createAppSession(user.id, true);
+        const session = await createAppSession(user.id, true);
 
         return {
           id: user.id,
           email: user.email,
           role: user.role,
-          sessionId: session.id
+          sessionId: session.id,
+          persistent: session.persistent,
+          expiresAt: session.expiresAt.toISOString()
         };
       }
     })
@@ -65,21 +67,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = user.role;
         token.sessionId = user.sessionId;
-      }
-
-      const sessionId = asSessionId(token.sessionId);
-      if (sessionId && !isSessionActive(sessionId)) {
-        delete token.sessionId;
-        delete token.persistent;
-        delete token.expiresAt;
-      }
-
-      if (sessionId) {
-        const appSession = getSessionById(sessionId);
-        if (appSession) {
-          token.persistent = appSession.persistent;
-          token.expiresAt = appSession.expiresAt.toISOString();
-        }
+        token.persistent = user.persistent === true;
+        token.expiresAt =
+          typeof user.expiresAt === "string" ? user.expiresAt : undefined;
       }
 
       return token;

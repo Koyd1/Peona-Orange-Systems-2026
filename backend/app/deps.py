@@ -25,7 +25,16 @@ retriever = Retriever(
     top_k=settings.rag_top_k,
     similarity_threshold=settings.rag_sim_threshold,
 )
-chat_streamer = ChatStreamer(api_key=settings.openai_api_key, model=settings.openai_chat_model)
+chat_fallback_models = [
+    item.strip()
+    for item in settings.openai_chat_fallback_models.split(",")
+    if item.strip()
+]
+chat_streamer = ChatStreamer(
+    api_key=settings.openai_api_key,
+    model=settings.openai_chat_model,
+    fallback_models=chat_fallback_models,
+)
 hallucination_judge = HallucinationJudge(
     api_key=settings.openai_api_key,
     model=settings.openai_judge_model,

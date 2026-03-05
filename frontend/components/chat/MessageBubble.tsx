@@ -12,7 +12,15 @@ export type ChatMessageVM = {
   feedbackComment?: string | null;
 };
 
-export default function MessageBubble({ message }: { message: ChatMessageVM }) {
+export default function MessageBubble({
+  message,
+  sessionId,
+  onFeedbackSaved
+}: {
+  message: ChatMessageVM;
+  sessionId: string;
+  onFeedbackSaved?: (messageId: string, payload: { rating: 1 | -1; comment: string | null }) => void;
+}) {
   const isUser = message.role === "user";
 
   return (
@@ -41,9 +49,11 @@ export default function MessageBubble({ message }: { message: ChatMessageVM }) {
 
       {!isUser && !message.id.startsWith("a-") ? (
         <FeedbackButtons
+          sessionId={sessionId}
           messageId={message.id}
           initialRating={message.feedbackRating}
           initialComment={message.feedbackComment}
+          onSaved={(payload) => onFeedbackSaved?.(message.id, payload)}
         />
       ) : null}
     </div>

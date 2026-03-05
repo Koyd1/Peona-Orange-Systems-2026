@@ -10,17 +10,15 @@ export default async function HomePage() {
     redirect("/admin");
   }
 
-  if (session) {
-    redirect("/chat");
-  }
+  redirect("/chat");
 
   return (
     <main>
       <div className="card">
         <h1>HR Bot</h1>
-        <p>Вход для пользователей и администраторов.</p>
+        <p>Публичный чат. Вход нужен только для админ-панели.</p>
         <p>
-          <Link href="/login">Login</Link> | <Link href="/register">Register</Link>
+          <Link href="/chat">Open chat</Link> | <Link href="/login">Admin login</Link>
         </p>
       </div>
     </main>

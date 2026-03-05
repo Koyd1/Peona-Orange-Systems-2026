@@ -1,69 +1,72 @@
-import { hash, hashSync, compare } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 
-export type AppRole = "ADMIN" | "USER";
+import { prisma } from "@/lib/db";
 
 export type AppUser = {
   id: string;
   email: string;
   passwordHash: string;
-  role: AppRole;
+  role: "ADMIN" | "USER";
   createdAt: Date;
 };
 
-type UserStore = Map<string, AppUser>;
+let adminBootstrapPromise: Promise<void> | null = null;
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __hrbot_user_store__: UserStore | undefined;
-}
-
-function getStore(): UserStore {
-  if (!global.__hrbot_user_store__) {
-    global.__hrbot_user_store__ = new Map<string, AppUser>();
-    bootstrapAdmin(global.__hrbot_user_store__);
-  }
-  return global.__hrbot_user_store__;
-}
-
-function bootstrapAdmin(store: UserStore): void {
-  const email = (process.env.ADMIN_EMAIL ?? "admin@hr.local").toLowerCase();
-  const password = process.env.ADMIN_PASSWORD ?? "Admin123456!";
-
-  if (store.has(email)) {
-    return;
+async function ensureAdminUser(): Promise<void> {
+  if (adminBootstrapPromise) {
+    return adminBootstrapPromise;
   }
 
-  store.set(email, {
-    id: crypto.randomUUID(),
-    email,
-    passwordHash: hashSync(password, 10),
-    role: "ADMIN",
-    createdAt: new Date()
-  });
+  adminBootstrapPromise = (async () => {
+    const email = (process.env.ADMIN_EMAIL ?? "admin@hr.local").toLowerCase();
+    const password = process.env.ADMIN_PASSWORD ?? "Admin123456!";
+    const passwordHash = await hash(password, 10);
+
+    await prisma.user.upsert({
+      where: { email },
+      update: {
+        role: "ADMIN",
+        passwordHash
+      },
+      create: {
+        email,
+        passwordHash,
+        role: "ADMIN"
+      }
+    });
+  })();
+
+  return adminBootstrapPromise;
 }
 
 export async function registerUser(input: {
   email: string;
   password: string;
-  role?: AppRole;
+  role?: "ADMIN" | "USER";
 }): Promise<AppUser> {
-  const store = getStore();
+  await ensureAdminUser();
   const email = input.email.trim().toLowerCase();
-
-  if (store.has(email)) {
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
     throw new Error("USER_EXISTS");
   }
+  const passwordHash = await hash(input.password, 10);
 
-  const user: AppUser = {
-    id: crypto.randomUUID(),
-    email,
-    passwordHash: await hash(input.password, 10),
-    role: input.role ?? "USER",
-    createdAt: new Date()
+  const created = await prisma.user.create({
+    data: {
+      email,
+      passwordHash,
+      role: input.role ?? "USER"
+    }
+  });
+
+  return {
+    id: created.id,
+    email: created.email,
+    passwordHash: created.passwordHash,
+    role: created.role,
+    createdAt: created.createdAt
   };
-
-  store.set(email, user);
-  return user;
 }
 
 export async function verifyUserPassword(
@@ -74,6 +77,18 @@ export async function verifyUserPassword(
 }
 
 export async function findUserByEmail(email: string): Promise<AppUser | null> {
-  const store = getStore();
-  return store.get(email.trim().toLowerCase()) ?? null;
+  await ensureAdminUser();
+  const user = await prisma.user.findUnique({
+    where: { email: email.trim().toLowerCase() }
+  });
+  if (!user) {
+    return null;
+  }
+  return {
+    id: user.id,
+    email: user.email,
+    passwordHash: user.passwordHash,
+    role: user.role,
+    createdAt: user.createdAt
+  };
 }

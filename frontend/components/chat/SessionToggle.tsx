@@ -1,89 +1,47 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
+  sessionId: string;
   initialPersistent: boolean;
   initialExpiresAt?: string;
 };
 
-export default function SessionToggle({ initialPersistent, initialExpiresAt }: Props) {
-  const [persistent, setPersistent] = useState(initialPersistent);
+export default function SessionToggle({
+  sessionId,
+  initialExpiresAt
+}: Props) {
   const [expiresAt, setExpiresAt] = useState<string | undefined>(initialExpiresAt);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const expiresLabel = useMemo(() => {
-    if (!expiresAt) return "unknown";
-    return new Date(expiresAt).toLocaleString();
-  }, [expiresAt]);
+  function recoverToFreshSession() {
+    window.location.replace(`/chat?renew=${Date.now()}`);
+  }
+
+  const expiresLabel = expiresAt
+    ? new Date(expiresAt).toISOString().replace("T", " ").replace(".000Z", " UTC")
+    : "unknown";
 
   useEffect(() => {
     const timer = window.setInterval(async () => {
-      const response = await fetch("/api/session/mode", { cache: "no-store" });
+      const response = await fetch(`/api/session/mode?sessionId=${encodeURIComponent(sessionId)}`, {
+        cache: "no-store"
+      });
+      if (response.status === 401 || response.status === 404) {
+        recoverToFreshSession();
+        return;
+      }
       if (!response.ok) return;
       const data = (await response.json()) as {
-        persistent: boolean;
         expiresAt: string;
       };
-      setPersistent(data.persistent);
       setExpiresAt(data.expiresAt);
     }, 30_000);
 
     return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (persistent) {
-      return;
-    }
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        window.setTimeout(() => {
-          if (document.visibilityState === "hidden") {
-            void fetch("/api/session/terminate", {
-              method: "POST",
-              keepalive: true
-            });
-          }
-        }, 400);
-      }
-    };
-
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
-  }, [persistent]);
-
-  async function changeMode(nextPersistent: boolean) {
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/session/mode", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ persistent: nextPersistent })
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Failed to switch mode");
-      }
-
-      const data = (await response.json()) as {
-        persistent: boolean;
-        expiresAt: string;
-      };
-      setPersistent(data.persistent);
-      setExpiresAt(data.expiresAt);
-    } catch (switchError) {
-      setError(switchError instanceof Error ? switchError.message : "Failed to switch mode");
-    } finally {
-      setBusy(false);
-    }
-  }
+  }, [sessionId]);
 
   async function terminateNow() {
     setBusy(true);
@@ -91,15 +49,21 @@ export default function SessionToggle({ initialPersistent, initialExpiresAt }: P
 
     try {
       const response = await fetch("/api/session/terminate", {
-        method: "POST"
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sessionId })
       });
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 404) {
+          recoverToFreshSession();
+          return;
+        }
         const text = await response.text();
         throw new Error(text || "Failed to terminate session");
       }
 
-      window.location.href = "/login";
+      recoverToFreshSession();
     } catch (terminateError) {
       setError(
         terminateError instanceof Error ? terminateError.message : "Failed to terminate session"
@@ -120,24 +84,15 @@ export default function SessionToggle({ initialPersistent, initialExpiresAt }: P
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <div style={{ fontWeight: 600 }}>Session mode: {persistent ? "Persistent" : "Ephemeral"}</div>
-          <div style={{ fontSize: 12, color: "#475467" }}>Expires at: {expiresLabel}</div>
-          {!persistent ? (
-            <div style={{ fontSize: 12, color: "#b54708" }}>
-              В ephemeral режиме сессия завершается при скрытии вкладки.
-            </div>
-          ) : null}
+          <div style={{ fontWeight: 600 }}>Режим сессии: Обычная</div>
+          <div style={{ fontSize: 12, color: "#475467" }}>
+            Expires at: {expiresLabel}
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-          <button type="button" disabled={busy || persistent} onClick={() => void changeMode(true)}>
-            Persistent
-          </button>
-          <button type="button" disabled={busy || !persistent} onClick={() => void changeMode(false)}>
-            Ephemeral
-          </button>
           <button type="button" disabled={busy} onClick={() => void terminateNow()}>
-            Terminate
+            Удалить сессию
           </button>
         </div>
       </div>

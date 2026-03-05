@@ -27,6 +27,14 @@ type SourcePayload = {
   snippet?: string;
 };
 
+type SessionContext = {
+  sessionId: string;
+  email: string;
+  role: "ADMIN" | "USER";
+  persistent: boolean;
+  expiresAt: Date;
+};
+
 function backendUrl(path: string): string {
   const base = process.env.PYTHON_BACKEND_URL ?? "http://backend:8000";
   return `${base}${path}`;
@@ -105,14 +113,7 @@ async function backfillHallScore(params: {
 
 async function persistDoneFromSSE(
   stream: ReadableStream<Uint8Array>,
-  ctx: {
-    sessionId: string;
-    userMessage: string;
-    email: string;
-    role: "ADMIN" | "USER";
-    persistent: boolean;
-    expiresAt: Date;
-  }
+  ctx: SessionContext & { userMessage: string }
 ) {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
@@ -197,14 +198,61 @@ async function persistDoneFromSSE(
   }
 }
 
-export async function GET() {
+async function resolveSessionContext(request: Request, bodySessionId?: unknown): Promise<SessionContext | null> {
   const session = await auth();
 
-  if (!session) {
-    return new Response("Unauthorized", { status: 401 });
+  if (session?.sessionId && (await isSessionActive(session.sessionId))) {
+    const appSession = await extendSessionIfNeeded(session.sessionId);
+    if (!appSession || appSession.terminatedAt) return null;
+
+    return {
+      sessionId: session.sessionId,
+      email: session.user.email ?? "unknown@hr.local",
+      role: session.user.role,
+      persistent: appSession.persistent,
+      expiresAt: appSession.expiresAt
+    };
   }
 
-  if (!session.sessionId || !isSessionActive(session.sessionId)) {
+  const sidFromBody = typeof bodySessionId === "string" ? bodySessionId.trim() : "";
+  const sidFromQuery =
+    new URL(request.url).searchParams.get("sessionId") ??
+    new URL(request.url).searchParams.get("sid") ??
+    "";
+  const sessionId = sidFromBody || sidFromQuery;
+
+  if (!sessionId || !(await isSessionActive(sessionId))) {
+    return null;
+  }
+
+  const appSession = await extendSessionIfNeeded(sessionId);
+  if (!appSession || appSession.terminatedAt) return null;
+
+  const row = await prisma.session.findUnique({
+    where: { id: sessionId },
+    select: {
+      user: {
+        select: {
+          email: true,
+          role: true
+        }
+      }
+    }
+  });
+
+  return {
+    sessionId,
+    email: row?.user.email ?? "guest@public.local",
+    role: row?.user.role ?? "USER",
+    persistent: appSession.persistent,
+    expiresAt: appSession.expiresAt
+  };
+}
+
+export async function GET(request: Request) {
+  const ctx = await resolveSessionContext(request);
+
+  if (!ctx) {
     return NextResponse.json({ items: [] });
   }
 
@@ -216,7 +264,7 @@ export async function GET() {
     createdAt: Date;
     feedback: { rating: number; comment: string | null } | null;
   }> = await prisma.message.findMany({
-    where: { sessionId: session.sessionId },
+    where: { sessionId: ctx.sessionId },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
@@ -247,27 +295,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-
-  if (!session) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  if (!session.sessionId) {
-    return NextResponse.json({ error: "Session is not active" }, { status: 401 });
-  }
-  if (!isSessionActive(session.sessionId)) {
-    return NextResponse.json({ error: "Session expired" }, { status: 401 });
-  }
-
-  const appSession = extendSessionIfNeeded(session.sessionId);
-  if (!appSession || appSession.terminatedAt) {
-    return NextResponse.json({ error: "Session expired" }, { status: 401 });
-  }
-
   const payload = (await request.json()) as {
+    sessionId?: string;
     messages?: InputMessage[];
   };
+  const ctx = await resolveSessionContext(request, payload.sessionId);
+  if (!ctx) {
+    return NextResponse.json({ error: "Session is not active" }, { status: 401 });
+  }
 
   const messages = payload.messages ?? [];
   const lastUserMessage = [...messages].reverse().find((msg) => msg.role === "user")?.content ?? "";
@@ -278,7 +313,7 @@ export async function POST(request: Request) {
       "content-type": "application/json"
     },
     body: JSON.stringify({
-      session_id: session.sessionId,
+      session_id: ctx.sessionId,
       messages
     })
   });
@@ -291,12 +326,12 @@ export async function POST(request: Request) {
   const [clientStream, auditStream] = upstream.body.tee();
 
   void persistDoneFromSSE(auditStream, {
-    sessionId: session.sessionId,
+    sessionId: ctx.sessionId,
     userMessage: lastUserMessage,
-    email: session.user.email ?? "unknown@hr.local",
-    role: session.user.role,
-    persistent: appSession.persistent,
-    expiresAt: appSession.expiresAt
+    email: ctx.email,
+    role: ctx.role,
+    persistent: ctx.persistent,
+    expiresAt: ctx.expiresAt
   });
 
   return new Response(clientStream, {

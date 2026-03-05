@@ -1,30 +1,51 @@
 import { redirect } from "next/navigation";
 
 import ChatWindow from "@/components/chat/ChatWindow";
-import { auth } from "@/lib/auth";
-import { getSessionById } from "@/lib/session";
+import { prisma } from "@/lib/db";
+import { createAppSession, getSessionById, isSessionActive } from "@/lib/session";
 
-export default async function ChatPage() {
-  const session = await auth();
+type PageProps = {
+  searchParams: Promise<{ sid?: string }>;
+};
 
-  if (!session) {
-    redirect("/login");
+async function ensurePublicUserId(): Promise<string> {
+  const guest = await prisma.user.upsert({
+    where: { email: "guest@public.local" },
+    update: { role: "USER" },
+    create: {
+      email: "guest@public.local",
+      passwordHash: "__public_access__",
+      role: "USER"
+    },
+    select: { id: true }
+  });
+
+  return guest.id;
+}
+
+export default async function ChatPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const sid = typeof params.sid === "string" ? params.sid : "";
+
+  if (!sid || !(await isSessionActive(sid))) {
+    const userId = await ensurePublicUserId();
+    const newSession = await createAppSession(userId, true);
+    redirect(`/chat?sid=${newSession.id}`);
   }
 
-  if (!session.sessionId) {
-    redirect("/login");
-  }
-
-  const appSession = getSessionById(session.sessionId);
-  if (!appSession) {
-    redirect("/login");
+  const appSession = await getSessionById(sid);
+  if (!appSession || appSession.terminatedAt) {
+    const userId = await ensurePublicUserId();
+    const newSession = await createAppSession(userId, true);
+    redirect(`/chat?sid=${newSession.id}`);
   }
 
   return (
     <ChatWindow
-      sessionId={session.sessionId}
+      sessionId={sid}
       initialPersistent={appSession.persistent}
       initialExpiresAt={appSession.expiresAt.toISOString()}
+      showSessionControls
     />
   );
 }

@@ -1,3 +1,5 @@
+import { prisma } from "@/lib/db";
+
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const EXTEND_BY_MS = 2 * 60 * 60 * 1000;
@@ -10,83 +12,116 @@ export type AppSession = {
   terminatedAt?: Date;
 };
 
-type SessionStore = Map<string, AppSession>;
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __hrbot_session_store__: SessionStore | undefined;
-}
-
-function getStore(): SessionStore {
-  if (!global.__hrbot_session_store__) {
-    global.__hrbot_session_store__ = new Map<string, AppSession>();
-  }
-  return global.__hrbot_session_store__;
-}
-
-export function createAppSession(userId: string, persistent = true): AppSession {
-  const session: AppSession = {
-    id: crypto.randomUUID(),
-    userId,
-    persistent,
-    expiresAt: new Date(Date.now() + SIX_HOURS_MS)
+function toAppSession(row: {
+  id: string;
+  userId: string;
+  persistent: boolean;
+  expiresAt: Date;
+  terminatedAt: Date | null;
+}): AppSession {
+  return {
+    id: row.id,
+    userId: row.userId,
+    persistent: row.persistent,
+    expiresAt: row.expiresAt,
+    terminatedAt: row.terminatedAt ?? undefined
   };
-
-  getStore().set(session.id, session);
-  return session;
 }
 
-export function terminateSession(sessionId: string): void {
-  const store = getStore();
-  const found = store.get(sessionId);
-  if (!found) return;
+export async function createAppSession(userId: string, persistent = true): Promise<AppSession> {
+  const created = await prisma.session.create({
+    data: {
+      userId,
+      persistent,
+      expiresAt: new Date(Date.now() + SIX_HOURS_MS)
+    },
+    select: {
+      id: true,
+      userId: true,
+      persistent: true,
+      expiresAt: true,
+      terminatedAt: true
+    }
+  });
 
-  found.terminatedAt = new Date();
-  store.set(sessionId, found);
+  return toAppSession(created);
 }
 
-export function isSessionActive(sessionId: string): boolean {
-  const found = getStore().get(sessionId);
+export async function terminateSession(sessionId: string): Promise<void> {
+  await prisma.session.updateMany({
+    where: { id: sessionId, terminatedAt: null },
+    data: { terminatedAt: new Date() }
+  });
+}
+
+export async function isSessionActive(sessionId: string): Promise<boolean> {
+  const found = await prisma.session.findUnique({
+    where: { id: sessionId },
+    select: {
+      expiresAt: true,
+      terminatedAt: true
+    }
+  });
+
   if (!found) return false;
   if (found.terminatedAt) return false;
   if (found.expiresAt.getTime() <= Date.now()) return false;
   return true;
 }
 
-export function getSessionById(sessionId: string): AppSession | null {
-  return getStore().get(sessionId) ?? null;
+export async function getSessionById(sessionId: string): Promise<AppSession | null> {
+  const found = await prisma.session.findUnique({
+    where: { id: sessionId },
+    select: {
+      id: true,
+      userId: true,
+      persistent: true,
+      expiresAt: true,
+      terminatedAt: true
+    }
+  });
+
+  return found ? toAppSession(found) : null;
 }
 
-export function setSessionPersistent(sessionId: string, persistent: boolean): AppSession | null {
-  const store = getStore();
-  const found = store.get(sessionId);
-  if (!found) return null;
+export async function setSessionPersistent(
+  sessionId: string,
+  persistent: boolean
+): Promise<AppSession | null> {
+  const updated = await prisma.session.updateMany({
+    where: { id: sessionId },
+    data: { persistent }
+  });
 
-  found.persistent = persistent;
-  store.set(sessionId, found);
-  return found;
+  if (updated.count === 0) {
+    return null;
+  }
+
+  return getSessionById(sessionId);
 }
 
-export function getSessionRemainingMs(sessionId: string): number {
-  const found = getStore().get(sessionId);
+export async function getSessionRemainingMs(sessionId: string): Promise<number> {
+  const found = await getSessionById(sessionId);
   if (!found) return 0;
   return found.expiresAt.getTime() - Date.now();
 }
 
-export function extendSessionIfNeeded(sessionId: string): AppSession | null {
-  const store = getStore();
-  const found = store.get(sessionId);
+export async function extendSessionIfNeeded(sessionId: string): Promise<AppSession | null> {
+  const found = await getSessionById(sessionId);
   if (!found) return null;
   if (found.terminatedAt) return found;
-
-  if (!found.persistent) {
-    return found;
-  }
+  if (!found.persistent) return found;
 
   const remaining = found.expiresAt.getTime() - Date.now();
   if (remaining < ONE_HOUR_MS) {
-    found.expiresAt = new Date(found.expiresAt.getTime() + EXTEND_BY_MS);
-    store.set(sessionId, found);
+    await prisma.session.update({
+      where: { id: sessionId },
+      data: {
+        expiresAt: new Date(found.expiresAt.getTime() + EXTEND_BY_MS)
+      }
+    });
+
+    return getSessionById(sessionId);
   }
 
   return found;

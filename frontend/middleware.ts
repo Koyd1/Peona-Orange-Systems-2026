@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { isSessionActive } from "@/lib/session";
 
-export default auth((req) => {
+export default auth(async (req) => {
   const session = req.auth;
   const sessionId = session?.sessionId;
   const { pathname } = req.nextUrl;
-
-  if (pathname.startsWith("/chat") && !session) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-
-  if (pathname.startsWith("/chat") && (!sessionId || !isSessionActive(sessionId))) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
 
   if (pathname.startsWith("/admin")) {
     if (!session || !sessionId) {
@@ -24,14 +15,11 @@ export default auth((req) => {
     if (session.user.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/chat", req.url));
     }
-    if (!isSessionActive(sessionId)) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
   }
 
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/chat/:path*", "/admin/:path*"]
+  matcher: ["/admin/:path*"]
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import MessageBubble, { type ChatMessageVM } from "@/components/chat/MessageBubble";
 import PromptCards from "@/components/chat/PromptCards";
@@ -11,6 +11,7 @@ type Props = {
   sessionId: string;
   initialPersistent: boolean;
   initialExpiresAt?: string;
+  showSessionControls?: boolean;
 };
 
 type SSEEvent =
@@ -46,7 +47,8 @@ function parseSSELines(buffer: string): { events: SSEEvent[]; rest: string } {
 export default function ChatWindow({
   sessionId,
   initialPersistent,
-  initialExpiresAt
+  initialExpiresAt,
+  showSessionControls = true
 }: Props) {
   const [messages, setMessages] = useState<ChatMessageVM[]>([]);
   const [input, setInput] = useState("");
@@ -55,43 +57,45 @@ export default function ChatWindow({
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
 
-  useEffect(() => {
-    async function loadHistory() {
-      const response = await fetch("/api/chat", { cache: "no-store" });
-      if (!response.ok) {
-        return;
-      }
-
-      const payload = (await response.json()) as {
-        items: Array<{
-          id: string;
-          role: "user" | "assistant" | "system";
-          content: string;
-          sources?: ChatSource[];
-          feedbackRating?: number | null;
-          feedbackComment?: string | null;
-        }>;
-      };
-
-      setMessages(
-        payload.items
-          .filter((item) => item.role === "user" || item.role === "assistant")
-          .map((item) => ({
-            id: item.id,
-            role: item.role as "user" | "assistant",
-            content: item.content,
-            sources: item.sources,
-            feedbackRating:
-              item.feedbackRating === 1 || item.feedbackRating === -1
-                ? item.feedbackRating
-                : undefined,
-            feedbackComment: item.feedbackComment ?? null
-          }))
-      );
+  const loadHistory = useCallback(async () => {
+    const response = await fetch(`/api/chat?sessionId=${encodeURIComponent(sessionId)}`, {
+      cache: "no-store"
+    });
+    if (!response.ok) {
+      return;
     }
 
+    const payload = (await response.json()) as {
+      items: Array<{
+        id: string;
+        role: "user" | "assistant" | "system";
+        content: string;
+        sources?: ChatSource[];
+        feedbackRating?: number | null;
+        feedbackComment?: string | null;
+      }>;
+    };
+
+    setMessages(
+      payload.items
+        .filter((item) => item.role === "user" || item.role === "assistant")
+        .map((item) => ({
+          id: item.id,
+          role: item.role as "user" | "assistant",
+          content: item.content,
+          sources: item.sources,
+          feedbackRating:
+            item.feedbackRating === 1 || item.feedbackRating === -1
+              ? item.feedbackRating
+              : undefined,
+          feedbackComment: item.feedbackComment ?? null
+        }))
+    );
+  }, [sessionId]);
+
+  useEffect(() => {
     void loadHistory();
-  }, []);
+  }, [loadHistory]);
 
   async function sendMessage() {
     const userText = input.trim();
@@ -193,6 +197,9 @@ export default function ChatWindow({
                   : msg
               )
             );
+            window.setTimeout(() => {
+              void loadHistory();
+            }, 350);
           }
         }
       }
@@ -207,10 +214,13 @@ export default function ChatWindow({
     <div className="card">
       <h1 style={{ marginTop: 0 }}>Chat</h1>
       <p style={{ marginTop: 0 }}>Session: {sessionId}</p>
-      <SessionToggle
-        initialPersistent={initialPersistent}
-        initialExpiresAt={initialExpiresAt}
-      />
+      {showSessionControls ? (
+        <SessionToggle
+          sessionId={sessionId}
+          initialPersistent={initialPersistent}
+          initialExpiresAt={initialExpiresAt}
+        />
+      ) : null}
       <PromptCards
         onPick={(content) => {
           setInput(content);
@@ -232,7 +242,24 @@ export default function ChatWindow({
       >
         {messages.length === 0 ? <p>Пока нет сообщений.</p> : null}
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble
+            key={message.id}
+            message={message}
+            sessionId={sessionId}
+            onFeedbackSaved={(messageId, payload) => {
+              setMessages((prev) =>
+                prev.map((item) =>
+                  item.id === messageId
+                    ? {
+                        ...item,
+                        feedbackRating: payload.rating,
+                        feedbackComment: payload.comment
+                      }
+                    : item
+                )
+              );
+            }}
+          />
         ))}
       </div>
 

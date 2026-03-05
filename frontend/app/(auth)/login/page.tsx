@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       await signIn("credentials", {
         email,
         password,
-        redirectTo: "/chat"
+        redirectTo: "/admin"
       });
     } catch (error) {
       if (error instanceof AuthError) {
@@ -35,7 +35,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
     <main>
       <div className="card">
         <h1>Login</h1>
-        <p>Войдите в аккаунт.</p>
+        <p>Вход только для администратора.</p>
         {params.error ? <p style={{ color: "#b42318" }}>{params.error}</p> : null}
 
         <form action={loginAction}>
@@ -51,7 +51,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
         </form>
 
         <p>
-          Нет аккаунта? <Link href="/register">Создать</Link>
+          Публичный чат доступен без логина: <Link href="/chat">/chat</Link>
         </p>
       </div>
     </main>
