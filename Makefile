@@ -19,14 +19,16 @@ logs-backend:
 	$(COMPOSE) logs -f backend
 
 migrate:
-	$(COMPOSE) exec frontend sh -lc "npx prisma generate && npx prisma migrate deploy"
+	cd frontend && node scripts/run-with-root-env.cjs npx prisma generate
+	cd frontend && node scripts/run-with-root-env.cjs npx prisma migrate deploy
 	$(COMPOSE) exec backend sh -lc "alembic upgrade head"
 
 migrate-dev:
-	$(COMPOSE) exec frontend sh -lc "npx prisma migrate dev"
+	cd frontend && node scripts/run-with-root-env.cjs npx prisma migrate dev
 
 seed:
-	$(COMPOSE) exec frontend sh -lc "npx prisma generate && npx prisma db seed"
+	cd frontend && node scripts/run-with-root-env.cjs npx prisma generate
+	cd frontend && node scripts/run-with-root-env.cjs npx prisma db seed
 
 shell-backend:
 	$(COMPOSE) exec backend sh

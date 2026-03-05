@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 export default async function HomePage() {
   const session = await auth();
 
-  if (session?.user.role === "ADMIN") {
+  if (session?.user?.role === "ADMIN") {
     redirect("/admin");
   }
 

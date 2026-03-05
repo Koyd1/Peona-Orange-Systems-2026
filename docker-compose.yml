@@ -53,29 +53,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 20s
       timeout: 5s
       retries: 3
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: dev
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      PYTHON_BACKEND_URL: http://backend:8000
-      NEXTAUTH_URL: ${NEXTAUTH_URL}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      DATABASE_URL: ${DATABASE_URL}
-    ports:
-      - "3000:3000"
-    depends_on:
-      backend:
-        condition: service_healthy
 
 volumes:
   minio_data:

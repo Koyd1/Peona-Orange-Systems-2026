@@ -73,8 +73,8 @@ if ! grep -Eq '^NEXTAUTH_URL=https?://' "$ENV_FILE"; then
   exit 1
 fi
 
-if ! grep -Eq '^PYTHON_BACKEND_URL=http://backend:8000$' "$ENV_FILE"; then
-  echo "[WARN] PYTHON_BACKEND_URL is expected as http://backend:8000 for docker network"
+if ! grep -Eq '^PYTHON_BACKEND_URL=http://127\.0\.0\.1:8000$' "$ENV_FILE"; then
+  echo "[WARN] PYTHON_BACKEND_URL is expected as http://127.0.0.1:8000 for host runtime"
 fi
 
 if ! docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_PROD_FILE" --env-file "$ENV_FILE" config >/dev/null; then

@@ -9,10 +9,16 @@
 
 ## Состав
 
-- `frontend/` — Next.js 15 (BFF + UI)
-- `backend/` — FastAPI (ingest/chat/health/evaluate)
+- `frontend/` — Next.js 15 (BFF + UI), запускается на хосте
+- `backend/` — FastAPI (ingest/chat/health/evaluate), запускается в Docker
 - `infra/` — nginx конфиг для production reverse proxy
 - `tasks/` — декомпозиция и roadmap
+
+## Prerequisites
+
+- Docker + Docker Compose plugin
+- Node.js 20+
+- npm
 
 ## Быстрый старт (dev)
 
@@ -22,19 +28,27 @@
 cp .env.example .env
 ```
 
-2. Запуск стека:
+2. Запуск backend/infra в Docker:
 
 ```bash
 make dev
 ```
 
-3. Миграции:
+3. Запуск frontend на хосте:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+4. Миграции:
 
 ```bash
 make migrate
 ```
 
-4. Seed admin:
+5. Seed admin:
 
 ```bash
 make seed
@@ -43,10 +57,11 @@ make seed
 Доступ:
 
 - Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:8000/health`
 - MinIO API: `http://localhost:9000`
 - MinIO Console (dev only): `http://localhost:9001`
 
-## Production запуск (compose override)
+## Production запуск (compose override + host frontend)
 
 Подготовка env:
 
@@ -60,13 +75,22 @@ Preflight перед деплоем:
 make prod-preflight
 ```
 
-Сборка и запуск:
+Сборка и запуск docker-части:
 
 ```bash
 make prod-up
 ```
 
-Остановка:
+Запуск frontend на хосте:
+
+```bash
+cd frontend
+npm ci
+npm run build
+npm run start -- -H 0.0.0.0 -p 3000
+```
+
+Остановка docker-части:
 
 ```bash
 make prod-down
@@ -74,11 +98,11 @@ make prod-down
 
 Что меняется в prod-режиме:
 
-- backend/frontend собираются с `target: prod`
+- backend собирается с `target: prod`
 - backend запускается без `--reload`
-- frontend запускается через `next start`
-- frontend не публикует порт напрямую
-- трафик идет через `nginx` (`80/443`)
+- frontend не запускается в Docker (работает как host process)
+- nginx в Docker проксирует трафик на frontend на хосте (`host.docker.internal:3000`)
+- backend доступен на `127.0.0.1:8000`
 - MinIO Console `:9001` скрыт
 - `raganything` вынесен из базового production image (опциональная установка отдельным профилем)
 
@@ -100,7 +124,7 @@ make prod-down
 - `NEXTAUTH_URL`
 - `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_BUCKET`
 - `REDIS_PASSWORD`
-- `PYTHON_BACKEND_URL`
+- `PYTHON_BACKEND_URL` (для host-runtime: `http://127.0.0.1:8000`)
 
 Рекомендуемые:
 
@@ -119,6 +143,7 @@ Workflow: `.github/workflows/ci.yml`
 
 1. `quality`:
 - frontend typecheck
+- frontend production build
 - backend compile check
 
 2. `migrations-smoke`:
@@ -127,7 +152,7 @@ Workflow: `.github/workflows/ci.yml`
 - `alembic upgrade head`
 
 3. `docker-build`:
-- сборка production образов
+- сборка production образов (`backend`, `nginx`)
 
 ## Optional dependencies
 
@@ -146,7 +171,8 @@ Workflow: `.github/workflows/ci.yml`
 1. Обновить `.env` production-секретами.
 2. Проверить, что нет `CHANGE_ME` значений.
 3. Выполнить `make prod-up`.
-4. Проверить:
+4. Запустить frontend на хосте (`npm ci && npm run build && npm run start -- -H 0.0.0.0 -p 3000`).
+5. Проверить:
 - `https://<domain>/healthz`
 - `https://<domain>/api/health`
 - login + chat smoke-flow
@@ -154,9 +180,10 @@ Workflow: `.github/workflows/ci.yml`
 ## Rollback checklist
 
 1. Вернуть предыдущий commit/tag.
-2. Выполнить `make prod-up` для пересборки предыдущего релиза.
-3. Проверить health endpoints.
-4. Проверить login/chat/admin smoke.
+2. Выполнить `make prod-up` для пересборки предыдущего релиза backend/nginx.
+3. Перезапустить frontend на хосте с версией из rollback.
+4. Проверить health endpoints.
+5. Проверить login/chat/admin smoke.
 
 ## Полезные команды
 

@@ -15,11 +15,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Frontend typecheck
+      - name: Frontend checks
         working-directory: frontend
         run: |
           npm install
           npm run typecheck
+          npm run build
 
       - uses: actions/setup-python@v5
         with:
@@ -84,4 +85,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build production images
-        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml build frontend backend nginx
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml build backend nginx
