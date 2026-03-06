@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.core.rag_pipeline import SUPPORTED_EXTENSIONS
 from app.db.models import KnowledgeFile, VectorChunk
-from app.deps import get_db, ingest_pipeline, storage
+from app.deps import get_db, ingest_pipeline
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
@@ -60,18 +60,14 @@ async def create_ingest_job(
     file_id = str(uuid4())
     object_key = f"knowledge/{file_id}/{filename}"
 
-    storage.upload_bytes(
-        object_name=object_key,
-        content=payload,
-        content_type=file.content_type or "application/octet-stream",
-    )
-
+    # Save file content to database instead of storage
     entity = KnowledgeFile(
         id=file_id,
         filename=filename,
         mime_type=file.content_type or "application/octet-stream",
         size=len(payload),
         storage_path=object_key,
+        binary_content=payload,
         status="PENDING",
         uploaded_by="system",
     )
@@ -122,8 +118,9 @@ async def delete_knowledge_file(file_id: str, db: AsyncSession = Depends(get_db)
     if file is None:
         raise HTTPException(status_code=404, detail="Knowledge file not found")
 
-    storage.delete_object(file.storage_path)
+    # Delete file chunks from database
     await db.execute(delete(VectorChunk).where(VectorChunk.file_id == file_id))
+    # Delete file record from database (including binary content)
     await db.delete(file)
     await db.commit()
 
