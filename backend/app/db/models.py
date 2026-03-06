@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import DateTime, Enum, Integer, JSON, String, Text, func
+from sqlalchemy import DateTime, Enum, Integer, JSON, LargeBinary, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -34,6 +34,7 @@ class KnowledgeFile(Base):
     mime_type: Mapped[str] = mapped_column(String, nullable=False)
     size: Mapped[int] = mapped_column(Integer, nullable=False)
     storage_path: Mapped[str] = mapped_column(String, nullable=False)
+    binary_content: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     status: Mapped[str] = mapped_column(
         Enum("PENDING", "PROCESSING", "READY", "ERROR", name="IndexStatus", create_type=False),
         nullable=False,

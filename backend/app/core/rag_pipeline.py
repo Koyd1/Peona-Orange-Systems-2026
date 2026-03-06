@@ -90,10 +90,12 @@ class RAGIngestPipeline:
             file = await session.scalar(select(KnowledgeFile).where(KnowledgeFile.id == file_id))
             if file is None:
                 raise RuntimeError("Knowledge file does not exist")
-            storage_path = file.storage_path
+            
+            if file.binary_content is None:
+                raise RuntimeError("File content not found in database")
+            
+            blob = file.binary_content
             filename = file.filename
-
-        blob = await asyncio.to_thread(self._storage.download_bytes, storage_path)
 
         with tempfile.TemporaryDirectory(prefix="ingest-", dir=self._tmp_dir) as temp_dir:
             local_path = Path(temp_dir) / filename
