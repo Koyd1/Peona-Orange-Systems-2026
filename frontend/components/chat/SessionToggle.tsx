@@ -6,11 +6,13 @@ type Props = {
   sessionId: string;
   initialPersistent: boolean;
   initialExpiresAt?: string;
+  canCreateNewSession?: boolean;
 };
 
 export default function SessionToggle({
   sessionId,
-  initialExpiresAt
+  initialExpiresAt,
+  canCreateNewSession = false
 }: Props) {
   const [expiresAt, setExpiresAt] = useState<string | undefined>(initialExpiresAt);
   const [busy, setBusy] = useState(false);
@@ -91,11 +93,38 @@ export default function SessionToggle({
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-          <button type="button" disabled={busy} onClick={() => void terminateNow()}>
+          <button
+            type="button"
+            disabled={busy || !canCreateNewSession}
+            onClick={() => void terminateNow()}
+            title={
+              !canCreateNewSession
+                ? "Отправьте хотя бы одно сообщение и дождитесь ответа"
+                : "Завершить сессию и начать новую"
+            }
+          >
             Удалить сессию
+          </button>
+          <button
+            type="button"
+            disabled={!canCreateNewSession}
+            onClick={() => recoverToFreshSession()}
+            title={
+              !canCreateNewSession
+                ? "Отправьте хотя бы одно сообщение и дождитесь ответа"
+                : "Начать новый чат"
+            }
+          >
+            Новый чат
           </button>
         </div>
       </div>
+
+      {!canCreateNewSession ? (
+        <p style={{ fontSize: 12, color: "#475467", marginTop: 8 }}>
+          Отправьте сообщение и дождитесь ответа, чтобы начать новый чат.
+        </p>
+      ) : null}
 
       {error ? <p style={{ color: "#b42318", marginTop: 8 }}>{error}</p> : null}
     </div>
