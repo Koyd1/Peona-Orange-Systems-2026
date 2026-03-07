@@ -54,6 +54,7 @@ export default function ChatWindow({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasResponse, setHasResponse] = useState(false);
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
 
@@ -76,21 +77,25 @@ export default function ChatWindow({
       }>;
     };
 
-    setMessages(
-      payload.items
-        .filter((item) => item.role === "user" || item.role === "assistant")
-        .map((item) => ({
-          id: item.id,
-          role: item.role as "user" | "assistant",
-          content: item.content,
-          sources: item.sources,
-          feedbackRating:
-            item.feedbackRating === 1 || item.feedbackRating === -1
-              ? item.feedbackRating
-              : undefined,
-          feedbackComment: item.feedbackComment ?? null
-        }))
-    );
+    const filtered = payload.items
+      .filter((item) => item.role === "user" || item.role === "assistant")
+      .map((item) => ({
+        id: item.id,
+        role: item.role as "user" | "assistant",
+        content: item.content,
+        sources: item.sources,
+        feedbackRating:
+          item.feedbackRating === 1 || item.feedbackRating === -1
+            ? (item.feedbackRating as 1 | -1)
+            : undefined,
+        feedbackComment: item.feedbackComment ?? null
+      }));
+
+    setMessages(filtered);
+
+    if (filtered.some((m) => m.role === "assistant" && m.content.length > 0)) {
+      setHasResponse(true);
+    }
   }, [sessionId]);
 
   useEffect(() => {
@@ -197,6 +202,7 @@ export default function ChatWindow({
                   : msg
               )
             );
+            setHasResponse(true);
             window.setTimeout(() => {
               void loadHistory();
             }, 350);
@@ -219,6 +225,7 @@ export default function ChatWindow({
           sessionId={sessionId}
           initialPersistent={initialPersistent}
           initialExpiresAt={initialExpiresAt}
+          canCreateNewSession={hasResponse}
         />
       ) : null}
       <PromptCards

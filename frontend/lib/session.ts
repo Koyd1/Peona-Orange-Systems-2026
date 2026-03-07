@@ -54,6 +54,34 @@ export async function terminateSession(sessionId: string): Promise<void> {
   });
 }
 
+export async function sessionHasMessages(sessionId: string): Promise<boolean> {
+  const count = await prisma.message.count({
+    where: { sessionId }
+  });
+  return count > 0;
+}
+
+export async function findEmptyActiveSession(userId: string): Promise<AppSession | null> {
+  const found = await prisma.session.findFirst({
+    where: {
+      userId,
+      terminatedAt: null,
+      expiresAt: { gt: new Date() },
+      messages: { none: {} }
+    },
+    select: {
+      id: true,
+      userId: true,
+      persistent: true,
+      expiresAt: true,
+      terminatedAt: true
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  return found ? toAppSession(found) : null;
+}
+
 export async function isSessionActive(sessionId: string): Promise<boolean> {
   const found = await prisma.session.findUnique({
     where: { id: sessionId },
