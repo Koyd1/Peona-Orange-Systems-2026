@@ -103,18 +103,6 @@ export default function SessionToggle({
                 : "Завершить сессию и начать новую"
             }
           >
-            Удалить сессию
-          </button>
-          <button
-            type="button"
-            disabled={!canCreateNewSession}
-            onClick={() => recoverToFreshSession()}
-            title={
-              !canCreateNewSession
-                ? "Отправьте хотя бы одно сообщение и дождитесь ответа"
-                : "Начать новый чат"
-            }
-          >
             Новый чат
           </button>
         </div>
