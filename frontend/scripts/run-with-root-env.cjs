@@ -19,7 +19,7 @@ if (!command) {
 const child = spawn(command, args, {
   stdio: "inherit",
   env: process.env,
-  shell: false
+  shell: true
 });
 
 child.on("exit", (code, signal) => {

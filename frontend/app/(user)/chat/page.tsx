@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 
 import ChatWindow from "@/components/chat/ChatWindow";
 import { prisma } from "@/lib/db";
-import { createAppSession, getSessionById, isSessionActive } from "@/lib/session";
+import {
+  createAppSession,
+  findEmptyActiveSession,
+  getSessionById,
+  isSessionActive
+} from "@/lib/session";
 
 type PageProps = {
   searchParams: Promise<{ sid?: string }>;
@@ -29,6 +34,10 @@ export default async function ChatPage({ searchParams }: PageProps) {
 
   if (!sid || !(await isSessionActive(sid))) {
     const userId = await ensurePublicUserId();
+    const existing = await findEmptyActiveSession(userId);
+    if (existing) {
+      redirect(`/chat?sid=${existing.id}`);
+    }
     const newSession = await createAppSession(userId, true);
     redirect(`/chat?sid=${newSession.id}`);
   }
@@ -36,6 +45,10 @@ export default async function ChatPage({ searchParams }: PageProps) {
   const appSession = await getSessionById(sid);
   if (!appSession || appSession.terminatedAt) {
     const userId = await ensurePublicUserId();
+    const existing = await findEmptyActiveSession(userId);
+    if (existing) {
+      redirect(`/chat?sid=${existing.id}`);
+    }
     const newSession = await createAppSession(userId, true);
     redirect(`/chat?sid=${newSession.id}`);
   }

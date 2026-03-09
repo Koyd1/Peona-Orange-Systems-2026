@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
-import { terminateSession } from "@/lib/session";
+import { sessionHasMessages, terminateSession } from "@/lib/session";
 
 async function resolveSessionId(request: Request, payloadSessionId?: unknown): Promise<string | null> {
   const session = await auth();
@@ -25,6 +25,14 @@ export async function POST(request: Request) {
 
   if (!sessionId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const hasMessages = await sessionHasMessages(sessionId);
+  if (!hasMessages) {
+    return NextResponse.json(
+      { error: "Отправьте хотя бы одно сообщение перед завершением сессии" },
+      { status: 400 }
+    );
   }
 
   await terminateSession(sessionId);
