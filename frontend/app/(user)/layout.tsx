@@ -2,15 +2,11 @@ import Link from "next/link";
 
 import type { ReactNode } from "react";
 
-import { auth, signOut } from "@/lib/auth";
+import LogoutButton from "@/components/auth/LogoutButton";
+import { auth } from "@/lib/auth";
 
 export default async function UserLayout({ children }: { children: ReactNode }) {
   const session = await auth();
-
-  async function logoutAction() {
-    "use server";
-    await signOut({ redirectTo: "/login" });
-  }
 
   return (
     <main>
@@ -21,9 +17,7 @@ export default async function UserLayout({ children }: { children: ReactNode }) 
             <p>
               {session.user.email} · role: {session.user.role}
             </p>
-            <form action={logoutAction}>
-              <button type="submit">Logout</button>
-            </form>
+            <LogoutButton />
             {session.user.role === "ADMIN" ? <Link href="/admin">Open admin</Link> : null}
           </>
         ) : (

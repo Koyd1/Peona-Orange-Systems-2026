@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
+import { readPublicSessionIdFromRequest } from "@/lib/public-session";
 import {
   getSessionById,
   getSessionRemainingMs,
@@ -13,14 +14,22 @@ async function resolveSessionId(request: Request, payloadSessionId?: unknown): P
     return session.sessionId;
   }
 
-  const sidFromPayload =
-    typeof payloadSessionId === "string" ? payloadSessionId.trim() : "";
-  const url = new URL(request.url);
-  const sidFromQuery =
-    url.searchParams.get("sessionId") ?? url.searchParams.get("sid") ?? "";
+  const publicSessionId = readPublicSessionIdFromRequest(request);
+  if (!publicSessionId) {
+    return null;
+  }
 
-  const sessionId = sidFromPayload || sidFromQuery;
-  return sessionId || null;
+  const sidFromPayload = typeof payloadSessionId === "string" ? payloadSessionId.trim() : "";
+  const url = new URL(request.url);
+  const sidFromQuery = url.searchParams.get("sessionId") ?? url.searchParams.get("sid") ?? "";
+  if (
+    (sidFromPayload && sidFromPayload !== publicSessionId) ||
+    (sidFromQuery && sidFromQuery !== publicSessionId)
+  ) {
+    return null;
+  }
+
+  return publicSessionId;
 }
 
 export async function GET(request: Request) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { readPublicSessionIdFromRequest } from "@/lib/public-session";
 import {
   extendSessionIfNeeded,
   isSessionActive
@@ -153,7 +154,13 @@ async function persistDoneFromSSE(
 
         if (dataLine) {
           const raw = dataLine.slice(6);
-          const event = JSON.parse(raw) as { type?: string; data?: unknown };
+          let event: { type?: string; data?: unknown } | null = null;
+          try {
+            event = JSON.parse(raw) as { type?: string; data?: unknown };
+          } catch {
+            boundary = buffer.indexOf("\n\n");
+            continue;
+          }
 
           if (event.type === "sources" && Array.isArray(event.data)) {
             sources = event.data as SourcePayload[];
@@ -214,14 +221,19 @@ async function resolveSessionContext(request: Request, bodySessionId?: unknown):
     };
   }
 
-  const sidFromBody = typeof bodySessionId === "string" ? bodySessionId.trim() : "";
-  const sidFromQuery =
-    new URL(request.url).searchParams.get("sessionId") ??
-    new URL(request.url).searchParams.get("sid") ??
-    "";
-  const sessionId = sidFromBody || sidFromQuery;
+  const sessionId = readPublicSessionIdFromRequest(request);
+  if (!sessionId) {
+    return null;
+  }
 
-  if (!sessionId || !(await isSessionActive(sessionId))) {
+  const sidFromBody = typeof bodySessionId === "string" ? bodySessionId.trim() : "";
+  const url = new URL(request.url);
+  const sidFromQuery = url.searchParams.get("sessionId") ?? url.searchParams.get("sid") ?? "";
+  if ((sidFromBody && sidFromBody !== sessionId) || (sidFromQuery && sidFromQuery !== sessionId)) {
+    return null;
+  }
+
+  if (!(await isSessionActive(sessionId))) {
     return null;
   }
 
