@@ -1,11 +1,6 @@
-# HR Bot
+# Peona
 
 Монорепо HR-ассистента (Next.js + FastAPI + RAG + pgvector).
-
-## Статус
-
-- Tasks `01`–`11`: `DONE`
-- Task `12` (Polish/Prod/CI): `DONE`
 
 ## Состав
 
@@ -133,6 +128,7 @@ make prod-down
 - `OPENAI_JUDGE_MODEL`
 - `RAG_TOP_K`, `RAG_SIM_THRESHOLD`
 - `HEALTH_OPENAI_WARN_MS`, `HEALTH_HALL_WARN_THRESHOLD`
+- `LOG_LEVEL`, `LOG_JSON`
 - `APP_DOMAIN`
 
 ## CI

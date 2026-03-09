@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -54,6 +57,7 @@ class Retriever:
         rows = result.mappings().all()
 
         if not rows:
+            LOGGER.info("retriever.ann_empty_fallback", extra={"top_k": self._top_k})
             # Fallback to exact scan when ANN returns nothing.
             await db.execute(text("SET LOCAL enable_indexscan = off"))
             await db.execute(text("SET LOCAL enable_bitmapscan = off"))
