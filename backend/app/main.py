@@ -7,7 +7,12 @@ from app.api.v1.router import api_router
 from app.config import settings
 from app.core.logging import configure_logging, install_http_logging
 
-configure_logging(log_level=settings.log_level, log_json=settings.log_json)
+configure_logging(
+    log_level=settings.log_level,
+    log_json=settings.log_json,
+    log_to_file=settings.log_to_file,
+    log_file_path=settings.log_file_path,
+)
 LOGGER = logging.getLogger(__name__)
 
 app = FastAPI(title="HR Bot Backend", version="0.1.0")

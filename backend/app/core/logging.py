@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextvars
 import json
 import logging
+from pathlib import Path
 import sys
 import time
 from collections.abc import Awaitable, Callable
@@ -80,14 +81,36 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False, default=str)
 
 
-def configure_logging(*, log_level: str = "INFO", log_json: bool = False) -> None:
+def configure_logging(
+    *,
+    log_level: str = "INFO",
+    log_json: bool = False,
+    log_to_file: bool = False,
+    log_file_path: str = "logs/backend.log",
+) -> None:
     level = getattr(logging, log_level.upper(), logging.INFO)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.addFilter(RequestContextFilter())
-    handler.setFormatter(JsonFormatter() if log_json else PlainFormatter())
+    formatter = JsonFormatter() if log_json else PlainFormatter()
+    handlers: list[logging.Handler] = []
+
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.addFilter(RequestContextFilter())
+    stream_handler.setFormatter(formatter)
+    handlers.append(stream_handler)
+
+    file_error: str | None = None
+    if log_to_file:
+        try:
+            file_path = Path(log_file_path)
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_handler = logging.FileHandler(file_path, encoding="utf-8")
+            file_handler.addFilter(RequestContextFilter())
+            file_handler.setFormatter(formatter)
+            handlers.append(file_handler)
+        except Exception as exc:
+            file_error = str(exc)
 
     root_logger = logging.getLogger()
-    root_logger.handlers = [handler]
+    root_logger.handlers = handlers
     root_logger.setLevel(level)
 
     for logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
@@ -97,6 +120,14 @@ def configure_logging(*, log_level: str = "INFO", log_json: bool = False) -> Non
         logger.propagate = True
 
     logging.captureWarnings(True)
+
+    if log_to_file and file_error:
+        root_logger.warning(
+            "logging.file_handler_failed",
+            extra={"path": log_file_path, "error": file_error},
+        )
+    elif log_to_file:
+        root_logger.info("logging.file_handler_enabled", extra={"path": log_file_path})
 
 
 def install_http_logging(app: FastAPI) -> None:
