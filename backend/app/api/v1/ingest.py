@@ -51,17 +51,17 @@ async def create_ingest_job(
     filename = file.filename or "upload.bin"
     extension = Path(filename).suffix.lower()
     if extension not in SUPPORTED_EXTENSIONS:
-        LOGGER.warning("ingest.unsupported_extension", extra={"filename": filename, "extension": extension})
+        LOGGER.warning("ingest.unsupported_extension", extra={"file_name": filename, "extension": extension})
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {extension}")
 
     payload = await file.read()
     if not payload:
-        LOGGER.warning("ingest.empty_file", extra={"filename": filename})
+        LOGGER.warning("ingest.empty_file", extra={"file_name": filename})
         raise HTTPException(status_code=400, detail="File is empty")
     if len(payload) > MAX_BYTES:
         LOGGER.warning(
             "ingest.file_too_large",
-            extra={"filename": filename, "size_bytes": len(payload), "max_bytes": MAX_BYTES},
+            extra={"file_name": filename, "size_bytes": len(payload), "max_bytes": MAX_BYTES},
         )
         raise HTTPException(status_code=413, detail="File is too large")
 
@@ -86,7 +86,7 @@ async def create_ingest_job(
     background_tasks.add_task(ingest_pipeline.run, file_id)
     LOGGER.info(
         "ingest.job_created",
-        extra={"file_id": file_id, "filename": filename, "size_bytes": len(payload)},
+        extra={"file_id": file_id, "file_name": filename, "size_bytes": len(payload)},
     )
 
     return {"fileId": file_id, "status": "PENDING"}
@@ -107,7 +107,7 @@ async def reindex_knowledge_file(
     await db.commit()
 
     background_tasks.add_task(ingest_pipeline.run, file_id)
-    LOGGER.info("ingest.reindex_requested", extra={"file_id": file_id, "filename": file.filename})
+    LOGGER.info("ingest.reindex_requested", extra={"file_id": file_id, "file_name": file.filename})
     return {"fileId": file.id, "status": file.status}
 
 
@@ -136,6 +136,6 @@ async def delete_knowledge_file(file_id: str, db: AsyncSession = Depends(get_db)
     # Delete file record from database (including binary content)
     await db.delete(file)
     await db.commit()
-    LOGGER.info("ingest.deleted", extra={"file_id": file_id, "filename": file.filename})
+    LOGGER.info("ingest.deleted", extra={"file_id": file_id, "file_name": file.filename})
 
     return {"ok": True}

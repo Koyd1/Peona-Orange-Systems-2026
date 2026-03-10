@@ -12,6 +12,29 @@ type ListResponse = {
   items: KnowledgeFileRow[];
 };
 
+type LoadFilesOptions = {
+  silent?: boolean;
+};
+
+function filesAreEqual(current: KnowledgeFileRow[], next: KnowledgeFileRow[]): boolean {
+  if (current.length !== next.length) {
+    return false;
+  }
+
+  return current.every((file, index) => {
+    const candidate = next[index];
+    return (
+      file.id === candidate.id &&
+      file.filename === candidate.filename &&
+      file.size === candidate.size &&
+      file.status === candidate.status &&
+      file.chunkCount === candidate.chunkCount &&
+      file.createdAt === candidate.createdAt &&
+      file.updatedAt === candidate.updatedAt
+    );
+  });
+}
+
 export default function AdminKnowledgePage() {
   const [files, setFiles] = useState<KnowledgeFileRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,9 +46,12 @@ export default function AdminKnowledgePage() {
     [files]
   );
 
-  const loadFiles = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadFiles = useCallback(async ({ silent = false }: LoadFilesOptions = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
+
     try {
       const response = await fetch("/api/upload", { cache: "no-store" });
       if (!response.ok) {
@@ -33,11 +59,16 @@ export default function AdminKnowledgePage() {
         throw new Error(body?.error ?? body?.detail ?? "Не удалось загрузить список файлов");
       }
       const payload = (await response.json()) as ListResponse;
-      setFiles(payload.items ?? []);
+      const nextFiles = payload.items ?? [];
+      setFiles((current) => (filesAreEqual(current, nextFiles) ? current : nextFiles));
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Ошибка загрузки");
+      if (!silent) {
+        setError(loadError instanceof Error ? loadError.message : "Ошибка загрузки");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -51,7 +82,7 @@ export default function AdminKnowledgePage() {
     }
 
     const timer = window.setInterval(() => {
-      void loadFiles();
+      void loadFiles({ silent: true });
     }, 3000);
 
     return () => {

@@ -90,11 +90,19 @@ class RAGIngestPipeline:
             file = await session.scalar(select(KnowledgeFile).where(KnowledgeFile.id == file_id))
             if file is None:
                 raise RuntimeError("Knowledge file does not exist")
-            
-            if file.binary_content is None:
-                raise RuntimeError("File content not found in database")
-            
+
             blob = file.binary_content
+            if blob is None:
+                # Backward compatibility for files uploaded before binary_content
+                # was persisted to the database: fetch from object storage once.
+                try:
+                    blob = await asyncio.to_thread(self._storage.download_bytes, file.storage_path)
+                except Exception as exc:  # pragma: no cover - defensive fallback
+                    raise RuntimeError("File content not found in database or storage") from exc
+
+                file.binary_content = blob
+                await session.commit()
+
             filename = file.filename
 
         with tempfile.TemporaryDirectory(prefix="ingest-", dir=self._tmp_dir) as temp_dir:
