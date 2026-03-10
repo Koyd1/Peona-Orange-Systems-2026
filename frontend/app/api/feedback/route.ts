@@ -4,6 +4,7 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { readPublicSessionIdFromRequest } from "@/lib/public-session";
 
 const bodySchema = z.object({
   sessionId: z.string().min(8).optional(),
@@ -36,9 +37,17 @@ export async function POST(request: Request) {
     });
     userId = user.id;
     allowedSessionId = session.sessionId;
-  } else if (parsed.data.sessionId) {
+  } else {
+    const publicSessionId = readPublicSessionIdFromRequest(request);
+    if (!publicSessionId) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    if (parsed.data.sessionId && parsed.data.sessionId !== publicSessionId) {
+      return NextResponse.json({ error: "Session mismatch" }, { status: 403 });
+    }
+
     const appSession = await prisma.session.findUnique({
-      where: { id: parsed.data.sessionId },
+      where: { id: publicSessionId },
       select: { id: true, userId: true, expiresAt: true, terminatedAt: true }
     });
 

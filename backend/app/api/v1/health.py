@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime, timedelta
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends
@@ -15,6 +16,7 @@ from app.db.models import VectorChunk
 from app.deps import get_db
 
 router = APIRouter(prefix="/health", tags=["health"])
+LOGGER = logging.getLogger(__name__)
 
 
 @router.get("/detailed")
@@ -55,7 +57,7 @@ async def _check_openai() -> dict[str, Any]:
         return {"ok": True, "latencyMs": latency_ms}
     except Exception as exc:
         latency_ms = int((time.perf_counter() - started) * 1000)
-        _ = exc
+        LOGGER.warning("health.openai_check_failed", extra={"latency_ms": latency_ms, "error": str(exc)})
         return {"ok": False, "latencyMs": latency_ms, "detail": "openai_check_failed"}
 
 
@@ -68,7 +70,7 @@ async def _check_redis() -> dict[str, Any]:
         return {"ok": bool(pong), "latencyMs": latency_ms}
     except Exception as exc:
         latency_ms = int((time.perf_counter() - started) * 1000)
-        _ = exc
+        LOGGER.warning("health.redis_check_failed", extra={"latency_ms": latency_ms, "error": str(exc)})
         return {"ok": False, "latencyMs": latency_ms, "detail": "redis_check_failed"}
     finally:
         await client.aclose()
@@ -82,7 +84,7 @@ async def _check_database(db: AsyncSession) -> dict[str, Any]:
         return {"ok": True, "latencyMs": latency_ms, "chunkCount": int(chunk_count or 0)}
     except Exception as exc:
         latency_ms = int((time.perf_counter() - started) * 1000)
-        _ = exc
+        LOGGER.warning("health.database_check_failed", extra={"latency_ms": latency_ms, "error": str(exc)})
         return {"ok": False, "latencyMs": latency_ms, "chunkCount": 0, "detail": "database_check_failed"}
 
 
@@ -107,5 +109,5 @@ async def _check_hallucination_avg(db: AsyncSession) -> dict[str, Any]:
             "sampleSize": int(sample_size or 0),
         }
     except Exception as exc:
-        _ = exc
+        LOGGER.warning("health.hallucination_aggregation_failed", extra={"error": str(exc)})
         return {"avg24h": 0.0, "sampleSize": 0, "detail": "hallucination_aggregation_failed"}

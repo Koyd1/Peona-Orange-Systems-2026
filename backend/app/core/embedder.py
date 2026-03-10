@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from typing import Sequence
 
 from openai import AsyncOpenAI
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIM = 1536
+LOGGER = logging.getLogger(__name__)
 
 
 class Embedder:
@@ -24,7 +26,11 @@ class Embedder:
         try:
             response = await self._client.embeddings.create(model=EMBEDDING_MODEL, input=list(texts))
             return [item.embedding for item in response.data]
-        except Exception:
+        except Exception as exc:
+            LOGGER.warning(
+                "embedder.api_failed",
+                extra={"texts_count": len(texts), "error": str(exc)},
+            )
             return [self._fake_embedding(text) for text in texts]
 
     def _fake_embedding(self, text: str) -> list[float]:

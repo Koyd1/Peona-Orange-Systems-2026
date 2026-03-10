@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import logging
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +15,7 @@ from app.db.models import KnowledgeFile
 from app.deps import chat_streamer, embedder, get_db, retriever
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+LOGGER = logging.getLogger(__name__)
 
 
 class ChatMessage(BaseModel):
@@ -32,8 +34,17 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
     if last_user is None:
         raise HTTPException(status_code=400, detail="At least one user message is required")
 
+    LOGGER.info(
+        "chat.request_received",
+        extra={"session_id": request.session_id, "messages_count": len(request.messages)},
+    )
+
     query_embedding = (await embedder.embed_texts([last_user.content]))[0]
     sources = await retriever.retrieve(db, query_embedding)
+    LOGGER.info(
+        "chat.sources_retrieved",
+        extra={"session_id": request.session_id, "sources_count": len(sources)},
+    )
 
     async def event_generator():
         files_map: dict[str, str] = {}
@@ -61,6 +72,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
 
         context_blocks = [source.content for source in sources]
         if not context_blocks:
+            LOGGER.info("chat.no_context", extra={"session_id": request.session_id})
             answer = (
                 "В базе знаний пока нет релевантной информации по этому вопросу. "
                 "Загрузите HR-документы в раздел Knowledge и повторите запрос."
@@ -87,6 +99,14 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
 
         final_answer = "".join(full_answer_parts).strip()
         hall_score = score_hallucination(final_answer, context_blocks)
+        LOGGER.info(
+            "chat.completed",
+            extra={
+                "session_id": request.session_id,
+                "answer_len": len(final_answer),
+                "hall_score": round(hall_score, 4),
+            },
+        )
         yield encode_sse(
             {
                 "type": "done",

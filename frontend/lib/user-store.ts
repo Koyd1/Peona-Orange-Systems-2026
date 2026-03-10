@@ -18,8 +18,19 @@ async function ensureAdminUser(): Promise<void> {
   }
 
   adminBootstrapPromise = (async () => {
+    const defaultPassword = "Admin123456!";
     const email = (process.env.ADMIN_EMAIL ?? "admin@hr.local").toLowerCase();
-    const password = process.env.ADMIN_PASSWORD ?? "Admin123456!";
+    const password = process.env.ADMIN_PASSWORD ?? defaultPassword;
+
+    if (process.env.NODE_ENV === "production") {
+      if (!process.env.ADMIN_PASSWORD) {
+        throw new Error("ADMIN_PASSWORD is required in production");
+      }
+      if (password === defaultPassword) {
+        throw new Error("ADMIN_PASSWORD default value is not allowed in production");
+      }
+    }
+
     const passwordHash = await hash(password, 10);
 
     await prisma.user.upsert({

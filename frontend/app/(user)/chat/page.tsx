@@ -1,10 +1,13 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import ChatWindow from "@/components/chat/ChatWindow";
-import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import {
-  createAppSession,
-  findEmptyActiveSession,
+  PUBLIC_SESSION_COOKIE_NAME,
+  verifyPublicSessionCookieValue
+} from "@/lib/public-session";
+import {
   getSessionById,
   isSessionActive
 } from "@/lib/session";
@@ -13,49 +16,54 @@ type PageProps = {
   searchParams: Promise<{ sid?: string }>;
 };
 
-async function ensurePublicUserId(): Promise<string> {
-  const guest = await prisma.user.upsert({
-    where: { email: "guest@public.local" },
-    update: { role: "USER" },
-    create: {
-      email: "guest@public.local",
-      passwordHash: "__public_access__",
-      role: "USER"
-    },
-    select: { id: true }
-  });
-
-  return guest.id;
-}
+const PUBLIC_BOOTSTRAP_PATH = "/api/session/public/bootstrap" as any;
 
 export default async function ChatPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const sid = typeof params.sid === "string" ? params.sid : "";
+  const sidFromUrl = typeof params.sid === "string" ? params.sid : "";
 
-  if (!sid || !(await isSessionActive(sid))) {
-    const userId = await ensurePublicUserId();
-    const existing = await findEmptyActiveSession(userId);
-    if (existing) {
-      redirect(`/chat?sid=${existing.id}`);
+  const signedIn = await auth();
+  if (signedIn?.sessionId && (await isSessionActive(signedIn.sessionId))) {
+    if (sidFromUrl !== signedIn.sessionId) {
+      redirect(`/chat?sid=${signedIn.sessionId}`);
     }
-    const newSession = await createAppSession(userId, true);
-    redirect(`/chat?sid=${newSession.id}`);
+
+    const appSession = await getSessionById(signedIn.sessionId);
+    if (!appSession || appSession.terminatedAt) {
+      redirect("/login");
+    }
+
+    return (
+      <ChatWindow
+        sessionId={signedIn.sessionId}
+        initialPersistent={appSession.persistent}
+        initialExpiresAt={appSession.expiresAt.toISOString()}
+        showSessionControls
+      />
+    );
   }
 
-  const appSession = await getSessionById(sid);
+  const cookieStore = await cookies();
+  const publicSessionId = verifyPublicSessionCookieValue(
+    cookieStore.get(PUBLIC_SESSION_COOKIE_NAME)?.value
+  );
+
+  if (!publicSessionId || !(await isSessionActive(publicSessionId))) {
+    redirect(PUBLIC_BOOTSTRAP_PATH);
+  }
+
+  if (sidFromUrl !== publicSessionId) {
+    redirect(`/chat?sid=${publicSessionId}`);
+  }
+
+  const appSession = await getSessionById(publicSessionId);
   if (!appSession || appSession.terminatedAt) {
-    const userId = await ensurePublicUserId();
-    const existing = await findEmptyActiveSession(userId);
-    if (existing) {
-      redirect(`/chat?sid=${existing.id}`);
-    }
-    const newSession = await createAppSession(userId, true);
-    redirect(`/chat?sid=${newSession.id}`);
+    redirect(PUBLIC_BOOTSTRAP_PATH);
   }
 
   return (
     <ChatWindow
-      sessionId={sid}
+      sessionId={publicSessionId}
       initialPersistent={appSession.persistent}
       initialExpiresAt={appSession.expiresAt.toISOString()}
       showSessionControls

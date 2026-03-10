@@ -12,6 +12,21 @@ export type AppSession = {
   terminatedAt?: Date;
 };
 
+export async function ensurePublicUserId(): Promise<string> {
+  const guest = await prisma.user.upsert({
+    where: { email: "guest@public.local" },
+    update: { role: "USER" },
+    create: {
+      email: "guest@public.local",
+      passwordHash: "__public_access__",
+      role: "USER"
+    },
+    select: { id: true }
+  });
+
+  return guest.id;
+}
+
 function toAppSession(row: {
   id: string;
   userId: string;

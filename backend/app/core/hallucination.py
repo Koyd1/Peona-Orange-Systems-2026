@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
 from openai import AsyncOpenAI
+
+LOGGER = logging.getLogger(__name__)
 
 
 class HallucinationJudge:
@@ -48,7 +51,8 @@ class HallucinationJudge:
             score = max(0.0, min(1.0, value))
             reason = str(data.get("reason", "n/a"))[:500]
             return {"hallScore": score, "reason": reason, "model": self._model}
-        except Exception:
+        except Exception as exc:
+            LOGGER.warning("hallucination_judge.failed", extra={"error": str(exc)})
             return {"hallScore": 0.5, "reason": "judge_error_fallback", "model": "rule-based"}
 
 

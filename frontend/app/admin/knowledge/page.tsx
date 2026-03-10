@@ -12,6 +12,51 @@ type ListResponse = {
   items: KnowledgeFileRow[];
 };
 
+type LoadFilesOptions = {
+  silent?: boolean;
+};
+
+function filenameFromContentDisposition(contentDisposition: string | null): string | null {
+  if (!contentDisposition) {
+    return null;
+  }
+
+  const encodedMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encodedMatch?.[1]) {
+    try {
+      return decodeURIComponent(encodedMatch[1]);
+    } catch {
+      return encodedMatch[1];
+    }
+  }
+
+  const plainMatch = contentDisposition.match(/filename="([^"]+)"/i);
+  if (plainMatch?.[1]) {
+    return plainMatch[1];
+  }
+
+  return null;
+}
+
+function filesAreEqual(current: KnowledgeFileRow[], next: KnowledgeFileRow[]): boolean {
+  if (current.length !== next.length) {
+    return false;
+  }
+
+  return current.every((file, index) => {
+    const candidate = next[index];
+    return (
+      file.id === candidate.id &&
+      file.filename === candidate.filename &&
+      file.size === candidate.size &&
+      file.status === candidate.status &&
+      file.chunkCount === candidate.chunkCount &&
+      file.createdAt === candidate.createdAt &&
+      file.updatedAt === candidate.updatedAt
+    );
+  });
+}
+
 export default function AdminKnowledgePage() {
   const [files, setFiles] = useState<KnowledgeFileRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,9 +68,12 @@ export default function AdminKnowledgePage() {
     [files]
   );
 
-  const loadFiles = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadFiles = useCallback(async ({ silent = false }: LoadFilesOptions = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
+
     try {
       const response = await fetch("/api/upload", { cache: "no-store" });
       if (!response.ok) {
@@ -33,11 +81,16 @@ export default function AdminKnowledgePage() {
         throw new Error(body?.error ?? body?.detail ?? "Не удалось загрузить список файлов");
       }
       const payload = (await response.json()) as ListResponse;
-      setFiles(payload.items ?? []);
+      const nextFiles = payload.items ?? [];
+      setFiles((current) => (filesAreEqual(current, nextFiles) ? current : nextFiles));
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Ошибка загрузки");
+      if (!silent) {
+        setError(loadError instanceof Error ? loadError.message : "Ошибка загрузки");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -51,7 +104,7 @@ export default function AdminKnowledgePage() {
     }
 
     const timer = window.setInterval(() => {
-      void loadFiles();
+      void loadFiles({ silent: true });
     }, 3000);
 
     return () => {
@@ -71,6 +124,39 @@ export default function AdminKnowledgePage() {
       await loadFiles();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Ошибка удаления");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDownload(id: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/upload/${id}/download`, {
+        method: "GET",
+        cache: "no-store"
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error ?? body?.detail ?? "Скачивание не удалось");
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get("content-disposition");
+      const fallbackName = files.find((file) => file.id === id)?.filename ?? `knowledge-${id}`;
+      const filename = filenameFromContentDisposition(contentDisposition) ?? fallbackName;
+
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (downloadError) {
+      setError(downloadError instanceof Error ? downloadError.message : "Ошибка скачивания");
     } finally {
       setBusyId(null);
     }
@@ -98,7 +184,7 @@ export default function AdminKnowledgePage() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h1 style={{ marginTop: 0 }}>Knowledge Base</h1>
         <p style={{ marginTop: 0 }}>
-          Управление документами: upload, status polling, delete и re-index.
+          Управление документами: upload, status polling, download, delete и re-index.
         </p>
         <p style={{ marginTop: 0 }}>
           <Link href="/admin/prompts">Open prompt templates</Link>
@@ -111,6 +197,7 @@ export default function AdminKnowledgePage() {
         files={files}
         loading={loading}
         busyId={busyId}
+        onDownload={handleDownload}
         onDelete={handleDelete}
         onReindex={handleReindex}
       />

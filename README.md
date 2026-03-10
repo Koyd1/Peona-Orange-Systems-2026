@@ -1,11 +1,6 @@
-# HR Bot
+# Peona
 
 Монорепо HR-ассистента (Next.js + FastAPI + RAG + pgvector).
-
-## Статус
-
-- Tasks `01`–`11`: `DONE`
-- Task `12` (Polish/Prod/CI): `DONE`
 
 ## Состав
 
@@ -122,6 +117,7 @@ make prod-down
 - `OPENAI_API_KEY`
 - `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
+- `PUBLIC_SESSION_SECRET`
 - `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_BUCKET`
 - `REDIS_PASSWORD`
 - `PYTHON_BACKEND_URL` (для host-runtime: `http://127.0.0.1:8000`)
@@ -133,6 +129,7 @@ make prod-down
 - `OPENAI_JUDGE_MODEL`
 - `RAG_TOP_K`, `RAG_SIM_THRESHOLD`
 - `HEALTH_OPENAI_WARN_MS`, `HEALTH_HALL_WARN_THRESHOLD`
+- `LOG_LEVEL`, `LOG_JSON`, `LOG_TO_FILE`, `LOG_FILE_PATH`
 - `APP_DOMAIN`
 
 ## CI

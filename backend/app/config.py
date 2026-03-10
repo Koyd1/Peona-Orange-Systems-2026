@@ -4,6 +4,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: str
     web_origin: str = "http://localhost:3000"
+    log_level: str = "INFO"
+    log_json: bool = False
+    log_to_file: bool = False
+    log_file_path: str = "logs/backend.log"
     minio_endpoint: str = "minio:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "CHANGE_ME"
