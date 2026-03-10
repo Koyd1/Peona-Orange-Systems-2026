@@ -16,6 +16,7 @@ type FileTableProps = {
   files: KnowledgeFileRow[];
   loading: boolean;
   busyId: string | null;
+  onDownload: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReindex: (id: string) => Promise<void>;
 };
@@ -36,6 +37,7 @@ export default function FileTable({
   files,
   loading,
   busyId,
+  onDownload,
   onDelete,
   onReindex
 }: FileTableProps) {
@@ -66,6 +68,15 @@ export default function FileTable({
                 <td>{new Date(file.updatedAt).toLocaleString()}</td>
                 <td>
                   <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      disabled={busyId === file.id}
+                      onClick={async () => {
+                        await onDownload(file.id);
+                      }}
+                    >
+                      Download
+                    </button>
                     <button
                       type="button"
                       disabled={busyId === file.id}

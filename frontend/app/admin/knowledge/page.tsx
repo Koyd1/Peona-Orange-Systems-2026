@@ -16,6 +16,28 @@ type LoadFilesOptions = {
   silent?: boolean;
 };
 
+function filenameFromContentDisposition(contentDisposition: string | null): string | null {
+  if (!contentDisposition) {
+    return null;
+  }
+
+  const encodedMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encodedMatch?.[1]) {
+    try {
+      return decodeURIComponent(encodedMatch[1]);
+    } catch {
+      return encodedMatch[1];
+    }
+  }
+
+  const plainMatch = contentDisposition.match(/filename="([^"]+)"/i);
+  if (plainMatch?.[1]) {
+    return plainMatch[1];
+  }
+
+  return null;
+}
+
 function filesAreEqual(current: KnowledgeFileRow[], next: KnowledgeFileRow[]): boolean {
   if (current.length !== next.length) {
     return false;
@@ -107,6 +129,39 @@ export default function AdminKnowledgePage() {
     }
   }
 
+  async function handleDownload(id: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/upload/${id}/download`, {
+        method: "GET",
+        cache: "no-store"
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error ?? body?.detail ?? "Скачивание не удалось");
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get("content-disposition");
+      const fallbackName = files.find((file) => file.id === id)?.filename ?? `knowledge-${id}`;
+      const filename = filenameFromContentDisposition(contentDisposition) ?? fallbackName;
+
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (downloadError) {
+      setError(downloadError instanceof Error ? downloadError.message : "Ошибка скачивания");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function handleReindex(id: string) {
     setBusyId(id);
     setError(null);
@@ -129,7 +184,7 @@ export default function AdminKnowledgePage() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h1 style={{ marginTop: 0 }}>Knowledge Base</h1>
         <p style={{ marginTop: 0 }}>
-          Управление документами: upload, status polling, delete и re-index.
+          Управление документами: upload, status polling, download, delete и re-index.
         </p>
         <p style={{ marginTop: 0 }}>
           <Link href="/admin/prompts">Open prompt templates</Link>
@@ -142,6 +197,7 @@ export default function AdminKnowledgePage() {
         files={files}
         loading={loading}
         busyId={busyId}
+        onDownload={handleDownload}
         onDelete={handleDelete}
         onReindex={handleReindex}
       />
