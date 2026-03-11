@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import unique
 import math
 import logging
 from typing import Literal
@@ -8,6 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# from app.core.snippet import extract_relevant_snippet
+# from app.core.snippet import query_overlap_score
 
 from app.core.hallucination import score_hallucination
 from app.core.streamer import encode_sse
@@ -41,17 +45,30 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
 
     query_embedding = (await embedder.embed_texts([last_user.content]))[0]
     sources = await retriever.retrieve(db, query_embedding)
+#     sources = sorted(
+#     sources,
+#     key=lambda s: (
+#         s.similarity,
+#         query_overlap_score(s.content, last_user.content)
+#     ),
+#     reverse=True
+# )
     LOGGER.info(
         "chat.sources_retrieved",
         extra={"session_id": request.session_id, "sources_count": len(sources)},
     )
 
-    async def event_generator():
+    async def event_generator(sources=sources):
         files_map: dict[str, str] = {}
         if sources:
             file_ids = list({source.file_id for source in sources})
             from sqlalchemy import select
-
+            unique = {}
+            for source in sources:
+                key = (source.file_id, source.content[:80])
+                if key not in unique:
+                    unique[key] = source
+            sources = list(unique.values())
             result = await db.execute(
                 select(KnowledgeFile.id, KnowledgeFile.filename).where(KnowledgeFile.id.in_(file_ids))
             )

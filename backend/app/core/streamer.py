@@ -1,3 +1,94 @@
+# from __future__ import annotations
+
+# import json
+# import logging
+# from collections.abc import AsyncIterator
+
+# from openai import AsyncOpenAI
+
+# LOGGER = logging.getLogger(__name__)
+
+
+# def encode_sse(payload: dict) -> bytes:
+#     return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n".encode("utf-8")
+
+
+# class ChatStreamer:
+#     def __init__(self, *, api_key: str, model: str, fallback_models: list[str] | None = None) -> None:
+#         self._model = model
+#         self._fallback_models = fallback_models or []
+#         self._client = AsyncOpenAI(api_key=api_key) if api_key else None
+
+#     async def stream_answer(
+#         self,
+#         *,
+#         user_message: str,
+#         context_blocks: list[str],
+#     ) -> AsyncIterator[str]:
+#         if self._client is None:
+#             async for token in self._fallback_tokens(user_message, context_blocks):
+#                 yield token
+#             return
+
+#         system_prompt = (
+#             "You are an HR assistant. Answer only using provided context. "
+#             "If context is insufficient, clearly state uncertainty."
+#         )
+#         context_text = "\n\n".join(context_blocks) if context_blocks else "No context provided."
+
+#         model_candidates = [self._model, *self._fallback_models]
+#         deduped_models: list[str] = []
+#         for candidate in model_candidates:
+#             if candidate and candidate not in deduped_models:
+#                 deduped_models.append(candidate)
+
+#         last_error: Exception | None = None
+#         try:
+#             for model_name in deduped_models:
+#                 try:
+#                     stream = await self._client.chat.completions.create(
+#                         model=model_name,
+#                         stream=True,
+#                         temperature=0.2,
+#                         messages=[
+#                             {"role": "system", "content": system_prompt},
+#                             {"role": "system", "content": f"Context:\n{context_text}"},
+#                             {"role": "user", "content": user_message},
+#                         ],
+#                     )
+
+#                     async for chunk in stream:
+#                         delta = chunk.choices[0].delta.content if chunk.choices else None
+#                         if delta:
+#                             yield delta
+#                     return
+#                 except Exception as exc:
+#                     last_error = exc
+#                     LOGGER.warning(
+#                         "chat_streamer.model_failed",
+#                         extra={"model": model_name, "error": str(exc)},
+#                     )
+#         except Exception as exc:
+#             last_error = exc
+
+#         if last_error is not None:
+#             LOGGER.error("chat_streamer.all_models_failed", extra={"error": str(last_error)})
+#             async for token in self._fallback_tokens(user_message, context_blocks):
+#                 yield token
+
+#     def _fallback_answer(self, user_message: str, context_blocks: list[str]) -> str:
+#         return (
+#             "Сейчас не удалось сгенерировать ответ моделью. "
+#             "Попробуйте повторить запрос позже. "
+#             f"Ваш запрос: {user_message}"
+#         )
+
+#     async def _fallback_tokens(
+#         self, user_message: str, context_blocks: list[str]
+#     ) -> AsyncIterator[str]:
+#         fallback = self._fallback_answer(user_message, context_blocks)
+#         for token in fallback.split(" "):
+#             yield f"{token} "
 from __future__ import annotations
 
 import json
@@ -30,22 +121,67 @@ class ChatStreamer:
                 yield token
             return
 
-        system_prompt = (
-            "You are an HR assistant. Answer only using provided context. "
-            "If context is insufficient, clearly state uncertainty."
-        )
+        system_prompt = """
+You are an HR assistant.
+
+You will receive context blocks in the following format:
+
+[S1] Document: <document name>
+Content: <text chunk>
+
+[S2] Document: <document name>
+Content: <text chunk>
+
+Rules:
+- Each context block has a source ID (S1, S2, etc.) and a document name.
+- When creating the SOURCES section you MUST use the real document name.
+- NEVER write "S1", "S2" as document names.
+- Instead use the document name that appears in the context block.
+
+Response structure MUST follow this format:
+
+1) Write the main answer for the user.
+
+2) After the answer write exactly:
+
+[[SOURCES]]
+
+3) Then list the sources used.
+
+Format:
+
+Document: <document name> | Citations: <citation1>; <citation2>
+
+Rules for citations:
+- A citation must be a short clear statement that reflects the document content.
+- If multiple statements come from the same document, combine them.
+- Do NOT repeat the same document twice.
+- Only include documents that appear in the context blocks.
+
+Example:
+
+Employees are entitled to paid annual leave.
+
+[[SOURCES]]
+
+Document: Vacation_Policy.pdf | Citations: Employees receive a fixed number of paid vacation days annually; Vacation must be approved by the manager.
+"""
+
         context_text = "\n\n".join(context_blocks) if context_blocks else "No context provided."
 
         model_candidates = [self._model, *self._fallback_models]
+
         deduped_models: list[str] = []
         for candidate in model_candidates:
             if candidate and candidate not in deduped_models:
                 deduped_models.append(candidate)
 
         last_error: Exception | None = None
+
         try:
             for model_name in deduped_models:
                 try:
+
                     stream = await self._client.chat.completions.create(
                         model=model_name,
                         stream=True,
@@ -61,18 +197,22 @@ class ChatStreamer:
                         delta = chunk.choices[0].delta.content if chunk.choices else None
                         if delta:
                             yield delta
+
                     return
+
                 except Exception as exc:
                     last_error = exc
                     LOGGER.warning(
                         "chat_streamer.model_failed",
                         extra={"model": model_name, "error": str(exc)},
                     )
+
         except Exception as exc:
             last_error = exc
 
         if last_error is not None:
             LOGGER.error("chat_streamer.all_models_failed", extra={"error": str(last_error)})
+
             async for token in self._fallback_tokens(user_message, context_blocks):
                 yield token
 
@@ -84,8 +224,12 @@ class ChatStreamer:
         )
 
     async def _fallback_tokens(
-        self, user_message: str, context_blocks: list[str]
+        self,
+        user_message: str,
+        context_blocks: list[str],
     ) -> AsyncIterator[str]:
+
         fallback = self._fallback_answer(user_message, context_blocks)
+
         for token in fallback.split(" "):
             yield f"{token} "
