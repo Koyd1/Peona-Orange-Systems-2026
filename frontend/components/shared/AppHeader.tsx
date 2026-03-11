@@ -1,0 +1,26 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+type AppHeaderProps = {
+  actions?: ReactNode;
+};
+
+export default function AppHeader({ actions }: AppHeaderProps) {
+  return (
+    <header className="app-header">
+      <Link href="/" className="app-header-logo">
+        <span className="logo-icon">
+          <svg width="20" height="22" viewBox="0 0 40 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fillRule="evenodd" clipRule="evenodd" d="M11.8073 18.4739L14.2521 11.1394H17.4144L19.8592 18.4739L27.1937 20.9187V24.081L19.8592 26.5258L17.4144 33.8602H14.2521L11.8073 26.5258L4.4729 24.081V20.9187L11.8073 18.4739ZM15.8333 16.9369L14.7061 20.3185L13.652 21.3726L10.2704 22.4998L13.652 23.627L14.7061 24.6811L15.8333 28.0627L16.9605 24.6811L18.0146 23.627L21.3962 22.4998L18.0146 21.3726L16.9605 20.3185L15.8333 16.9369Z" fill="#E07620" />
+            <path fillRule="evenodd" clipRule="evenodd" d="M26.9177 8.58425L28.2179 4.68359H30.1153L31.4155 8.58425L35.3162 9.88447V11.7818L31.4155 13.0821L30.1153 16.9827H28.2179L26.9177 13.0821L23.0171 11.7818V9.88447L26.9177 8.58425Z" fill="#E07620" />
+          </svg>
+        </span>
+        Peona
+      </Link>
+      <div className="app-header-actions">
+        {actions}
+        <span className="lang-badge">RO</span>
+      </div>
+    </header>
+  );
+}

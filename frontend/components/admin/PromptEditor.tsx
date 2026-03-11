@@ -130,7 +130,7 @@ export default function PromptEditor() {
     <div className="card">
       <h2 style={{ marginTop: 0 }}>Prompt Templates</h2>
       {loading ? <p>Загрузка...</p> : null}
-      {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
+      {error ? <div className="alert alert-error">{error}</div> : null}
 
       <div
         style={{
@@ -154,11 +154,11 @@ export default function PromptEditor() {
             onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
           />
           <textarea
+            className="textarea"
             placeholder="Content"
             value={draft.content}
             onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
             rows={4}
-            style={{ resize: "vertical" }}
           />
           <input
             placeholder="Category"
@@ -182,7 +182,7 @@ export default function PromptEditor() {
             />
             Active
           </label>
-          <button type="submit" disabled={busyId === "create"}>
+          <button type="submit" className="btn btn-sm btn-primary" disabled={busyId === "create"}>
             Create
           </button>
         </form>
@@ -196,7 +196,7 @@ export default function PromptEditor() {
           >
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
               <strong>{item.title}</strong>
-              <span style={{ fontSize: 12, color: "#475467" }}>
+              <span className={item.isActive ? "status-pill status-pill-ready" : "status-pill status-pill-pending"}>
                 {item.isActive ? "ACTIVE" : "INACTIVE"}
               </span>
             </div>

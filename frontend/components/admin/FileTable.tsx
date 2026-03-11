@@ -1,7 +1,5 @@
 "use client";
 
-import type { CSSProperties } from "react";
-
 export type KnowledgeFileRow = {
   id: string;
   filename: string;
@@ -27,11 +25,12 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function statusStyle(status: KnowledgeFileRow["status"]): CSSProperties {
-  if (status === "READY") return { color: "#027a48", fontWeight: 600 };
-  if (status === "ERROR") return { color: "#b42318", fontWeight: 600 };
-  return { color: "#b54708", fontWeight: 600 };
-}
+const STATUS_PILL: Record<KnowledgeFileRow["status"], string> = {
+  READY: "status-pill status-pill-ready",
+  PENDING: "status-pill status-pill-pending",
+  PROCESSING: "status-pill status-pill-processing",
+  ERROR: "status-pill status-pill-error",
+};
 
 export default function FileTable({
   files,
@@ -43,33 +42,38 @@ export default function FileTable({
 }: FileTableProps) {
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>Файлы базы знаний</h2>
-      {loading ? <p>Обновление списка...</p> : null}
+      <div className="section-header">
+        <h2>Файлы базы знаний</h2>
+        {loading ? <span className="text-sm text-muted">Обновление...</span> : null}
+      </div>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table className="table">
           <thead>
             <tr>
-              <th align="left">Filename</th>
-              <th align="left">Size</th>
-              <th align="left">Status</th>
-              <th align="left">Chunks</th>
-              <th align="left">Updated</th>
-              <th align="left">Actions</th>
+              <th>Filename</th>
+              <th>Size</th>
+              <th>Status</th>
+              <th>Chunks</th>
+              <th>Updated</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {files.map((file) => (
-              <tr key={file.id} style={{ borderTop: "1px solid #e4e7ec" }}>
-                <td style={{ padding: "8px 0" }}>{file.filename}</td>
+              <tr key={file.id}>
+                <td>{file.filename}</td>
                 <td>{formatBytes(file.size)}</td>
-                <td style={statusStyle(file.status)}>{file.status}</td>
+                <td>
+                  <span className={STATUS_PILL[file.status]}>{file.status}</span>
+                </td>
                 <td>{file.chunkCount ?? "-"}</td>
                 <td>{new Date(file.updatedAt).toLocaleString()}</td>
                 <td>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       type="button"
+                      className="btn btn-sm btn-secondary"
                       disabled={busyId === file.id}
                       onClick={async () => {
                         await onDownload(file.id);
@@ -79,6 +83,7 @@ export default function FileTable({
                     </button>
                     <button
                       type="button"
+                      className="btn btn-sm btn-secondary"
                       disabled={busyId === file.id}
                       onClick={async () => {
                         const confirmed = window.confirm(
@@ -92,6 +97,7 @@ export default function FileTable({
                     </button>
                     <button
                       type="button"
+                      className="btn btn-sm btn-outline-orange"
                       disabled={busyId === file.id}
                       onClick={async () => {
                         await onReindex(file.id);
@@ -105,8 +111,12 @@ export default function FileTable({
             ))}
             {files.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ paddingTop: 12 }}>
-                  Нет загруженных файлов.
+                <td colSpan={6}>
+                  <div className="empty-state">
+                    <div className="empty-state-icon">📂</div>
+                    <h3>Нет загруженных файлов</h3>
+                    <p>Загрузите документы через форму выше</p>
+                  </div>
                 </td>
               </tr>
             ) : null}

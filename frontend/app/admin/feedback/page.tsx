@@ -75,48 +75,58 @@ export default function AdminFeedbackPage() {
   return (
     <>
       <div className="card" style={{ marginBottom: 16 }}>
-        <h1 style={{ marginTop: 0 }}>Feedback dashboard</h1>
-        <p style={{ marginTop: 0 }}>Агрегаты, динамика и негативные отзывы пользователей.</p>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" onClick={() => void load()} disabled={loading}>
-            Refresh
-          </button>
-          <a href="/api/admin/feedback/export" target="_blank" rel="noreferrer">
-            Download CSV
-          </a>
+        <div className="section-header">
+          <div>
+            <h1>Feedback dashboard</h1>
+            <p className="section-header-sub">Агрегаты, динамика и негативные отзывы пользователей.</p>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" className="btn btn-sm btn-secondary" onClick={() => void load()} disabled={loading}>
+              Refresh
+            </button>
+            <a href="/api/admin/feedback/export" className="btn btn-sm btn-outline-orange" target="_blank" rel="noreferrer">
+              Download CSV
+            </a>
+          </div>
         </div>
-        {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
+        {error ? <div className="alert alert-error">{error}</div> : null}
       </div>
 
       <FeedbackChart summary={summary} series={series} />
 
       <div className="card">
-        <h2 style={{ marginTop: 0 }}>Negative feedback</h2>
+        <div className="section-header">
+          <h2>Negative feedback</h2>
+        </div>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="table">
             <thead>
               <tr>
-                <th align="left">Date</th>
-                <th align="left">User</th>
-                <th align="left">Comment</th>
-                <th align="left">Message</th>
-                <th align="left">Session</th>
+                <th>Date</th>
+                <th>User</th>
+                <th>Comment</th>
+                <th>Message</th>
+                <th>Session</th>
               </tr>
             </thead>
             <tbody>
               {negative.map((row) => (
-                <tr key={row.id} style={{ borderTop: "1px solid #e4e7ec" }}>
-                  <td style={{ padding: "8px 0" }}>{new Date(row.createdAt).toLocaleString()}</td>
+                <tr key={row.id}>
+                  <td>{new Date(row.createdAt).toLocaleString()}</td>
                   <td>{row.userEmail}</td>
                   <td>{row.comment || "-"}</td>
                   <td style={{ maxWidth: 360 }}>{row.messageContent}</td>
-                  <td style={{ fontSize: 12 }}>{row.sessionId}</td>
+                  <td className="text-xs text-muted">{row.sessionId}</td>
                 </tr>
               ))}
               {negative.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ paddingTop: 12 }}>
-                    Нет негативных отзывов.
+                  <td colSpan={5}>
+                    <div className="empty-state">
+                      <div className="empty-state-icon">👍</div>
+                      <h3>Нет негативных отзывов</h3>
+                      <p>Все пользователи довольны!</p>
+                    </div>
                   </td>
                 </tr>
               ) : null}

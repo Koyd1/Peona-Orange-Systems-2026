@@ -8,6 +8,7 @@ import {
   verifyPublicSessionCookieValue
 } from "@/lib/public-session";
 import {
+  createAppSession,
   getSessionById,
   isSessionActive
 } from "@/lib/session";

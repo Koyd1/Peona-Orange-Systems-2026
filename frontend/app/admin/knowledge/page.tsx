@@ -182,14 +182,16 @@ export default function AdminKnowledgePage() {
   return (
     <>
       <div className="card" style={{ marginBottom: 16 }}>
-        <h1 style={{ marginTop: 0 }}>Knowledge Base</h1>
-        <p style={{ marginTop: 0 }}>
-          Управление документами: upload, status polling, download, delete и re-index.
-        </p>
-        <p style={{ marginTop: 0 }}>
-          <Link href="/admin/prompts">Open prompt templates</Link>
-        </p>
-        {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
+        <div className="section-header">
+          <div>
+            <h1>Knowledge Base</h1>
+            <p className="section-header-sub">
+              Управление документами: upload, status polling, download, delete и re-index.
+            </p>
+          </div>
+          <Link href="/admin/prompts" className="btn btn-sm btn-secondary">Open prompts</Link>
+        </div>
+        {error ? <div className="alert alert-error">{error}</div> : null}
       </div>
 
       <FileUpload onUploaded={loadFiles} />

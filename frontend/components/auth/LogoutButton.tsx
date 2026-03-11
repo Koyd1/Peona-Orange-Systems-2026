@@ -25,7 +25,12 @@ export default function LogoutButton({ callbackUrl = "/login" }: LogoutButtonPro
   }
 
   return (
-    <button type="button" disabled={busy} onClick={() => void handleLogout()}>
+    <button
+      type="button"
+      className="btn btn-sm btn-secondary"
+      disabled={busy}
+      onClick={() => void handleLogout()}
+    >
       {busy ? "Logging out..." : "Logout"}
     </button>
   );
