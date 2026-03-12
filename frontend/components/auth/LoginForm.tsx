@@ -20,6 +20,7 @@ export default function LoginForm({ loginAction, serverError }: Props) {
     email?: string;
     password?: string;
   }>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     const formData = new FormData(e.currentTarget);
@@ -57,8 +58,8 @@ export default function LoginForm({ loginAction, serverError }: Props) {
       ) : null}
 
       <form action={loginAction} onSubmit={handleSubmit} noValidate className="grid gap-4 text-left">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-sm font-semibold text-gray-900">
+        <div className="flex flex-col gap-1.5" >
+          <label htmlFor="email" className="text-sm font-semibold text-gray-900 ">
             Email
           </label>
           <Input
@@ -66,7 +67,10 @@ export default function LoginForm({ loginAction, serverError }: Props) {
             name="email"
             type="email"
             placeholder="admin@company.com"
-            icon={<span>✉</span>}
+            className="w-full border border-gray-300 rounded-full px-2 py-2"
+            icon={<span className="flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7" ><img src="/icons/logo_message.svg" 
+                             alt="Email icon"
+                              className="w-full h-full object-contain" /></span>}
           />
           {fieldErrors.email ? (
             <span className="text-xs text-red-600">{fieldErrors.email}</span>
@@ -80,9 +84,27 @@ export default function LoginForm({ loginAction, serverError }: Props) {
           <Input
             id="password"
             name="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            icon={<span>🔒</span>}
+            className="w-full border border-gray-300 rounded-xl px-2 py-2"
+            icon={<span className="flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7" ><img src="/icons/square-lock.svg"
+                             alt="Password icon"
+                             className="w-full h-full object-contain"
+                 /></span>}
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="flex items-center justify-center p-0.5 cursor-pointer"
+                tabIndex={-1}
+              >
+                <img
+                  src="/icons/eye_logo.svg"
+                  alt=""
+                  className="w-5 h-5 opacity-60 hover:opacity-100 transition-opacity"
+                />
+              </button>
+            }
           />
           {fieldErrors.password ? (
             <span className="text-xs text-red-600">{fieldErrors.password}</span>

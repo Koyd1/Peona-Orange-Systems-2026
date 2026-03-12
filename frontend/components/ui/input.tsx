@@ -4,11 +4,12 @@ import { cn } from "@/lib/utils";
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ReactNode;
+  suffix?: React.ReactNode;
   wrapperClassName?: string;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, icon, type, wrapperClassName, ...props }, ref) => {
+  ({ className, icon, suffix, type, wrapperClassName, ...props }, ref) => {
     if (icon) {
       return (
         <div
@@ -27,6 +28,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             {...props}
           />
+          {suffix ? <span className="shrink-0">{suffix}</span> : null}
         </div>
       );
     }
