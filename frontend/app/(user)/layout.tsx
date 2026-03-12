@@ -1,32 +1,38 @@
 import Link from "next/link";
-
 import type { ReactNode } from "react";
 
+import AppHeader from "@/components/shared/AppHeader";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { auth } from "@/lib/auth";
+import { buttonVariants } from "@/components/ui/button";
 
 export default async function UserLayout({ children }: { children: ReactNode }) {
   const session = await auth();
 
   return (
-    <main>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <strong>User area</strong>
-        {session ? (
-          <>
-            <p>
-              {session.user.email} · role: {session.user.role}
-            </p>
-            <LogoutButton />
-            {session.user.role === "ADMIN" ? <Link href="/admin">Open admin</Link> : null}
-          </>
-        ) : (
-          <p>
-            Публичный режим чата. Для админ-панели используйте <Link href="/login">/login</Link>.
-          </p>
-        )}
-      </div>
-      {children}
-    </main>
+    <>
+      <AppHeader
+        actions={
+          session ? (
+            <>
+              <span className="text-sm text-gray-500">{session.user.email}</span>
+              <LogoutButton />
+              {session.user.role === "ADMIN" ? (
+                <Link href="/admin" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                  Admin
+                </Link>
+              ) : null}
+            </>
+          ) : (
+            <Link href="/login" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+              Login
+            </Link>
+          )
+        }
+      />
+      <main className="max-w-[960px] mx-auto px-6 py-6">
+        {children}
+      </main>
+    </>
   );
 }

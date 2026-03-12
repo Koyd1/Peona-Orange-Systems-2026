@@ -3,6 +3,8 @@ import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { signIn } from "@/lib/auth";
+import LoginForm from "@/components/auth/LoginForm";
+import { Card } from "@/components/ui/card";
 
 type PageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -21,39 +23,43 @@ export default async function LoginPage({ searchParams }: PageProps) {
       await signIn("credentials", {
         email,
         password,
-        redirectTo: "/admin"
+        redirectTo: "/admin",
       });
     } catch (error) {
       if (error instanceof AuthError) {
-        redirect("/login?error=Invalid+credentials");
+        redirect("/login?error=credentials");
       }
       throw error;
     }
   }
 
   return (
-    <main>
-      <div className="card">
-        <h1>Login</h1>
-        <p>Вход только для администратора.</p>
-        {params.error ? <p style={{ color: "#b42318" }}>{params.error}</p> : null}
-
-        <form action={loginAction}>
-          <input name="email" type="email" placeholder="Email" required />
-          <input
-            name="password"
-            type="password"
-            minLength={8}
-            placeholder="Password"
-            required
-          />
-          <button type="submit">Sign In</button>
-        </form>
-
-        <p>
-          Публичный чат доступен без логина: <Link href="/chat">/chat</Link>
-        </p>
+    <div className="min-h-screen flex items-center justify-center p-6 relative">
+      <div className="absolute top-6 right-6">
+        <span className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-900 text-white text-xs font-bold">
+          RO
+        </span>
       </div>
-    </main>
+
+      <Card className="w-full max-w-[420px] p-8 text-center shadow-hover">
+        <div className="flex justify-center mb-3">
+          <span className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-xl bg-gradient-to-br from-[#ef9f40] to-[#df8240] text-4xl">
+            ✦
+          </span>
+        </div>
+        <h1 className="text-2xl font-semibold leading-snug">Panoul de administrare</h1>
+        <p className="text-sm text-gray-400 mb-6">
+          Autentificați-vă în sistemul de administrare HR AI Assistant
+        </p>
+
+        <LoginForm loginAction={loginAction} serverError={params.error} />
+
+        <p className="text-sm mt-4">
+          <Link href="/chat" className="text-orange-600 no-underline hover:underline">
+            Întoarce-te la chat
+          </Link>
+        </p>
+      </Card>
+    </div>
   );
 }
