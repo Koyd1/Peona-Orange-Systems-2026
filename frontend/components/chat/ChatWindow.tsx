@@ -16,6 +16,7 @@ type Props = {
 
 type SSEEvent =
   | { type: "sources"; data: ChatSource[] }
+  | { type: "updated_sources"; data: ChatSource[] }
   | { type: "token"; data: string }
   | { type: "done"; data: { answer: string; session_id: string; hallScore: number } };
 
@@ -151,6 +152,7 @@ export default function ChatWindow({
       const decoder = new TextDecoder();
       let buffer = "";
       let latestSources: ChatSource[] = [];
+      let seenMarker = false;
 
       while (true) {
         const { value, done } = await reader.read();
@@ -161,7 +163,25 @@ export default function ChatWindow({
         buffer = rest;
 
         for (const event of events) {
+          // ignore plain sources events, use updated_sources only
           if (event.type === "sources") {
+              continue; 
+            }
+          // if (event.type === "sources") {
+          //   latestSources = event.data;
+          //   setMessages((prev) =>
+          //     prev.map((msg) =>
+          //       msg.id === assistantId
+          //         ? {
+          //             ...msg,
+          //             sources: latestSources
+          //           }
+          //         : msg
+          //     )
+          //   );
+          // }
+
+          if (event.type === "updated_sources") {
             latestSources = event.data;
             setMessages((prev) =>
               prev.map((msg) =>
@@ -176,27 +196,36 @@ export default function ChatWindow({
           }
 
           if (event.type === "token") {
+            if (seenMarker) {
+              // ignore tokens after marker
+              continue;
+            }
             setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantId
-                  ? {
-                      ...msg,
-                      content: msg.content + event.data,
-                      sources: latestSources
-                    }
-                  : msg
-              )
+              prev.map((msg) => {
+                if (msg.id !== assistantId) return msg;
+                let newContent = msg.content + event.data;
+                if (newContent.includes("[[SOURCES]]")) {
+                  seenMarker = true;
+                  newContent = newContent.split("[[SOURCES]]")[0];
+                }
+                return {
+                  ...msg,
+                  content: newContent,
+                  sources: latestSources
+                };
+              })
             );
           }
 
           if (event.type === "done") {
             const finalAnswer = event.data?.answer ?? "";
+            const clean = finalAnswer.split("[[SOURCES]]")[0];
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === assistantId
                   ? {
                       ...msg,
-                      content: finalAnswer || msg.content,
+                      content: clean || msg.content,
                       sources: latestSources
                     }
                   : msg

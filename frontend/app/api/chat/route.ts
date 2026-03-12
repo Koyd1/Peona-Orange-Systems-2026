@@ -162,7 +162,8 @@ async function persistDoneFromSSE(
             continue;
           }
 
-          if (event.type === "sources" && Array.isArray(event.data)) {
+          if ((event.type === "sources" || event.type === "updated_sources") && Array.isArray(event.data)) {
+            // track latest source list, give precedence to parsed sources
             sources = event.data as SourcePayload[];
           }
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import unique
 import math
 import logging
 from typing import Literal
@@ -8,9 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.core.source_parser import parse_model_sources
 from app.core.hallucination import score_hallucination
-from app.core.streamer import encode_sse
+from app.core.streamer import encode_sse, Source
 from app.db.models import KnowledgeFile
 from app.deps import chat_streamer, embedder, get_db, retriever
 
@@ -41,26 +42,52 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
 
     query_embedding = (await embedder.embed_texts([last_user.content]))[0]
     sources = await retriever.retrieve(db, query_embedding)
+#     sources = sorted(
+#     sources,
+#     key=lambda s: (
+#         s.similarity,
+#         query_overlap_score(s.content, last_user.content)
+#     ),
+#     reverse=True
+# )
     LOGGER.info(
         "chat.sources_retrieved",
         extra={"session_id": request.session_id, "sources_count": len(sources)},
     )
 
-    async def event_generator():
+    async def event_generator(sources=sources):
         files_map: dict[str, str] = {}
         if sources:
             file_ids = list({source.file_id for source in sources})
             from sqlalchemy import select
-
+            unique = {}
+            for source in sources:
+                key = (source.file_id, source.content[:80])
+                if key not in unique:
+                    unique[key] = source
+            sources = list(unique.values())
             result = await db.execute(
                 select(KnowledgeFile.id, KnowledgeFile.filename).where(KnowledgeFile.id.in_(file_ids))
             )
             files_map = {str(row[0]): str(row[1]) for row in result.all()}
+            
+            for source in sources:
+                source.filename = files_map.get(source.file_id, "unknown")
+            filename_to_similarity: dict[str, float] = {}
+            filename_to_fileid: dict[str, str] = {}
+            for source in sources:
+                fname = source.filename or "unknown"
+                sim = source.similarity
+                if sim is None:
+                    continue
+                if fname not in filename_to_similarity or sim > filename_to_similarity[fname]:
+                    filename_to_similarity[fname] = sim
+                    filename_to_fileid[fname] = source.file_id
 
         sources_payload = [
             {
                 "fileId": source.file_id,
-                "filename": files_map.get(source.file_id, "unknown"),
+                "filename": getattr(source, 'filename', files_map.get(source.file_id, "unknown")),
                 "similarity": round(source.similarity, 4)
                 if isinstance(source.similarity, float) and math.isfinite(source.similarity)
                 else 0.0,
@@ -70,11 +97,10 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
         ]
         yield encode_sse({"type": "sources", "data": sources_payload})
 
-        context_blocks = [source.content for source in sources]
-        if not context_blocks:
+        if not sources:
             LOGGER.info("chat.no_context", extra={"session_id": request.session_id})
             answer = (
-                "В базе знаний пока нет релевантной информации по этому вопросу. "
+                "В базе знаний пока нет релевантной информация по этому вопросу. "
                 "Загрузите HR-документы в раздел Knowledge и повторите запрос."
             )
             yield encode_sse(
@@ -89,21 +115,67 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
             )
             return
 
+        # Convert sources to Source objects for streamer
+        sources_for_streamer = [
+            Source(
+                file_id=source.file_id,
+                content=source.content,
+                filename=getattr(source, 'filename', files_map.get(source.file_id, "unknown"))
+            )
+            for source in sources
+        ]
+
         full_answer_parts: list[str] = []
         async for token in chat_streamer.stream_answer(
             user_message=last_user.content,
-            context_blocks=context_blocks,
+            sources=sources_for_streamer,
         ):
             full_answer_parts.append(token)
             yield encode_sse({"type": "token", "data": token})
 
         final_answer = "".join(full_answer_parts).strip()
-        hall_score = score_hallucination(final_answer, context_blocks)
+
+        answer_text, parsed_sources = parse_model_sources(final_answer)
+
+        filename_to_max_similarity: dict[str, float] = {}
+        filename_to_fileid: dict[str, str] = {}
+        for source in sources:
+            filename = getattr(source, 'filename', files_map.get(source.file_id, "unknown"))
+            sim = source.similarity or 0.0
+            current_max = filename_to_max_similarity.get(filename, 0.0)
+            if sim > current_max:
+                filename_to_max_similarity[filename] = sim
+                filename_to_fileid[filename] = source.file_id
+        
+        # Build sources from model answer with fileId included
+        model_sources_payload = []
+        for doc_name, citations in parsed_sources.items():
+            max_similarity = filename_to_max_similarity.get(doc_name, 0.0)
+            payload: dict[str, object] = {
+                "filename": doc_name,
+                "similarity": round(max_similarity, 4) if isinstance(max_similarity, float) and math.isfinite(max_similarity) else 0.0,
+                "snippet": citations,  # Citations from model
+            }
+            file_id = filename_to_fileid.get(doc_name)
+            if file_id:
+                payload["fileId"] = file_id
+            model_sources_payload.append(payload)
+        
+        if model_sources_payload:
+            yield encode_sse(
+                {
+                    "type": "updated_sources",
+                    "data": model_sources_payload,
+                }
+            )
+        
+        context_blocks = [source.content for source in sources_for_streamer]
+        hall_score = score_hallucination(answer_text, context_blocks)
         LOGGER.info(
             "chat.completed",
             extra={
                 "session_id": request.session_id,
-                "answer_len": len(final_answer),
+                "answer_len": len(answer_text),
                 "hall_score": round(hall_score, 4),
             },
         )
@@ -111,7 +183,7 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
             {
                 "type": "done",
                 "data": {
-                    "answer": final_answer,
+                    "answer": answer_text,
                     "session_id": request.session_id,
                     "hallScore": hall_score,
                 },
@@ -119,3 +191,4 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
         )
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+ 
