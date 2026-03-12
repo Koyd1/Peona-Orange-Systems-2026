@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import SubmitButton from "./SubmitButton";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
 
 const ERROR_MESSAGES: Record<string, string> = {
   credentials: "Email sau parolă incorectă",
@@ -48,41 +50,41 @@ export default function LoginForm({ loginAction, serverError }: Props) {
   return (
     <>
       {errorMessage ? (
-        <div className="alert alert-error" style={{ marginBottom: 12 }}>
+        <Alert variant="error" className="mb-3">
           {errorMessage}
-        </div>
+        </Alert>
       ) : null}
 
-      <form action={loginAction} onSubmit={handleSubmit} noValidate>
-        <div className="input-group">
-          <label htmlFor="email">Email</label>
-          <div className="input-wrapper">
-            <span className="input-icon">✉</span>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="admin@company.com"
-            />
-          </div>
+      <form action={loginAction} onSubmit={handleSubmit} noValidate className="grid gap-4 text-left">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="email" className="text-sm font-semibold text-gray-900">
+            Email
+          </label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="admin@company.com"
+            icon={<span>✉</span>}
+          />
           {fieldErrors.email ? (
-            <span className="text-xs text-error">{fieldErrors.email}</span>
+            <span className="text-xs text-red-600">{fieldErrors.email}</span>
           ) : null}
         </div>
 
-        <div className="input-group">
-          <label htmlFor="password">Parolă</label>
-          <div className="input-wrapper">
-            <span className="input-icon">🔒</span>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-            />
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="password" className="text-sm font-semibold text-gray-900">
+            Parolă
+          </label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="••••••••"
+            icon={<span>🔒</span>}
+          />
           {fieldErrors.password ? (
-            <span className="text-xs text-error">{fieldErrors.password}</span>
+            <span className="text-xs text-red-600">{fieldErrors.password}</span>
           ) : null}
         </div>
 

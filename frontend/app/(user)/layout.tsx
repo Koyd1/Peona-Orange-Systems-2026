@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import AppHeader from "@/components/shared/AppHeader";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { auth } from "@/lib/auth";
+import { buttonVariants } from "@/components/ui/button";
 
 export default async function UserLayout({ children }: { children: ReactNode }) {
   const session = await auth();
@@ -14,22 +15,22 @@ export default async function UserLayout({ children }: { children: ReactNode }) 
         actions={
           session ? (
             <>
-              <span className="text-sm text-secondary">{session.user.email}</span>
+              <span className="text-sm text-gray-500">{session.user.email}</span>
               <LogoutButton />
               {session.user.role === "ADMIN" ? (
-                <Link href="/admin" className="btn btn-sm btn-secondary">
+                <Link href="/admin" className={buttonVariants({ variant: "secondary", size: "sm" })}>
                   Admin
                 </Link>
               ) : null}
             </>
           ) : (
-            <Link href="/login" className="btn btn-sm btn-secondary">
+            <Link href="/login" className={buttonVariants({ variant: "secondary", size: "sm" })}>
               Login
             </Link>
           )
         }
       />
-      <main className="page-container-narrow">
+      <main className="max-w-[960px] mx-auto px-6 py-6">
         {children}
       </main>
     </>

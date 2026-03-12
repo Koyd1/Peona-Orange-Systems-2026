@@ -1,23 +1,22 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import { Button } from "@/components/ui/button";
 
 type SubmitButtonProps = {
   children: React.ReactNode;
   pendingText?: string;
-  className?: string;
 };
 
 export default function SubmitButton({
   children,
   pendingText = "Se încarcă...",
-  className = "btn btn-primary btn-full",
 }: SubmitButtonProps) {
   const { pending } = useFormStatus();
 
   return (
-    <button type="submit" className={className} disabled={pending}>
+    <Button type="submit" fullWidth disabled={pending}>
       {pending ? pendingText : children}
-    </button>
+    </Button>
   );
 }

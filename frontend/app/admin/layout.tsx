@@ -26,19 +26,29 @@ export default async function AdminRouteLayout({
       <AppHeader
         actions={
           <>
-            <span className="text-sm text-secondary">{session.user.email}</span>
+            <span className="text-sm text-gray-500">{session.user.email}</span>
             <LogoutButton />
           </>
         }
       />
-      <nav className="admin-nav">
-        <Link href="/admin/knowledge">Knowledge</Link>
-        <Link href="/admin/prompts">Prompts</Link>
-        <Link href="/admin/feedback">Feedback</Link>
-        <Link href="/admin/health">Health</Link>
-        <Link href="/chat">← Chat</Link>
+      <nav className="flex gap-1 px-6 py-2 bg-card border-b border-border overflow-x-auto">
+        <Link href="/admin/knowledge" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          Knowledge
+        </Link>
+        <Link href="/admin/prompts" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          Prompts
+        </Link>
+        <Link href="/admin/feedback" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          Feedback
+        </Link>
+        <Link href="/admin/health" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          Health
+        </Link>
+        <Link href="/chat" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          ← Chat
+        </Link>
       </nav>
-      <main className="page-container-narrow">
+      <main className="max-w-[960px] mx-auto px-6 py-6">
         {children}
       </main>
     </>

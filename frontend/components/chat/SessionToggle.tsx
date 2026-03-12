@@ -102,6 +102,18 @@ export default function SessionToggle({
                 ? "Отправьте хотя бы одно сообщение и дождитесь ответа"
                 : "Завершить сессию и начать новую"
             }
+            style={{
+              padding: "6px 18px",
+              borderRadius: 8,
+              border: "1.5px solid #d0d5dd",
+              backgroundColor: canCreateNewSession && !busy ? "#fff" : "#f5f5f5",
+              color: canCreateNewSession && !busy ? "#344054" : "#a0a0a0",
+              fontWeight: 600,
+              fontSize: 14,
+              fontFamily: "Inter, sans-serif",
+              cursor: canCreateNewSession && !busy ? "pointer" : "not-allowed",
+              transition: "all 0.2s",
+            }}
           >
             Новый чат
           </button>

@@ -217,7 +217,7 @@ export default function ChatWindow({
   }
 
   return (
-    <div className="card">
+    <div className="rounded-xl bg-white border border-[#e5e7eb] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
       <h1 style={{ marginTop: 0 }}>Chat</h1>
       <p style={{ marginTop: 0 }}>Session: {sessionId}</p>
       {showSessionControls ? (
@@ -275,14 +275,42 @@ export default function ChatWindow({
           event.preventDefault();
           await sendMessage();
         }}
+        style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
           placeholder="Введите вопрос..."
           disabled={loading}
+          style={{
+            width: "100%",
+            padding: "12px 14px",
+            fontSize: 15,
+            border: "1px solid #d0d5dd",
+            borderRadius: 8,
+            outline: "none",
+            fontFamily: "Inter, sans-serif",
+            boxSizing: "border-box",
+            backgroundColor: "#fff",
+          }}
         />
-        <button type="submit" disabled={!canSend}>
+        <button
+          type="submit"
+          disabled={!canSend}
+          style={{
+            width: "100%",
+            padding: "10px 0",
+            fontSize: 15,
+            fontWeight: 500,
+            fontFamily: "Inter, sans-serif",
+            border: "1px solid #d0d5dd",
+            borderRadius: 8,
+            background: "linear-gradient(to bottom, #fafafa, #f0f0f0)",
+            color: canSend ? "#344054" : "#a0a0a0",
+            cursor: canSend ? "pointer" : "not-allowed",
+            transition: "all 0.15s",
+          }}
+        >
           {loading ? "Sending..." : "Send"}
         </button>
       </form>

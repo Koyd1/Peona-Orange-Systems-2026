@@ -1,5 +1,17 @@
 "use client";
 
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+
 export type KnowledgeFileRow = {
   id: string;
   filename: string;
@@ -25,11 +37,11 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-const STATUS_PILL: Record<KnowledgeFileRow["status"], string> = {
-  READY: "status-pill status-pill-ready",
-  PENDING: "status-pill status-pill-pending",
-  PROCESSING: "status-pill status-pill-processing",
-  ERROR: "status-pill status-pill-error",
+const STATUS_VARIANT: Record<KnowledgeFileRow["status"], BadgeProps["variant"]> = {
+  READY: "ready",
+  PENDING: "pending",
+  PROCESSING: "processing",
+  ERROR: "error",
 };
 
 export default function FileTable({
@@ -41,88 +53,88 @@ export default function FileTable({
   onReindex
 }: FileTableProps) {
   return (
-    <div className="card">
-      <div className="section-header">
-        <h2>Файлы базы знаний</h2>
-        {loading ? <span className="text-sm text-muted">Обновление...</span> : null}
-      </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Файлы базы знаний</CardTitle>
+        {loading ? <span className="text-sm text-gray-400">Обновление...</span> : null}
+      </CardHeader>
 
-      <div style={{ overflowX: "auto" }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Filename</th>
-              <th>Size</th>
-              <th>Status</th>
-              <th>Chunks</th>
-              <th>Updated</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {files.map((file) => (
-              <tr key={file.id}>
-                <td>{file.filename}</td>
-                <td>{formatBytes(file.size)}</td>
-                <td>
-                  <span className={STATUS_PILL[file.status]}>{file.status}</span>
-                </td>
-                <td>{file.chunkCount ?? "-"}</td>
-                <td>{new Date(file.updatedAt).toLocaleString()}</td>
-                <td>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-secondary"
-                      disabled={busyId === file.id}
-                      onClick={async () => {
-                        await onDownload(file.id);
-                      }}
-                    >
-                      Download
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-secondary"
-                      disabled={busyId === file.id}
-                      onClick={async () => {
-                        const confirmed = window.confirm(
-                          `Удалить ${file.filename} и все векторные чанки?`
-                        );
-                        if (!confirmed) return;
-                        await onDelete(file.id);
-                      }}
-                    >
-                      Delete
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-orange"
-                      disabled={busyId === file.id}
-                      onClick={async () => {
-                        await onReindex(file.id);
-                      }}
-                    >
-                      Re-index
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {files.length === 0 ? (
-              <tr>
-                <td colSpan={6}>
-                  <div className="empty-state">
-                    <div className="empty-state-icon">📂</div>
-                    <h3>Нет загруженных файлов</h3>
-                    <p>Загрузите документы через форму выше</p>
-                  </div>
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Filename</TableHead>
+            <TableHead>Size</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Chunks</TableHead>
+            <TableHead>Updated</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {files.map((file) => (
+            <TableRow key={file.id}>
+              <TableCell>{file.filename}</TableCell>
+              <TableCell>{formatBytes(file.size)}</TableCell>
+              <TableCell>
+                <Badge variant={STATUS_VARIANT[file.status]} dot>
+                  {file.status}
+                </Badge>
+              </TableCell>
+              <TableCell>{file.chunkCount ?? "-"}</TableCell>
+              <TableCell>{new Date(file.updatedAt).toLocaleString()}</TableCell>
+              <TableCell>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={busyId === file.id}
+                    onClick={async () => {
+                      await onDownload(file.id);
+                    }}
+                  >
+                    Download
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={busyId === file.id}
+                    onClick={async () => {
+                      const confirmed = window.confirm(
+                        `Удалить ${file.filename} и все векторные чанки?`
+                      );
+                      if (!confirmed) return;
+                      await onDelete(file.id);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={busyId === file.id}
+                    onClick={async () => {
+                      await onReindex(file.id);
+                    }}
+                  >
+                    Re-index
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+          {files.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6}>
+                <div className="flex flex-col items-center justify-center text-center py-16 px-6 text-gray-400">
+                  <div className="text-4xl mb-4 opacity-50">📂</div>
+                  <h3 className="text-gray-500 mb-2 font-semibold">Нет загруженных файлов</h3>
+                  <p className="max-w-[360px] text-sm">Загрузите документы через форму выше</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : null}
+        </TableBody>
+      </Table>
+    </Card>
   );
 }

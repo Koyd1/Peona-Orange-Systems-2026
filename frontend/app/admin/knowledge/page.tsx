@@ -5,6 +5,9 @@ import Link from "next/link";
 
 import FileTable, { type KnowledgeFileRow } from "@/components/admin/FileTable";
 import FileUpload from "@/components/admin/FileUpload";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 
 const POLLABLE_STATUSES = new Set<KnowledgeFileRow["status"]>(["PENDING", "PROCESSING"]);
 
@@ -181,18 +184,20 @@ export default function AdminKnowledgePage() {
 
   return (
     <>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="section-header">
+      <Card className="mb-4">
+        <CardHeader>
           <div>
-            <h1>Knowledge Base</h1>
-            <p className="section-header-sub">
+            <CardTitle className="text-2xl">Knowledge Base</CardTitle>
+            <CardDescription>
               Управление документами: upload, status polling, download, delete и re-index.
-            </p>
+            </CardDescription>
           </div>
-          <Link href="/admin/prompts" className="btn btn-sm btn-secondary">Open prompts</Link>
-        </div>
-        {error ? <div className="alert alert-error">{error}</div> : null}
-      </div>
+          <Link href="/admin/prompts" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+            Open prompts
+          </Link>
+        </CardHeader>
+        {error ? <Alert variant="error">{error}</Alert> : null}
+      </Card>
 
       <FileUpload onUploaded={loadFiles} />
       <FileTable

@@ -3,6 +3,17 @@
 import { useEffect, useState } from "react";
 
 import FeedbackChart from "@/components/admin/FeedbackChart";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 type Summary = {
   total: number;
@@ -74,66 +85,64 @@ export default function AdminFeedbackPage() {
 
   return (
     <>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="section-header">
+      <Card className="mb-4">
+        <CardHeader>
           <div>
-            <h1>Feedback dashboard</h1>
-            <p className="section-header-sub">Агрегаты, динамика и негативные отзывы пользователей.</p>
+            <CardTitle className="text-2xl">Feedback dashboard</CardTitle>
+            <CardDescription>Агрегаты, динамика и негативные отзывы пользователей.</CardDescription>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button type="button" className="btn btn-sm btn-secondary" onClick={() => void load()} disabled={loading}>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={() => void load()} disabled={loading}>
               Refresh
-            </button>
-            <a href="/api/admin/feedback/export" className="btn btn-sm btn-outline-orange" target="_blank" rel="noreferrer">
+            </Button>
+            <a href="/api/admin/feedback/export" target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })}>
               Download CSV
             </a>
           </div>
-        </div>
-        {error ? <div className="alert alert-error">{error}</div> : null}
-      </div>
+        </CardHeader>
+        {error ? <Alert variant="error">{error}</Alert> : null}
+      </Card>
 
       <FeedbackChart summary={summary} series={series} />
 
-      <div className="card">
-        <div className="section-header">
-          <h2>Negative feedback</h2>
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>User</th>
-                <th>Comment</th>
-                <th>Message</th>
-                <th>Session</th>
-              </tr>
-            </thead>
-            <tbody>
-              {negative.map((row) => (
-                <tr key={row.id}>
-                  <td>{new Date(row.createdAt).toLocaleString()}</td>
-                  <td>{row.userEmail}</td>
-                  <td>{row.comment || "-"}</td>
-                  <td style={{ maxWidth: 360 }}>{row.messageContent}</td>
-                  <td className="text-xs text-muted">{row.sessionId}</td>
-                </tr>
-              ))}
-              {negative.length === 0 ? (
-                <tr>
-                  <td colSpan={5}>
-                    <div className="empty-state">
-                      <div className="empty-state-icon">👍</div>
-                      <h3>Нет негативных отзывов</h3>
-                      <p>Все пользователи довольны!</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Negative feedback</CardTitle>
+        </CardHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead>Comment</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead>Session</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {negative.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell>{new Date(row.createdAt).toLocaleString()}</TableCell>
+                <TableCell>{row.userEmail}</TableCell>
+                <TableCell>{row.comment || "-"}</TableCell>
+                <TableCell className="max-w-[360px]">{row.messageContent}</TableCell>
+                <TableCell className="text-xs text-gray-400">{row.sessionId}</TableCell>
+              </TableRow>
+            ))}
+            {negative.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5}>
+                  <div className="flex flex-col items-center justify-center text-center py-16 px-6 text-gray-400">
+                    <div className="text-4xl mb-4 opacity-50">👍</div>
+                    <h3 className="text-gray-500 mb-2 font-semibold">Нет негативных отзывов</h3>
+                    <p className="max-w-[360px] text-sm">Все пользователи довольны!</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : null}
+          </TableBody>
+        </Table>
+      </Card>
     </>
   );
 }

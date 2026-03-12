@@ -9,6 +9,7 @@ import {
 } from "@/lib/public-session";
 import {
   createAppSession,
+  findEmptyActiveSession,
   getSessionById,
   isSessionActive
 } from "@/lib/session";
@@ -24,6 +25,8 @@ export default async function ChatPage({ searchParams }: PageProps) {
   const sidFromUrl = typeof params.sid === "string" ? params.sid : "";
 
   const signedIn = await auth();
+
+  /* ── Signed-in user: active session ─────────────────────────── */
   if (signedIn?.sessionId && (await isSessionActive(signedIn.sessionId))) {
     if (sidFromUrl !== signedIn.sessionId) {
       redirect(`/chat?sid=${signedIn.sessionId}`);
@@ -42,6 +45,30 @@ export default async function ChatPage({ searchParams }: PageProps) {
         showSessionControls
       />
     );
+  }
+
+  /* ── Signed-in user: session terminated/expired → create new ─ */
+  if (signedIn?.sessionId) {
+    const oldSession = await getSessionById(signedIn.sessionId);
+    if (oldSession) {
+      /* If URL already points to a valid active session for this user, render it */
+      if (sidFromUrl) {
+        const urlSession = await getSessionById(sidFromUrl);
+        if (urlSession && !urlSession.terminatedAt && urlSession.userId === oldSession.userId && urlSession.expiresAt.getTime() > Date.now()) {
+          return (
+            <ChatWindow
+              sessionId={urlSession.id}
+              initialPersistent={urlSession.persistent}
+              initialExpiresAt={urlSession.expiresAt.toISOString()}
+              showSessionControls
+            />
+          );
+        }
+      }
+      const existing = await findEmptyActiveSession(oldSession.userId);
+      const fresh = existing ?? await createAppSession(oldSession.userId, true);
+      redirect(`/chat?sid=${fresh.id}`);
+    }
   }
 
   const cookieStore = await cookies();

@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 type PromptTemplate = {
   id: string;
@@ -127,45 +133,37 @@ export default function PromptEditor() {
   }
 
   return (
-    <div className="card">
-      <h2 style={{ marginTop: 0 }}>Prompt Templates</h2>
-      {loading ? <p>Загрузка...</p> : null}
-      {error ? <div className="alert alert-error">{error}</div> : null}
+    <Card>
+      <h2 className="text-lg font-semibold mt-0">Prompt Templates</h2>
+      {loading ? <p className="text-sm text-gray-400">Загрузка...</p> : null}
+      {error ? <Alert variant="error">{error}</Alert> : null}
 
-      <div
-        style={{
-          border: "1px solid #d0d5dd",
-          borderRadius: 8,
-          padding: 10,
-          marginBottom: 16,
-          background: "#f8fafc"
-        }}
-      >
-        <h3 style={{ marginTop: 0 }}>Новый шаблон</h3>
+      <div className="border border-border-strong rounded-lg p-3 mb-4 bg-gray-50">
+        <h3 className="text-base font-semibold mt-0 mb-2">Новый шаблон</h3>
         <form
+          className="grid gap-3"
           onSubmit={async (event) => {
             event.preventDefault();
             await createTemplate();
           }}
         >
-          <input
+          <Input
             placeholder="Title"
             value={draft.title}
             onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
           />
-          <textarea
-            className="textarea"
+          <Textarea
             placeholder="Content"
             value={draft.content}
             onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
             rows={4}
           />
-          <input
+          <Input
             placeholder="Category"
             value={draft.category}
             onChange={(event) => setDraft((prev) => ({ ...prev, category: event.target.value }))}
           />
-          <input
+          <Input
             type="number"
             min={0}
             max={9999}
@@ -174,40 +172,42 @@ export default function PromptEditor() {
               setDraft((prev) => ({ ...prev, order: Number(event.target.value || 0) }))
             }
           />
-          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={draft.isActive}
               onChange={(event) => setDraft((prev) => ({ ...prev, isActive: event.target.checked }))}
+              className="accent-orange-500"
             />
             Active
           </label>
-          <button type="submit" className="btn btn-sm btn-primary" disabled={busyId === "create"}>
+          <Button size="sm" disabled={busyId === "create"}>
             Create
-          </button>
+          </Button>
         </form>
       </div>
 
-      <div style={{ display: "grid", gap: 10 }}>
+      <div className="grid gap-2.5">
         {items.map((item) => (
           <div
             key={item.id}
-            style={{ border: "1px solid #e4e7ec", borderRadius: 8, padding: 10, background: "#fff" }}
+            className="border border-border rounded-lg p-3 bg-white"
           >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+            <div className="flex justify-between gap-2.5">
               <strong>{item.title}</strong>
-              <span className={item.isActive ? "status-pill status-pill-ready" : "status-pill status-pill-pending"}>
+              <Badge variant={item.isActive ? "ready" : "pending"} dot>
                 {item.isActive ? "ACTIVE" : "INACTIVE"}
-              </span>
+              </Badge>
             </div>
-            <p style={{ margin: "8px 0" }}>{item.content}</p>
-            <p style={{ margin: "8px 0", fontSize: 12, color: "#475467" }}>
+            <p className="my-2">{item.content}</p>
+            <p className="my-2 text-xs text-gray-500">
               category: {item.category ?? "-"} | order: {item.order}
             </p>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button
-                type="button"
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={busyId === item.id}
                 onClick={async () => {
                   const title = window.prompt("New title", item.title);
@@ -216,9 +216,10 @@ export default function PromptEditor() {
                 }}
               >
                 Edit title
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={busyId === item.id}
                 onClick={async () => {
                   const content = window.prompt("New content", item.content);
@@ -227,18 +228,20 @@ export default function PromptEditor() {
                 }}
               >
                 Edit content
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={busyId === item.id}
                 onClick={async () => {
                   await patchTemplate(item.id, { isActive: !item.isActive });
                 }}
               >
                 {item.isActive ? "Deactivate" : "Activate"}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={busyId === item.id}
                 onClick={async () => {
                   const nextOrder = window.prompt("New order", String(item.order));
@@ -247,14 +250,19 @@ export default function PromptEditor() {
                 }}
               >
                 Change order
-              </button>
-              <button type="button" disabled={busyId === item.id} onClick={() => void deleteTemplate(item.id)}>
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={busyId === item.id}
+                onClick={() => void deleteTemplate(item.id)}
+              >
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
