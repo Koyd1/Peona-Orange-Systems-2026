@@ -73,7 +73,34 @@ export async function POST(request: Request) {
   }
 
   if (allowedSessionId && message.sessionId !== allowedSessionId) {
-    return NextResponse.json({ error: "Message is outside active session" }, { status: 403 });
+    /* Signed-in user whose JWT sessionId is stale (after "Новый чат").
+       Accept the body sessionId if it matches the message and belongs
+       to the same user. */
+    const bodySid = parsed.data.sessionId;
+    let accepted = false;
+
+    if (session && bodySid && bodySid === message.sessionId) {
+      const [oldRow, newRow] = await Promise.all([
+        prisma.session.findUnique({ where: { id: allowedSessionId }, select: { userId: true } }),
+        prisma.session.findUnique({
+          where: { id: bodySid },
+          select: { userId: true, terminatedAt: true, expiresAt: true }
+        })
+      ]);
+      if (
+        oldRow &&
+        newRow &&
+        !newRow.terminatedAt &&
+        newRow.expiresAt.getTime() > Date.now() &&
+        newRow.userId === oldRow.userId
+      ) {
+        accepted = true;
+      }
+    }
+
+    if (!accepted) {
+      return NextResponse.json({ error: "Message is outside active session" }, { status: 403 });
+    }
   }
 
   try {

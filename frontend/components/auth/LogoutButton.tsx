@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signOut } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 
 type LogoutButtonProps = {
   callbackUrl?: string;
@@ -25,8 +26,13 @@ export default function LogoutButton({ callbackUrl = "/login" }: LogoutButtonPro
   }
 
   return (
-    <button type="button" disabled={busy} onClick={() => void handleLogout()}>
+    <Button
+      variant="secondary"
+      size="sm"
+      disabled={busy}
+      onClick={() => void handleLogout()}
+    >
       {busy ? "Logging out..." : "Logout"}
-    </button>
+    </Button>
   );
 }
