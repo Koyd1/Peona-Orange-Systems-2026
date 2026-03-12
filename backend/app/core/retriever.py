@@ -15,6 +15,7 @@ class RetrievedSource:
     content: str
     metadata: dict | None
     similarity: float
+    filename: str | None = None
 
 
 class Retriever:
