@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { readPublicSessionIdFromRequest } from "@/lib/public-session";
 import {
   getSessionById,
@@ -8,10 +9,65 @@ import {
   setSessionPersistent
 } from "@/lib/session";
 
+async function resolveSignedInSessionId(params: {
+  request: Request;
+  session: { sessionId: string; user: { email?: string | null } };
+  payloadSessionId?: unknown;
+}): Promise<string | null> {
+  const sidFromPayload =
+    typeof params.payloadSessionId === "string" ? params.payloadSessionId.trim() : "";
+  const url = new URL(params.request.url);
+  const sidFromQuery = url.searchParams.get("sessionId") ?? url.searchParams.get("sid") ?? "";
+  const candidateId = sidFromPayload || sidFromQuery;
+
+  if (!candidateId || candidateId === params.session.sessionId) {
+    return params.session.sessionId;
+  }
+
+  const candidate = await prisma.session.findUnique({
+    where: { id: candidateId },
+    select: {
+      id: true,
+      userId: true,
+      expiresAt: true,
+      terminatedAt: true,
+      user: { select: { email: true } }
+    }
+  });
+  if (!candidate || candidate.terminatedAt || candidate.expiresAt.getTime() <= Date.now()) {
+    return null;
+  }
+
+  const signedInEmail = params.session.user.email?.trim().toLowerCase();
+  const candidateEmail = candidate.user.email?.trim().toLowerCase();
+  if (signedInEmail && candidateEmail && signedInEmail === candidateEmail) {
+    return candidate.id;
+  }
+
+  const signedInSession = await prisma.session.findUnique({
+    where: { id: params.session.sessionId },
+    select: { userId: true }
+  });
+  if (signedInSession && signedInSession.userId === candidate.userId) {
+    return candidate.id;
+  }
+
+  return null;
+}
+
 async function resolveSessionId(request: Request, payloadSessionId?: unknown): Promise<string | null> {
   const session = await auth();
   if (session?.sessionId) {
-    return session.sessionId;
+    return resolveSignedInSessionId({
+      request,
+      session: {
+        sessionId: session.sessionId,
+        user: {
+          email: session.user.email
+        }
+      },
+      payloadSessionId
+    });
   }
 
   const publicSessionId = readPublicSessionIdFromRequest(request);

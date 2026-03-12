@@ -231,12 +231,8 @@ async function resolveSessionContext(request: Request, bodySessionId?: unknown):
     const sidFromQuery = url.searchParams.get("sessionId") ?? url.searchParams.get("sid") ?? "";
     const candidateId = sidFromBody || sidFromQuery;
 
-    if (candidateId && candidateId !== session.sessionId && (await isSessionActive(candidateId))) {
-      const oldRow = await prisma.session.findUnique({
-        where: { id: session.sessionId },
-        select: { userId: true }
-      });
-      const newRow = await prisma.session.findUnique({
+    if (candidateId && candidateId !== session.sessionId) {
+      const candidateRow = await prisma.session.findUnique({
         where: { id: candidateId },
         select: {
           userId: true,
@@ -247,14 +243,32 @@ async function resolveSessionContext(request: Request, bodySessionId?: unknown):
         }
       });
 
-      if (oldRow && newRow && !newRow.terminatedAt && newRow.userId === oldRow.userId) {
+      if (!candidateRow || candidateRow.terminatedAt || candidateRow.expiresAt.getTime() <= Date.now()) {
+        return null;
+      }
+
+      const signedInEmail = session.user.email?.trim().toLowerCase();
+      const candidateEmail = candidateRow.user.email?.trim().toLowerCase();
+      let sameOwner = Boolean(
+        signedInEmail && candidateEmail && signedInEmail === candidateEmail
+      );
+
+      if (!sameOwner) {
+        const oldRow = await prisma.session.findUnique({
+          where: { id: session.sessionId },
+          select: { userId: true }
+        });
+        sameOwner = Boolean(oldRow && oldRow.userId === candidateRow.userId);
+      }
+
+      if (sameOwner) {
         const extendedSession = await extendSessionIfNeeded(candidateId);
         return {
           sessionId: candidateId,
-          email: newRow.user.email ?? session.user.email ?? "unknown@hr.local",
-          role: (newRow.user.role as "ADMIN" | "USER") ?? session.user.role,
-          persistent: newRow.persistent,
-          expiresAt: extendedSession?.expiresAt ?? newRow.expiresAt
+          email: candidateRow.user.email ?? session.user.email ?? "unknown@hr.local",
+          role: (candidateRow.user.role as "ADMIN" | "USER") ?? session.user.role,
+          persistent: candidateRow.persistent,
+          expiresAt: extendedSession?.expiresAt ?? candidateRow.expiresAt
         };
       }
     }
