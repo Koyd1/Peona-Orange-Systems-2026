@@ -1,14 +1,19 @@
 import PromptEditor from "@/components/admin/PromptEditor";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function AdminPromptsPage() {
   return (
     <>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h1 style={{ marginTop: 0 }}>Prompt Library</h1>
-        <p style={{ marginTop: 0 }}>
-          Управление шаблонами для быстрого старта диалога в пользовательском чате.
-        </p>
-      </div>
+      <Card className="mb-4">
+        <CardHeader>
+          <div>
+            <CardTitle className="text-2xl">Prompt Library</CardTitle>
+            <CardDescription>
+              Управление шаблонами для быстрого старта диалога в пользовательском чате.
+            </CardDescription>
+          </div>
+        </CardHeader>
+      </Card>
       <PromptEditor />
     </>
   );

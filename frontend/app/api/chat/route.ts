@@ -222,6 +222,44 @@ async function resolveSessionContext(request: Request, bodySessionId?: unknown):
     };
   }
 
+  /* Signed-in user whose JWT session is terminated/expired,
+     but the request carries a different (new) sessionId. Verify
+     that it's active and owned by the same user. */
+  if (session?.sessionId) {
+    const sidFromBody = typeof bodySessionId === "string" ? bodySessionId.trim() : "";
+    const url = new URL(request.url);
+    const sidFromQuery = url.searchParams.get("sessionId") ?? url.searchParams.get("sid") ?? "";
+    const candidateId = sidFromBody || sidFromQuery;
+
+    if (candidateId && candidateId !== session.sessionId && (await isSessionActive(candidateId))) {
+      const oldRow = await prisma.session.findUnique({
+        where: { id: session.sessionId },
+        select: { userId: true }
+      });
+      const newRow = await prisma.session.findUnique({
+        where: { id: candidateId },
+        select: {
+          userId: true,
+          persistent: true,
+          expiresAt: true,
+          terminatedAt: true,
+          user: { select: { email: true, role: true } }
+        }
+      });
+
+      if (oldRow && newRow && !newRow.terminatedAt && newRow.userId === oldRow.userId) {
+        const extendedSession = await extendSessionIfNeeded(candidateId);
+        return {
+          sessionId: candidateId,
+          email: newRow.user.email ?? session.user.email ?? "unknown@hr.local",
+          role: (newRow.user.role as "ADMIN" | "USER") ?? session.user.role,
+          persistent: newRow.persistent,
+          expiresAt: extendedSession?.expiresAt ?? newRow.expiresAt
+        };
+      }
+    }
+  }
+
   const sessionId = readPublicSessionIdFromRequest(request);
   if (!sessionId) {
     return null;
