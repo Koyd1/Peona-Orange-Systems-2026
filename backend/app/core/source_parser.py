@@ -1,30 +1,3 @@
-# import re
-
-
-# def parse_model_sources(answer: str) -> tuple[str, dict[str, str]]:
-#     """
-#     Returns:
-#         clean_answer
-#         {document_name: citation_text}
-#     """
-
-#     if "[[SOURCES]]" not in answer:
-#         return answer, {}
-
-#     answer_part, sources_part = answer.split("[[SOURCES]]", 1)
-
-#     sources = {}
-
-#     pattern = r"Document:\s*(.*?)\s*\|\s*Citations:\s*(.*)"
-
-#     for line in sources_part.splitlines():
-#         match = re.search(pattern, line.strip())
-#         if match:
-#             doc = match.group(1).strip()
-#             citation = match.group(2).strip()
-#             sources[doc] = citation
-
-#     return answer_part.strip(), sources
 from __future__ import annotations
 
 import re
