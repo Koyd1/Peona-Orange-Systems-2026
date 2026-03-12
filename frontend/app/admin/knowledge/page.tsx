@@ -6,7 +6,7 @@ import Link from "next/link";
 import FileTable, { type KnowledgeFileRow } from "@/components/admin/FileTable";
 import FileUpload from "@/components/admin/FileUpload";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 
 const POLLABLE_STATUSES = new Set<KnowledgeFileRow["status"]>(["PENDING", "PROCESSING"]);
