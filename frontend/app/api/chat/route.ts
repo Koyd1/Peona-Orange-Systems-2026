@@ -247,13 +247,13 @@ async function resolveSessionContext(request: Request, bodySessionId?: unknown):
       });
 
       if (oldRow && newRow && !newRow.terminatedAt && newRow.userId === oldRow.userId) {
-        await extendSessionIfNeeded(candidateId);
+        const extendedSession = await extendSessionIfNeeded(candidateId);
         return {
           sessionId: candidateId,
           email: newRow.user.email ?? session.user.email ?? "unknown@hr.local",
           role: (newRow.user.role as "ADMIN" | "USER") ?? session.user.role,
           persistent: newRow.persistent,
-          expiresAt: newRow.expiresAt
+          expiresAt: extendedSession?.expiresAt ?? newRow.expiresAt
         };
       }
     }

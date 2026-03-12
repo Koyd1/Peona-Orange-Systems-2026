@@ -1,5 +1,6 @@
 "use client";
 
+import type { FormEvent } from "react";
 import { useState } from "react";
 import SubmitButton from "./SubmitButton";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ export default function LoginForm({ loginAction, serverError }: Props) {
     password?: string;
   }>({});
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     const formData = new FormData(e.currentTarget);
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");

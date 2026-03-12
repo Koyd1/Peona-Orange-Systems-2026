@@ -10,7 +10,7 @@ export default function HomePage() {
       <AppHeader />
 
       <main className="max-w-[1200px] mx-auto px-6 py-6">
-        <div className="text-center pt-15 pb-12">
+        <div className="text-center pt-16 pb-12">
           <div className="flex justify-center gap-9 mb-6">
             <span className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-xl bg-gradient-to-br from-[#ef9f40] to-[#df8240]">
               <img src="/icons/main_logo.svg" alt="" className="w-3/4 h-3/4 object-contain" />

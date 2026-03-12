@@ -1,10 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 
 type SubmitButtonProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   pendingText?: string;
 };
 

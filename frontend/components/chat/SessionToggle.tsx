@@ -74,46 +74,33 @@ export default function SessionToggle({
     }
   }
 
+  const canAct = canCreateNewSession && !busy;
+
   return (
-    <div
-      style={{
-        border: "1px solid #d0d5dd",
-        borderRadius: 8,
-        padding: 10,
-        marginBottom: 12,
-        background: "#f8fafc"
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+    <div className="border border-gray-300 rounded-lg p-2.5 mb-3 bg-slate-50">
+      <div className="flex justify-between gap-3">
         <div>
-          <div style={{ fontWeight: 600 }}>Режим сессии: Обычная</div>
-          <div style={{ fontSize: 12, color: "#475467" }}>
+          <div className="font-semibold">Режим сессии: Обычная</div>
+          <div className="text-xs text-gray-500">
             Expires at: {expiresLabel}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <div className="flex gap-2 items-start">
           <button
             type="button"
-            disabled={busy || !canCreateNewSession}
+            disabled={!canAct}
             onClick={() => void terminateNow()}
             title={
               !canCreateNewSession
                 ? "Отправьте хотя бы одно сообщение и дождитесь ответа"
                 : "Завершить сессию и начать новую"
             }
-            style={{
-              padding: "6px 18px",
-              borderRadius: 8,
-              border: "1.5px solid #d0d5dd",
-              backgroundColor: canCreateNewSession && !busy ? "#fff" : "#f5f5f5",
-              color: canCreateNewSession && !busy ? "#344054" : "#a0a0a0",
-              fontWeight: 600,
-              fontSize: 14,
-              fontFamily: "Inter, sans-serif",
-              cursor: canCreateNewSession && !busy ? "pointer" : "not-allowed",
-              transition: "all 0.2s",
-            }}
+            className={`inline-flex items-center rounded-lg border border-gray-300 px-4 py-1.5 text-sm font-semibold font-sans transition-all ${
+              canAct
+                ? "bg-white text-gray-800 cursor-pointer hover:bg-gray-50"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            }`}
           >
             Новый чат
           </button>
@@ -121,12 +108,12 @@ export default function SessionToggle({
       </div>
 
       {!canCreateNewSession ? (
-        <p style={{ fontSize: 12, color: "#475467", marginTop: 8 }}>
+        <p className="text-xs text-gray-500 mt-2">
           Отправьте сообщение и дождитесь ответа, чтобы начать новый чат.
         </p>
       ) : null}
 
-      {error ? <p style={{ color: "#b42318", marginTop: 8 }}>{error}</p> : null}
+      {error ? <p className="text-red-700 mt-2">{error}</p> : null}
     </div>
   );
 }

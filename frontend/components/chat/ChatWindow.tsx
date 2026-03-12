@@ -218,8 +218,8 @@ export default function ChatWindow({
 
   return (
     <div className="rounded-xl bg-white border border-[#e5e7eb] p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-      <h1 style={{ marginTop: 0 }}>Chat</h1>
-      <p style={{ marginTop: 0 }}>Session: {sessionId}</p>
+      <h1 className="mt-0">Chat</h1>
+      <p className="mt-0">Session: {sessionId}</p>
       {showSessionControls ? (
         <SessionToggle
           sessionId={sessionId}
@@ -234,19 +234,9 @@ export default function ChatWindow({
         }}
       />
 
-      {error ? <p style={{ color: "#b42318" }}>{error}</p> : null}
+      {error ? <p className="text-red-700">{error}</p> : null}
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          maxHeight: 420,
-          overflowY: "auto",
-          marginBottom: 12,
-          paddingRight: 4
-        }}
-      >
+      <div className="flex flex-col gap-2.5 max-h-[420px] overflow-y-auto mb-3 pr-1">
         {messages.length === 0 ? <p>Пока нет сообщений.</p> : null}
         {messages.map((message) => (
           <MessageBubble
@@ -275,41 +265,21 @@ export default function ChatWindow({
           event.preventDefault();
           await sendMessage();
         }}
-        style={{ display: "flex", flexDirection: "column", gap: 8 }}
+        className="flex flex-col gap-2"
       >
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
           placeholder="Введите вопрос..."
           disabled={loading}
-          style={{
-            width: "100%",
-            padding: "12px 14px",
-            fontSize: 15,
-            border: "1px solid #d0d5dd",
-            borderRadius: 8,
-            outline: "none",
-            fontFamily: "Inter, sans-serif",
-            boxSizing: "border-box",
-            backgroundColor: "#fff",
-          }}
+          className="w-full px-3.5 py-3 text-[15px] border border-gray-300 rounded-lg outline-none font-sans bg-white"
         />
         <button
           type="submit"
           disabled={!canSend}
-          style={{
-            width: "100%",
-            padding: "10px 0",
-            fontSize: 15,
-            fontWeight: 500,
-            fontFamily: "Inter, sans-serif",
-            border: "1px solid #d0d5dd",
-            borderRadius: 8,
-            background: "linear-gradient(to bottom, #fafafa, #f0f0f0)",
-            color: canSend ? "#344054" : "#a0a0a0",
-            cursor: canSend ? "pointer" : "not-allowed",
-            transition: "all 0.15s",
-          }}
+          className={`w-full py-2.5 text-[15px] font-medium font-sans border border-gray-300 rounded-lg bg-gradient-to-b from-[#fafafa] to-[#f0f0f0] transition-all ${
+            canSend ? "text-gray-700 cursor-pointer" : "text-gray-400 cursor-not-allowed"
+          }`}
         >
           {loading ? "Sending..." : "Send"}
         </button>
