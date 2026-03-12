@@ -67,7 +67,7 @@ class RAGIngestPipeline:
                             file_id=file_id,
                             content=chunk,
                             embedding=embedding,
-                            meta={"source": file.storage_path},
+                            meta={"source": file.storage_path, "filename": file.filename},
                         )
                         for chunk, embedding in zip(chunks, embeddings, strict=False)
                     ]
