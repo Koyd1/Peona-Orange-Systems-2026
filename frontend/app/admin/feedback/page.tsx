@@ -3,17 +3,8 @@
 import { useEffect, useState } from "react";
 
 import FeedbackChart from "@/components/admin/FeedbackChart";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
 
 type Summary = {
   total: number;
@@ -84,65 +75,95 @@ export default function AdminFeedbackPage() {
   }, []);
 
   return (
-    <>
-      <Card className="mb-4">
-        <CardHeader>
-          <div>
-            <CardTitle className="text-2xl">Feedback dashboard</CardTitle>
-            <CardDescription>Агрегаты, динамика и негативные отзывы пользователей.</CardDescription>
+    <div className="space-y-7">
+      <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-7 py-7 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-10 md:py-9">
+        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-[620px]">
+            <h1 className="m-0 text-[2rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.35rem]">
+              Feedback
+            </h1>
+            <p className="mt-3 text-base leading-relaxed text-[#6b7280]">
+              Monitorizezi satisfacția utilizatorilor prin indicatori zilnici și feedback negativ.
+            </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={() => void load()} disabled={loading}>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-11 px-5 text-sm"
+              onClick={() => void load()}
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#cbd5e1] border-t-[#475467]" />
+              ) : (
+                <span className="text-base leading-none">↻</span>
+              )}
               Refresh
             </Button>
-            <a href="/api/admin/feedback/export" target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <a
+              href="/api/admin/feedback/export"
+              target="_blank"
+              rel="noreferrer"
+              className={`${buttonVariants({
+                variant: "outline",
+                size: "sm"
+              })} h-11 px-5 text-sm`}
+            >
+              <span className="text-base leading-none">↓</span>
               Download CSV
             </a>
           </div>
-        </CardHeader>
-        {error ? <Alert variant="error">{error}</Alert> : null}
-      </Card>
+        </div>
+        {error ? <Alert variant="error" className="mt-6">{error}</Alert> : null}
+      </section>
 
       <FeedbackChart summary={summary} series={series} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Negative feedback</CardTitle>
-        </CardHeader>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Comment</TableHead>
-              <TableHead>Message</TableHead>
-              <TableHead>Session</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-5 py-6 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-7">
+        <h2 className="m-0 text-[1.7rem] font-bold tracking-[-0.02em] text-[#111827]">
+          Negative feedback
+        </h2>
+        <p className="mt-2 text-sm text-[#6b7280]">
+          Mesajele care au primit evaluări negative în conversațiile recente.
+        </p>
+        <div className="mt-5 overflow-x-auto rounded-2xl border border-[#edf0f5] bg-white">
+          <table className="w-full min-w-[860px] border-collapse text-sm">
+            <thead className="bg-[#fafbfe]">
+              <tr className="border-b border-[#eef1f5]">
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Date</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">User</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Comment</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Message</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Session</th>
+              </tr>
+            </thead>
+            <tbody>
             {negative.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{new Date(row.createdAt).toLocaleString()}</TableCell>
-                <TableCell>{row.userEmail}</TableCell>
-                <TableCell>{row.comment || "-"}</TableCell>
-                <TableCell className="max-w-[360px]">{row.messageContent}</TableCell>
-                <TableCell className="text-xs text-gray-400">{row.sessionId}</TableCell>
-              </TableRow>
+              <tr key={row.id} className="border-b border-[#eef1f5] align-top text-[#1f2937] hover:bg-[#fafbff]">
+                <td className="px-4 py-3 whitespace-nowrap">{new Date(row.createdAt).toLocaleString()}</td>
+                <td className="px-4 py-3 whitespace-nowrap">{row.userEmail}</td>
+                <td className="max-w-[260px] px-4 py-3">{row.comment || "-"}</td>
+                <td className="max-w-[360px] px-4 py-3">{row.messageContent}</td>
+                <td className="px-4 py-3 text-xs text-[#98a2b3]">{row.sessionId}</td>
+              </tr>
             ))}
             {negative.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5}>
-                  <div className="flex flex-col items-center justify-center text-center py-16 px-6 text-gray-400">
-                    <div className="text-4xl mb-4 opacity-50">👍</div>
-                    <h3 className="text-gray-500 mb-2 font-semibold">Нет негативных отзывов</h3>
-                    <p className="max-w-[360px] text-sm">Все пользователи довольны!</p>
+              <tr>
+                <td colSpan={5}>
+                  <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+                    <h3 className="m-0 text-lg font-semibold text-[#344054]">Nu există feedback negativ</h3>
+                    <p className="mt-2 max-w-[360px] text-sm text-[#667085]">
+                      Utilizatorii au oferit până acum feedback pozitiv.
+                    </p>
                   </div>
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ) : null}
-          </TableBody>
-        </Table>
-      </Card>
-    </>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   );
 }

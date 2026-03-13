@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
+import { useEffect, useMemo, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 
 type PromptTemplate = {
   id: string;
@@ -40,6 +39,19 @@ export default function PromptEditor() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort((left, right) => {
+        if (left.order !== right.order) {
+          return left.order - right.order;
+        }
+        return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+      }),
+    [items]
+  );
 
   async function load() {
     setLoading(true);
@@ -60,6 +72,24 @@ export default function PromptEditor() {
     void load();
   }, []);
 
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      if (target.closest("[data-prompt-menu]")) {
+        return;
+      }
+      setOpenMenuId(null);
+    }
+
+    window.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, []);
+
   async function createTemplate() {
     setBusyId("create");
     setError(null);
@@ -75,6 +105,7 @@ export default function PromptEditor() {
       }
 
       setDraft(EMPTY_DRAFT);
+      setIsCreateOpen(false);
       await load();
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : "Create failed");
@@ -108,7 +139,7 @@ export default function PromptEditor() {
   }
 
   async function deleteTemplate(id: string) {
-    const confirmed = window.confirm("Удалить шаблон?");
+    const confirmed = window.confirm("Ștergi acest template?");
     if (!confirmed) return;
 
     setBusyId(id);
@@ -132,137 +163,254 @@ export default function PromptEditor() {
     }
   }
 
+  async function editTemplate(item: PromptTemplate) {
+    const title = window.prompt("Titlu nou", item.title);
+    if (title === null) return;
+
+    const content = window.prompt("Conținut nou", item.content);
+    if (content === null) return;
+
+    await patchTemplate(item.id, { title, content });
+  }
+
+  function formatDate(value: string) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "-";
+    }
+    return date.toLocaleDateString("sv-SE");
+  }
+
+  function subtitle(item: PromptTemplate) {
+    if (item.category && item.category.trim().length > 0) {
+      return `Categorie: ${item.category}`;
+    }
+    return "Șablon reutilizabil pentru asistentul AI";
+  }
+
   return (
-    <Card>
-      <h2 className="text-lg font-semibold mt-0">Prompt Templates</h2>
-      {loading ? <p className="text-sm text-gray-400">Загрузка...</p> : null}
-      {error ? <Alert variant="error">{error}</Alert> : null}
+    <section className="space-y-6">
+      <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-7 py-7 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-10 md:py-9">
+        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-[620px]">
+            <h1 className="m-0 text-[2rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.35rem]">
+              Prompt Templates
+            </h1>
+            <p className="mt-3 text-base leading-relaxed text-[#6b7280]">
+              Gestionarea șabloanelor de prompturi pentru asistentul AI.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {loading ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-[#eef2ff] px-3 py-1.5 text-sm text-[#4338ca]">
+                <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#a5b4fc] border-t-[#4338ca]" />
+                Actualizare...
+              </span>
+            ) : null}
+            <Button
+              type="button"
+              size="md"
+              className="h-11 px-6 text-base"
+              onClick={() => setIsCreateOpen((current) => !current)}
+            >
+              <span className="text-lg leading-none">+</span>
+              {isCreateOpen ? "Ascunde formularul" : "Creare template"}
+            </Button>
+          </div>
+        </div>
+        {error ? <Alert variant="error" className="mt-6">{error}</Alert> : null}
+      </section>
 
-      <div className="border border-border-strong rounded-lg p-3 mb-4 bg-gray-50">
-        <h3 className="text-base font-semibold mt-0 mb-2">Новый шаблон</h3>
-        <form
-          className="grid gap-3"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            await createTemplate();
-          }}
-        >
-          <Input
-            placeholder="Title"
-            value={draft.title}
-            onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
-          />
-          <Textarea
-            placeholder="Content"
-            value={draft.content}
-            onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
-            rows={4}
-          />
-          <Input
-            placeholder="Category"
-            value={draft.category}
-            onChange={(event) => setDraft((prev) => ({ ...prev, category: event.target.value }))}
-          />
-          <Input
-            type="number"
-            min={0}
-            max={9999}
-            value={draft.order}
-            onChange={(event) =>
-              setDraft((prev) => ({ ...prev, order: Number(event.target.value || 0) }))
-            }
-          />
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={draft.isActive}
-              onChange={(event) => setDraft((prev) => ({ ...prev, isActive: event.target.checked }))}
-              className="accent-orange-500"
-            />
-            Active
-          </label>
-          <Button size="sm" disabled={busyId === "create"}>
-            Create
-          </Button>
-        </form>
-      </div>
-
-      <div className="grid gap-2.5">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="border border-border rounded-lg p-3 bg-white"
+      {isCreateOpen ? (
+        <section className="rounded-[24px] border border-[#eceff5] bg-white p-5 shadow-[0_20px_48px_-44px_rgba(15,23,42,0.85)] md:p-6">
+          <h2 className="m-0 text-xl font-semibold text-[#101828]">Template nou</h2>
+          <form
+            className="mt-4 grid gap-3 md:grid-cols-2"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              await createTemplate();
+            }}
           >
-            <div className="flex justify-between gap-2.5">
-              <strong>{item.title}</strong>
-              <Badge variant={item.isActive ? "ready" : "pending"} dot>
-                {item.isActive ? "ACTIVE" : "INACTIVE"}
-              </Badge>
+            <Input
+              placeholder="Titlu"
+              value={draft.title}
+              onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
+              className="bg-white"
+            />
+            <Input
+              placeholder="Categorie"
+              value={draft.category}
+              onChange={(event) => setDraft((prev) => ({ ...prev, category: event.target.value }))}
+              className="bg-white"
+            />
+            <Textarea
+              placeholder="Conținut"
+              value={draft.content}
+              onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
+              rows={4}
+              className="bg-white md:col-span-2"
+            />
+            <Input
+              type="number"
+              min={0}
+              max={9999}
+              value={draft.order}
+              className="bg-white"
+              onChange={(event) =>
+                setDraft((prev) => ({ ...prev, order: Number(event.target.value || 0) }))
+              }
+            />
+            <label className="flex items-center gap-2 rounded-xl border border-[#e4e7ec] bg-white px-3 text-sm text-[#344054]">
+              <input
+                type="checkbox"
+                checked={draft.isActive}
+                onChange={(event) => setDraft((prev) => ({ ...prev, isActive: event.target.checked }))}
+                className="accent-orange-500"
+              />
+              Activ
+            </label>
+            <div className="mt-1 flex flex-wrap gap-2 md:col-span-2">
+              <Button type="submit" size="sm" disabled={busyId === "create"}>
+                <span className="text-base leading-none">+</span>
+                Creare
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setIsCreateOpen(false);
+                  setDraft(EMPTY_DRAFT);
+                }}
+              >
+                Anulează
+              </Button>
             </div>
-            <p className="my-2">{item.content}</p>
-            <p className="my-2 text-xs text-gray-500">
-              category: {item.category ?? "-"} | order: {item.order}
+          </form>
+        </section>
+      ) : null}
+
+      <section className="grid gap-5 lg:grid-cols-2">
+        {sortedItems.map((item) => (
+          <article
+            key={item.id}
+            className="rounded-[22px] border border-[#e8ebf2] bg-white p-5 shadow-[0_8px_24px_-22px_rgba(16,24,40,1)] md:p-6"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#fbefe8]">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M7.5 8.75H16.5M7.5 12.25H12M9.8 18.25L6.4 20V16.5C5.52 16.5 4.8 15.78 4.8 14.9V6.1C4.8 5.22 5.52 4.5 6.4 4.5H17.6C18.48 4.5 19.2 5.22 19.2 6.1V14.9C19.2 15.78 18.48 16.5 17.6 16.5H11.5"
+                      stroke="#E07620"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <div className="min-w-0">
+                  <h3 className="m-0 text-[2rem] font-bold tracking-[-0.02em] text-[#101828]">
+                    {item.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-[#667085]">{subtitle(item)}</p>
+                </div>
+              </div>
+
+              <div className="relative" data-prompt-menu>
+                <button
+                  type="button"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-lg text-[#101828] transition hover:bg-[#f5f7fb]"
+                  disabled={busyId === item.id}
+                  onClick={() =>
+                    setOpenMenuId((current) => (current === item.id ? null : item.id))
+                  }
+                >
+                  ⋮
+                </button>
+                {openMenuId === item.id ? (
+                  <div className="absolute right-0 top-10 z-20 min-w-[170px] rounded-2xl border border-[#e4e7ec] bg-white p-2 shadow-[0_16px_38px_-28px_rgba(16,24,40,0.9)]">
+                    <button
+                      type="button"
+                      className="w-full rounded-xl px-3 py-2 text-left text-[0.96rem] text-[#1f2937] transition hover:bg-[#f5f7fb]"
+                      onClick={async () => {
+                        setOpenMenuId(null);
+                        await editTemplate(item);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full rounded-xl px-3 py-2 text-left text-[0.96rem] text-[#1f2937] transition hover:bg-[#f5f7fb]"
+                      onClick={async () => {
+                        setOpenMenuId(null);
+                        const nextOrder = window.prompt("Ordine nouă", String(item.order));
+                        if (nextOrder === null) return;
+                        await patchTemplate(item.id, { order: Number(nextOrder) || 0 });
+                      }}
+                    >
+                      Change order
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full rounded-xl px-3 py-2 text-left text-[0.96rem] text-[#1f2937] transition hover:bg-[#f5f7fb]"
+                      onClick={async () => {
+                        setOpenMenuId(null);
+                        await patchTemplate(item.id, { isActive: !item.isActive });
+                      }}
+                    >
+                      {item.isActive ? "Deactivate" : "Activate"}
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full rounded-xl px-3 py-2 text-left text-[0.96rem] text-[#b42318] transition hover:bg-[#fff3f2]"
+                      onClick={async () => {
+                        setOpenMenuId(null);
+                        await deleteTemplate(item.id);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <p className="mt-5 min-h-[112px] overflow-hidden text-[1.02rem] leading-relaxed text-[#475467] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:4]">
+              {item.content}
             </p>
 
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={busyId === item.id}
-                onClick={async () => {
-                  const title = window.prompt("New title", item.title);
-                  if (title === null) return;
-                  await patchTemplate(item.id, { title });
-                }}
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <span
+                className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${
+                  item.isActive
+                    ? "bg-[#fbefe8] text-[#b54708]"
+                    : "bg-[#f2f4f7] text-[#667085]"
+                }`}
               >
-                Edit title
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={busyId === item.id}
-                onClick={async () => {
-                  const content = window.prompt("New content", item.content);
-                  if (content === null) return;
-                  await patchTemplate(item.id, { content });
-                }}
-              >
-                Edit content
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={busyId === item.id}
-                onClick={async () => {
-                  await patchTemplate(item.id, { isActive: !item.isActive });
-                }}
-              >
-                {item.isActive ? "Deactivate" : "Activate"}
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={busyId === item.id}
-                onClick={async () => {
-                  const nextOrder = window.prompt("New order", String(item.order));
-                  if (nextOrder === null) return;
-                  await patchTemplate(item.id, { order: Number(nextOrder) || 0 });
-                }}
-              >
-                Change order
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={busyId === item.id}
-                onClick={() => void deleteTemplate(item.id)}
-              >
-                Delete
-              </Button>
+                {item.category?.trim() || "General"}
+              </span>
+              <span className="text-sm text-[#98a2b3]">{formatDate(item.updatedAt)}</span>
             </div>
-          </div>
+          </article>
         ))}
-      </div>
-    </Card>
+        {sortedItems.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[#d0d5dd] bg-[#fcfdff] px-4 py-12 text-center lg:col-span-2">
+            <p className="m-0 text-base font-semibold text-[#344054]">Nu există template-uri definite.</p>
+            <p className="mt-2 text-sm text-[#667085]">
+              Creează primul template din butonul „Creare template”.
+            </p>
+          </div>
+        ) : null}
+      </section>
+    </section>
   );
 }
