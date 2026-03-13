@@ -11,12 +11,16 @@ export default function HomePage() {
 
       <main className="max-w-[1200px] mx-auto px-6 py-6">
         <div className="text-center pt-16 pb-12">
-          <div className="mb-6 flex justify-center">
-            <img
-              src="/icons/hr_assistant_logo.svg"
-              alt="HR AI Assistant logo"
-              className="h-[104px] w-[104px] object-contain"
-            />
+          <div className="flex justify-center gap-9 mb-6">
+            <span className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-xl bg-gradient-to-br from-[#ef9f40] to-[#df8240]">
+              <img src="/icons/main_logo.svg" alt="" className="w-3/4 h-3/4 object-contain" />
+            </span>
+            <span className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-xl bg-gradient-to-br from-[#ef9f40] to-[#df8240]">
+              <img src="/icons/hr_logo.svg" alt="" className="w-3/4 h-3/4 object-contain" />
+            </span>
+            <span className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-xl bg-gradient-to-br from-[#ef9f40] to-[#df8240]">
+              <img src="/icons/letter.svg" alt="" className="w-3/4 h-3/4 object-contain" />
+            </span>
           </div>
 
           <h1 className="text-[3.5rem] font-bold leading-[1.15]">HR AI Assistant</h1>

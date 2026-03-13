@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
 import LoginForm from "@/components/auth/LoginForm";
 import { Card } from "@/components/ui/card";
-import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 
 type PageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -37,16 +36,16 @@ export default async function LoginPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative">
       <div className="absolute top-6 right-6">
-        <LanguageSwitcher />
+        <span className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-900 text-white text-xs font-bold">
+          RO
+        </span>
       </div>
 
       <Card className="w-full max-w-[420px] p-8 text-center shadow-hover">
         <div className="flex justify-center mb-3">
-          <img
-            src="/icons/hr_assistant_logo.svg"
-            alt="HR AI Assistant logo"
-            className="h-[88px] w-[88px] object-contain"
-          />
+          <span className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-xl bg-gradient-to-br from-[#ef9f40] to-[#df8240] text-4xl">
+            ✦
+          </span>
         </div>
         <h1 className="text-2xl font-semibold leading-snug">Panoul de administrare</h1>
         <p className="text-sm text-gray-400 mb-6">
