@@ -57,7 +57,7 @@ export default function LoginForm({ loginAction, serverError }: Props) {
         </Alert>
       ) : null}
 
-      <form action={loginAction} onSubmit={handleSubmit} noValidate className="grid gap-4 text-left">
+      <form action={loginAction} onSubmit={handleSubmit} noValidate autoComplete="on" className="grid gap-4 text-left">
         <div className="flex flex-col gap-1.5" >
           <label htmlFor="email" className="text-sm font-semibold text-gray-900 ">
             Email
@@ -66,6 +66,7 @@ export default function LoginForm({ loginAction, serverError }: Props) {
             id="email"
             name="email"
             type="email"
+            autoComplete="username"
             placeholder="admin@company.com"
             className="w-full border border-gray-300 rounded-full px-2 py-2"
             icon={<span className="flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7" ><img src="/icons/logo_message.svg" 
@@ -85,6 +86,7 @@ export default function LoginForm({ loginAction, serverError }: Props) {
             id="password"
             name="password"
             type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
             placeholder="••••••••"
             className="w-full border border-gray-300 rounded-xl px-2 py-2"
             icon={<span className="flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7" ><img src="/icons/square-lock.svg"
@@ -94,9 +96,11 @@ export default function LoginForm({ loginAction, serverError }: Props) {
             suffix={
               <button
                 type="button"
+                aria-label={showPassword ? "Ascunde parola" : "Arată parola"}
+                aria-pressed={showPassword}
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="flex items-center justify-center p-0.5 cursor-pointer"
-                tabIndex={-1}
+                className="relative z-10 flex items-center justify-center p-0.5 cursor-pointer"
               >
                 <img
                   src="/icons/eye_logo.svg"
