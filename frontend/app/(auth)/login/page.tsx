@@ -43,11 +43,12 @@ export default async function LoginPage({ searchParams }: PageProps) {
 
       <Card className="w-full max-w-[420px] p-8 text-center shadow-hover">
         <div className="flex justify-center mb-3">
-          <span className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-xl bg-gradient-to-br from-[#ef9f40] to-[#df8240] text-4xl">
-            ✦
+          <span className="inline-flex items-center justify-center w-[1.5em] h-[1.5em] 
+          rounded-xl bg-gradient-to-br from-[#ef9f40] to-[#df8240] text-4xl ">
+            <img src="/icons/main_logo.svg" alt="Peona logo" className="w-3/4 h-3/4 object-contain" />
           </span>
         </div>
-        <h1 className="text-2xl font-semibold leading-snug">Panoul de administrare</h1>
+        <h1 className="text-2xl font-semibold leading-snug mb-3">Admin Panel</h1>
         <p className="text-sm text-gray-400 mb-6">
           Autentificați-vă în sistemul de administrare HR AI Assistant
         </p>

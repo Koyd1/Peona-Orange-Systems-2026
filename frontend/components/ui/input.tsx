@@ -4,11 +4,12 @@ import { cn } from "@/lib/utils";
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ReactNode;
+  suffix?: React.ReactNode;
   wrapperClassName?: string;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, icon, type, wrapperClassName, ...props }, ref) => {
+  ({ className, icon, suffix, type, wrapperClassName, ...props }, ref) => {
     if (icon) {
       return (
         <div
@@ -21,12 +22,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             type={type}
             className={cn(
-              "flex-1 py-2.5 bg-transparent border-none outline-none text-gray-900 placeholder:text-gray-400 text-sm",
+              "min-w-0 flex-1 py-2.5 bg-transparent border-none outline-none text-gray-900 placeholder:text-gray-400 text-sm",
               className
             )}
             ref={ref}
             {...props}
           />
+          {suffix ? <span className="shrink-0 z-10 pointer-events-auto">{suffix}</span> : null}
         </div>
       );
     }
