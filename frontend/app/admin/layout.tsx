@@ -2,9 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
-import AdminTopNav from "@/components/admin/AdminTopNav";
+import AppHeader from "@/components/shared/AppHeader";
 import LogoutButton from "@/components/auth/LogoutButton";
-import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { auth } from "@/lib/auth";
 
 export default async function AdminRouteLayout({
@@ -24,30 +23,31 @@ export default async function AdminRouteLayout({
 
   return (
     <>
-      <header className="flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-3">
-        <div className="flex min-w-0 items-center gap-8 overflow-x-auto">
-          <Link
-            href="/admin/knowledge"
-            className="flex shrink-0 items-center gap-3 text-xl font-bold text-gray-900 no-underline hover:no-underline"
-          >
-            <span className="inline-flex items-center justify-center w-10 h-10">
-              <img
-                src="/icons/hr_assistant_logo.svg"
-                alt="HR AI Assistant logo"
-                className="w-10 h-10 object-contain"
-              />
-            </span>
-            Admin Panel
-          </Link>
-          <AdminTopNav />
-        </div>
-
-        <div className="flex shrink-0 items-center gap-3">
-          <span className="text-sm text-gray-500">{session.user.email}</span>
-          <LogoutButton />
-          <LanguageSwitcher />
-        </div>
-      </header>
+      <AppHeader
+        actions={
+          <>
+            <span className="text-sm text-gray-500">{session.user.email}</span>
+            <LogoutButton />
+          </>
+        }
+      />
+      <nav className="flex gap-1 px-6 py-2 bg-card border-b border-border overflow-x-auto">
+        <Link href="/admin/knowledge" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          Knowledge
+        </Link>
+        <Link href="/admin/prompts" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          Prompts
+        </Link>
+        <Link href="/admin/feedback" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          Feedback
+        </Link>
+        <Link href="/admin/health" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          Health
+        </Link>
+        <Link href="/chat" className="text-sm font-medium text-gray-500 px-3 py-2 rounded-lg whitespace-nowrap no-underline hover:bg-gray-100 hover:text-gray-900 hover:no-underline">
+          ← Chat
+        </Link>
+      </nav>
       <main className="max-w-[960px] mx-auto px-6 py-6">
         {children}
       </main>
