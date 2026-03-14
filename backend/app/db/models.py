@@ -17,7 +17,7 @@ class VectorChunk(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     file_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(3072), nullable=False)
     meta: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
