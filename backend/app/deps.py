@@ -20,7 +20,11 @@ storage = MinioStorage(
     bucket=settings.minio_bucket,
     use_ssl=settings.minio_use_ssl,
 )
-embedder = Embedder(api_key=settings.openai_api_key)
+embedder = Embedder(
+    api_key=settings.openai_api_key,
+    model=settings.openai_embedding_model,
+    dimensions=settings.openai_embedding_dim,
+)
 retriever = Retriever(
     top_k=settings.rag_top_k,
     similarity_threshold=settings.rag_sim_threshold,
