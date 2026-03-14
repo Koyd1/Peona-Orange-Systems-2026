@@ -124,6 +124,8 @@ make prod-down
 
 Рекомендуемые:
 
+- `OPENAI_EMBEDDING_MODEL`
+- `OPENAI_EMBEDDING_DIM`
 - `OPENAI_CHAT_MODEL`
 - `OPENAI_CHAT_FALLBACK_MODELS`
 - `OPENAI_JUDGE_MODEL`
@@ -181,6 +183,16 @@ Workflow: `.github/workflows/ci.yml`
 3. Перезапустить frontend на хосте с версией из rollback.
 4. Проверить health endpoints.
 5. Проверить login/chat/admin smoke.
+
+## Reindex runbook after embedding migration
+
+После перехода на новую embedding размерность (например, `3072`) выполните:
+
+1. `make migrate`
+2. Перезапустить backend с актуальными `OPENAI_EMBEDDING_MODEL`/`OPENAI_EMBEDDING_DIM`
+3. Получить список файлов: `GET /api/v1/ingest`
+4. Для каждого `fileId` вызвать `POST /api/v1/ingest/{file_id}/reindex`
+5. Дождаться `READY` по `GET /api/v1/ingest/{file_id}/status` для всех файлов
 
 ## Полезные команды
 

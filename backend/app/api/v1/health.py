@@ -52,7 +52,11 @@ async def _check_openai() -> dict[str, Any]:
     client = AsyncOpenAI(api_key=settings.openai_api_key)
     started = time.perf_counter()
     try:
-        await client.embeddings.create(model="text-embedding-3-small", input=["healthcheck"])
+        await client.embeddings.create(
+            model=settings.openai_embedding_model,
+            input=["healthcheck"],
+            dimensions=settings.openai_embedding_dim,
+        )
         latency_ms = int((time.perf_counter() - started) * 1000)
         return {"ok": True, "latencyMs": latency_ms}
     except Exception as exc:

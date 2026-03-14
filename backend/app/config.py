@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     minio_use_ssl: bool = False
     redis_url: str = "redis://localhost:6379/0"
     openai_api_key: str = ""
+    openai_embedding_model: str = "text-embedding-3-large"
+    openai_embedding_dim: int = 3072
     ingest_tmp_dir: str = "/tmp/rag"
     ingest_max_file_size_mb: int = 15
     openai_chat_model: str = "gpt-4o"
