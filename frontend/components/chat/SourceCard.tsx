@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 export type ChatSource = {
   fileId?: string;
@@ -9,22 +9,25 @@ export type ChatSource = {
 
 export default function SourceCard({ source }: { source: ChatSource }) {
   return (
-    <div
-      style={{
-        border: "1px solid #d0d5dd",
-        borderRadius: 8,
-        padding: 8,
-        marginTop: 8,
-        background: "#f8fafc"
-      }}
-    >
-      <div style={{ fontWeight: 600 }}>{source.filename ?? "unknown"}</div>
-      {typeof source.similarity === "number" ? (
-        <div style={{ color: "#475467", fontSize: 12 }}>
-          similarity: {source.similarity.toFixed(3)}
-        </div>
+    <div className="rounded-xl border border-border bg-card px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)]">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+          Source
+        </span>
+        <span className="text-sm font-semibold text-slate-800">
+          {source.filename ?? "unknown"}
+        </span>
+        {typeof source.similarity === "number" ? (
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
+            Similarity {source.similarity.toFixed(3)}
+          </span>
+        ) : null}
+      </div>
+      {source.snippet ? (
+        <p className="mt-2 text-sm leading-relaxed text-slate-600 whitespace-pre-wrap break-words hyphens-auto">
+          {source.snippet}
+        </p>
       ) : null}
-      {source.snippet ? <div style={{ marginTop: 4, fontSize: 13 }}>{source.snippet}</div> : null}
     </div>
   );
 }

@@ -1,13 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 
 import FileTable, { type KnowledgeFileRow } from "@/components/admin/FileTable";
 import FileUpload from "@/components/admin/FileUpload";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
 
 const POLLABLE_STATUSES = new Set<KnowledgeFileRow["status"]>(["PENDING", "PROCESSING"]);
 
@@ -65,11 +63,28 @@ export default function AdminKnowledgePage() {
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const hasPollableRows = useMemo(
     () => files.some((file) => POLLABLE_STATUSES.has(file.status)),
     [files]
   );
+  const filteredFiles = useMemo(() => {
+    const normalized = search.trim().toLowerCase();
+    const filtered = normalized
+      ? files.filter((file) => file.filename.toLowerCase().includes(normalized))
+      : files;
+
+    return [...filtered].sort((left, right) => {
+      const leftDate = new Date(left.createdAt).getTime();
+      const rightDate = new Date(right.createdAt).getTime();
+      if (sortOrder === "oldest") {
+        return leftDate - rightDate;
+      }
+      return rightDate - leftDate;
+    });
+  }, [files, search, sortOrder]);
 
   const loadFiles = useCallback(async ({ silent = false }: LoadFilesOptions = {}) => {
     if (!silent) {
@@ -183,31 +198,70 @@ export default function AdminKnowledgePage() {
   }
 
   return (
-    <>
-      <Card className="mb-4">
-        <CardHeader>
-          <div>
-            <CardTitle className="text-2xl">Knowledge Base</CardTitle>
-            <CardDescription>
-              Управление документами: upload, status polling, download, delete и re-index.
-            </CardDescription>
+    <div className="w-full">
+      <section className="w-full pt-3">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-[760px]">
+            <h1 className="m-0 text-[2.25rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.75rem]">
+              Knowledge Base
+            </h1>
+            <p className="mt-3 text-lg leading-relaxed text-[#6b7280]">
+              Gestionarea fișierelor și documentelor pentru asistentul AI.
+            </p>
           </div>
-          <Link href="/admin/prompts" className={buttonVariants({ variant: "secondary", size: "sm" })}>
-            Open prompts
-          </Link>
-        </CardHeader>
-        {error ? <Alert variant="error">{error}</Alert> : null}
-      </Card>
+          <FileUpload
+            onUploaded={loadFiles}
+            compact
+            buttonLabel="Încarcă fișierul"
+            className="w-full xl:w-[560px] xl:max-w-[560px] xl:shrink-0"
+          />
+        </div>
+        {error ? (
+          <Alert variant="error" className="mt-6 max-w-[760px]">
+            {error}
+          </Alert>
+        ) : null}
+        <div className="mt-10 max-w-[480px]">
+          <Input
+            icon={
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M13.125 13.125L17 17M15.3333 8.66667C15.3333 12.3486 12.3486 15.3333 8.66667 15.3333C4.98477 15.3333 2 12.3486 2 8.66667C2 4.98477 4.98477 2 8.66667 2C12.3486 2 15.3333 4.98477 15.3333 8.66667Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            }
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search"
+            wrapperClassName="rounded-2xl bg-[#f6f8fc] border-[#eef1f6] px-4 py-0"
+            className="py-3 text-sm"
+            aria-label="Search files"
+          />
+        </div>
+      </section>
 
-      <FileUpload onUploaded={loadFiles} />
-      <FileTable
-        files={files}
-        loading={loading}
-        busyId={busyId}
-        onDownload={handleDownload}
-        onDelete={handleDelete}
-        onReindex={handleReindex}
-      />
-    </>
+      <div className="pt-14">
+        <FileTable
+          files={filteredFiles}
+          totalCount={files.length}
+          loading={loading}
+          busyId={busyId}
+          sortOrder={sortOrder}
+          onSortOrderChange={setSortOrder}
+          onDownload={handleDownload}
+          onDelete={handleDelete}
+          onReindex={handleReindex}
+        />
+      </div>
+    </div>
   );
 }

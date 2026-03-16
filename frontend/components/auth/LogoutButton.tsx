@@ -29,11 +29,12 @@ export default function LogoutButton({ callbackUrl = "/login" }: LogoutButtonPro
     <Button
       variant="secondary"
       size="sm"
+      className="whitespace-nowrap px-5"
       type="button"
       disabled={busy}
       onClick={() => void handleLogout()}
     >
-      {busy ? "Logging out..." : "Logout"}
+      {busy ? "Logging out..." : "Log out"}
     </Button>
   );
 }

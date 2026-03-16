@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -9,49 +10,56 @@ async function requireAdmin() {
   return session;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const searchParams = url.searchParams;
   const session = await requireAdmin();
   if (!session) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const rows: Array<{
-    id: string;
-    messageId: string;
-    comment: string | null;
-    createdAt: Date;
-    userId: string;
-    message: {
-      id: string;
-      sessionId: string;
-      content: string;
-    };
-    user: {
-      id: string;
-      email: string;
-    };
-  }> = await prisma.feedback.findMany({
-    where: { rating: -1 },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    include: {
-      message: {
-        select: {
-          id: true,
-          sessionId: true,
-          content: true
-        }
-      },
-      user: {
-        select: {
-          id: true,
-          email: true
+  const rawPage = Number.parseInt(searchParams.get("page") ?? "1", 10);
+  const rawPageSize = Number.parseInt(searchParams.get("pageSize") ?? "15", 10);
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const pageSize = Number.isFinite(rawPageSize) && rawPageSize > 0
+    ? Math.min(rawPageSize, 100)
+    : 15;
+  const skip = (page - 1) * pageSize;
+
+  const where: Prisma.FeedbackWhereInput = { rating: -1 };
+
+  const [total, rows] = await prisma.$transaction([
+    prisma.feedback.count({ where }),
+    prisma.feedback.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+      include: {
+        message: {
+          select: {
+            id: true,
+            sessionId: true,
+            content: true
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            email: true
+          }
         }
       }
-    }
-  });
+    })
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return NextResponse.json({
+    page,
+    pageSize,
+    total,
+    totalPages,
     items: rows.map((row) => ({
       id: row.id,
       messageId: row.messageId,
