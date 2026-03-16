@@ -48,7 +48,7 @@ export default async function AdminRouteLayout({
           <LanguageSwitcher />
         </div>
       </header>
-      <main className="max-w-[960px] mx-auto px-6 py-6">
+      <main className="mx-auto w-full max-w-[1600px] px-8 py-8 xl:px-10">
         {children}
       </main>
     </>

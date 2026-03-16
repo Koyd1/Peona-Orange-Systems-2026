@@ -198,14 +198,14 @@ export default function AdminKnowledgePage() {
   }
 
   return (
-    <div>
-      <section className="px-1 pt-2">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-[620px]">
-            <h1 className="m-0 text-[2rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.35rem]">
+    <div className="w-full">
+      <section className="w-full pt-3">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-[760px]">
+            <h1 className="m-0 text-[2.25rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.75rem]">
               Knowledge Base
             </h1>
-            <p className="mt-3 text-base leading-relaxed text-[#6b7280]">
+            <p className="mt-3 text-lg leading-relaxed text-[#6b7280]">
               Gestionarea fișierelor și documentelor pentru asistentul AI.
             </p>
           </div>
@@ -213,15 +213,15 @@ export default function AdminKnowledgePage() {
             onUploaded={loadFiles}
             compact
             buttonLabel="Încarcă fișierul"
-            className="w-full lg:w-auto"
+            className="w-full xl:w-[560px] xl:max-w-[560px] xl:shrink-0"
           />
         </div>
         {error ? (
-          <Alert variant="error" className="mt-6 max-w-[620px]">
+          <Alert variant="error" className="mt-6 max-w-[760px]">
             {error}
           </Alert>
         ) : null}
-        <div className="mt-8 max-w-[420px]">
+        <div className="mt-10 max-w-[480px]">
           <Input
             icon={
               <svg
@@ -249,7 +249,7 @@ export default function AdminKnowledgePage() {
         </div>
       </section>
 
-      <div className="pt-12">
+      <div className="pt-14">
         <FileTable
           files={filteredFiles}
           totalCount={files.length}

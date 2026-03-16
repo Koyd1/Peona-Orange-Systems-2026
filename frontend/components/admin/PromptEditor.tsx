@@ -25,17 +25,40 @@ type Draft = {
   isActive: boolean;
 };
 
-const EMPTY_DRAFT: Draft = {
-  title: "",
-  content: "",
-  category: "",
-  order: 100,
-  isActive: true
-};
+function createEmptyDraft(order = 100): Draft {
+  return {
+    title: "",
+    content: "",
+    category: "",
+    order,
+    isActive: true
+  };
+}
+
+async function readPromptApiError(response: Response, fallback: string) {
+  const payload = await response.json().catch(() => null);
+  const message =
+    (payload && typeof payload === "object" && "error" in payload && payload.error) ||
+    (payload && typeof payload === "object" && "detail" in payload && payload.detail);
+
+  if (typeof message === "string" && message.trim()) {
+    if (message === "Invalid payload") {
+      return "Datele introduse nu sunt valide. Verifică titlul, conținutul, categoria și poziția.";
+    }
+    return message;
+  }
+
+  const text = await response.text().catch(() => "");
+  if (text.trim()) {
+    return text;
+  }
+
+  return fallback;
+}
 
 export default function PromptEditor() {
   const [items, setItems] = useState<PromptTemplate[]>([]);
-  const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<Draft>(createEmptyDraft());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,15 +123,15 @@ export default function PromptEditor() {
         body: JSON.stringify(draft)
       });
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Create failed");
+        throw new Error(await readPromptApiError(response, "Crearea template-ului a eșuat."));
       }
-
-      setDraft(EMPTY_DRAFT);
+      setDraft(createEmptyDraft());
       setIsCreateOpen(false);
       await load();
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Create failed");
+      setError(
+        createError instanceof Error ? createError.message : "Crearea template-ului a eșuat."
+      );
     } finally {
       setBusyId(null);
     }
@@ -126,13 +149,14 @@ export default function PromptEditor() {
       });
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Update failed");
+        throw new Error(await readPromptApiError(response, "Actualizarea template-ului a eșuat."));
       }
 
       await load();
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : "Update failed");
+      setError(
+        updateError instanceof Error ? updateError.message : "Actualizarea template-ului a eșuat."
+      );
     } finally {
       setBusyId(null);
     }
@@ -173,6 +197,21 @@ export default function PromptEditor() {
     await patchTemplate(item.id, { title, content });
   }
 
+  function resetEditor() {
+    setDraft(createEmptyDraft());
+    setIsCreateOpen(false);
+  }
+
+  function toggleCreateEditor() {
+    if (isCreateOpen) {
+      resetEditor();
+      return;
+    }
+
+    setDraft(createEmptyDraft());
+    setIsCreateOpen(true);
+  }
+
   function formatDate(value: string) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
@@ -190,17 +229,17 @@ export default function PromptEditor() {
 
   return (
     <section className="space-y-6">
-      <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-7 py-7 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-10 md:py-9">
-        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-          <div className="max-w-[620px]">
-            <h1 className="m-0 text-[2rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.35rem]">
+      <section className="w-full pt-3">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-[760px]">
+            <h1 className="m-0 text-[2.25rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.75rem]">
               Prompt Templates
             </h1>
-            <p className="mt-3 text-base leading-relaxed text-[#6b7280]">
+            <p className="mt-3 text-lg leading-relaxed text-[#6b7280]">
               Gestionarea șabloanelor de prompturi pentru asistentul AI.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 xl:justify-end">
             {loading ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-[#eef2ff] px-3 py-1.5 text-sm text-[#4338ca]">
                 <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#a5b4fc] border-t-[#4338ca]" />
@@ -211,14 +250,14 @@ export default function PromptEditor() {
               type="button"
               size="md"
               className="h-11 px-6 text-base"
-              onClick={() => setIsCreateOpen((current) => !current)}
+              onClick={toggleCreateEditor}
             >
               <span className="text-lg leading-none">+</span>
               {isCreateOpen ? "Ascunde formularul" : "Creare template"}
             </Button>
           </div>
         </div>
-        {error ? <Alert variant="error" className="mt-6">{error}</Alert> : null}
+        {error ? <Alert variant="error" className="mt-6 max-w-[760px]">{error}</Alert> : null}
       </section>
 
       {isCreateOpen ? (
@@ -278,10 +317,7 @@ export default function PromptEditor() {
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => {
-                  setIsCreateOpen(false);
-                  setDraft(EMPTY_DRAFT);
-                }}
+                onClick={resetEditor}
               >
                 Anulează
               </Button>

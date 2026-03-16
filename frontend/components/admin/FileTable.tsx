@@ -79,6 +79,18 @@ export default function FileTable({
   }, [totalCount]);
 
   function statusPresentation(status: KnowledgeFileRow["status"]) {
+    if (status === "PENDING") {
+      return {
+        label: "În așteptare",
+        className: "bg-slate-100 text-slate-700"
+      };
+    }
+    if (status === "PROCESSING") {
+      return {
+        label: "În procesare",
+        className: "bg-amber-100 text-amber-700"
+      };
+    }
     if (status === "READY") {
       return {
         label: "Finalizat",
@@ -92,8 +104,8 @@ export default function FileTable({
       };
     }
     return {
-      label: "În proces",
-      className: "bg-amber-100 text-amber-700"
+      label: "Eroare",
+      className: "bg-red-100 text-red-700"
     };
   }
 
@@ -113,18 +125,37 @@ export default function FileTable({
               Actualizare...
             </span>
           ) : null}
-          <label className="inline-flex items-center gap-2 rounded-2xl bg-[#f4f6fb] px-3 py-2 text-sm font-medium text-[#6b7280]">
-            Sortează după:
-            <select
-              value={sortOrder}
-              onChange={(event) =>
-                onSortOrderChange(event.target.value === "oldest" ? "oldest" : "newest")
-              }
-              className="rounded-xl border border-transparent bg-transparent px-2 py-1 font-semibold text-[#1f2937] outline-none"
-            >
-              <option value="newest">Noi</option>
-              <option value="oldest">Vechi</option>
-            </select>
+          <label className="inline-flex items-center gap-3 rounded-2xl border border-[#eef2f7] bg-[#f6f8fc] px-4 py-2.5 text-sm font-medium text-[#6b7280] shadow-[0_12px_28px_-24px_rgba(15,23,42,0.45)]">
+            <span>Sortează după:</span>
+            <span className="relative inline-flex min-w-[92px] items-center">
+              <select
+                value={sortOrder}
+                onChange={(event) =>
+                  onSortOrderChange(event.target.value === "oldest" ? "oldest" : "newest")
+                }
+                className="h-10 w-full appearance-none rounded-xl border border-[#e8ecf4] bg-white px-3 pr-10 text-sm font-semibold text-[#1f2937] shadow-[0_8px_20px_-18px_rgba(15,23,42,0.45)] outline-none transition hover:border-[#d7ddea] focus:border-[#f28c28] focus:ring-2 focus:ring-[#fde6d2]"
+              >
+                <option value="newest">Noi</option>
+                <option value="oldest">Vechi</option>
+              </select>
+              <span className="pointer-events-none absolute right-3 text-[#475467]">
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </span>
           </label>
         </div>
       </div>

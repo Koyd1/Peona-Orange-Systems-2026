@@ -77,7 +77,7 @@ export default function FileUpload({
     <div
       className={cn(
         compact
-          ? "flex flex-col items-start gap-3"
+          ? "flex w-full flex-col items-stretch gap-3 xl:items-stretch"
           : "rounded-2xl border border-[#edf0f5] bg-white p-6 shadow-[0_20px_48px_-44px_rgba(15,23,42,0.85)]",
         className
       )}
@@ -107,7 +107,7 @@ export default function FileUpload({
         type="button"
         variant="primary"
         size="lg"
-        className="w-full min-w-[220px] text-base lg:w-auto"
+        className="w-full min-w-[220px] text-base sm:w-auto xl:self-end"
         disabled={isUploading}
         onClick={() => inputRef.current?.click()}
       >
@@ -115,8 +115,8 @@ export default function FileUpload({
         {isUploading ? "Se încarcă..." : buttonLabel}
       </Button>
 
-      {error ? <Alert variant="error">{error}</Alert> : null}
-      {success ? <Alert variant="success">{success}</Alert> : null}
+      {error ? <Alert variant="error" className={compact ? "w-full" : undefined}>{error}</Alert> : null}
+      {success ? <Alert variant="success" className={compact ? "w-full" : undefined}>{success}</Alert> : null}
       {!compact ? (
         <p className="m-0 text-xs text-[#98a2b3]">
           După încărcare, documentul va intra automat în pipeline-ul de indexare.
