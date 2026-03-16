@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+
 type Summary = {
   total: number;
   positive: number;
@@ -14,6 +18,8 @@ type Point = {
   negative: number;
 };
 
+const CHART_PAGE_SIZE = 2;
+
 export default function FeedbackChart({
   summary,
   series
@@ -21,7 +27,25 @@ export default function FeedbackChart({
   summary: Summary;
   series: Point[];
 }) {
-  const maxTotal = Math.max(1, ...series.map((item) => item.total));
+  const orderedSeries = useMemo(() => [...series].reverse(), [series]);
+  const [chartPage, setChartPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(orderedSeries.length / CHART_PAGE_SIZE));
+  const maxTotal = Math.max(1, ...orderedSeries.map((item) => item.total));
+
+  useEffect(() => {
+    setChartPage(1);
+  }, [orderedSeries.length]);
+
+  useEffect(() => {
+    if (chartPage > totalPages) {
+      setChartPage(totalPages);
+    }
+  }, [chartPage, totalPages]);
+
+  const pageFrom = (chartPage - 1) * CHART_PAGE_SIZE;
+  const visibleSeries = orderedSeries.slice(pageFrom, pageFrom + CHART_PAGE_SIZE);
+  const rangeFrom = orderedSeries.length === 0 ? 0 : pageFrom + 1;
+  const rangeTo = orderedSeries.length === 0 ? 0 : Math.min(pageFrom + CHART_PAGE_SIZE, orderedSeries.length);
 
   return (
     <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-5 py-6 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-7">
@@ -56,7 +80,7 @@ export default function FeedbackChart({
             Nu există încă date pentru grafic.
           </p>
         ) : null}
-        {series.map((point) => (
+        {visibleSeries.map((point) => (
           <div key={point.day} className="rounded-2xl border border-[#edf0f5] bg-[#fbfcff] px-4 py-3">
             <div className="mb-2 flex items-center justify-between text-sm text-[#667085]">
               <span className="font-semibold text-[#344054]">{point.day}</span>
@@ -76,6 +100,36 @@ export default function FeedbackChart({
             </div>
           </div>
         ))}
+        {orderedSeries.length > CHART_PAGE_SIZE ? (
+          <div className="mt-2 flex flex-col gap-3 text-sm text-[#667085] md:flex-row md:items-center md:justify-between">
+            <div>
+              Showing {rangeFrom}-{rangeTo} of {orderedSeries.length} days
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-9 px-4"
+                onClick={() => setChartPage((prev) => Math.max(1, prev - 1))}
+                disabled={chartPage <= 1}
+              >
+                Previous
+              </Button>
+              <span className="px-2 text-[#98a2b3]">
+                Page {chartPage} / {totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-9 px-4"
+                onClick={() => setChartPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={chartPage >= totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   );

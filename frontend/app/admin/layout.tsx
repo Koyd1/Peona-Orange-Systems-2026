@@ -24,28 +24,58 @@ export default async function AdminRouteLayout({
 
   return (
     <>
-      <header className="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-3">
-        <div className="flex min-w-0 items-center gap-8 overflow-x-auto">
-          <Link
-            href="/admin/knowledge"
-            className="flex shrink-0 items-center gap-3 text-xl font-bold text-gray-900 no-underline hover:no-underline"
-          >
-            <span className="inline-flex items-center justify-center w-10 h-10">
-              <img
-                src="/icons/hr_assistant_logo.svg"
-                alt="HR AI Assistant logo"
-                className="w-10 h-10 object-contain"
-              />
-            </span>
-            Admin Panel
-          </Link>
-          <AdminTopNav />
-        </div>
+      <header className="sticky top-0 z-50 border-b border-border bg-card">
+        <div className="mx-auto w-full max-w-[1600px] px-8 py-3 xl:px-10">
+          <div className="flex items-center justify-between gap-4 lg:hidden">
+            <div className="flex min-w-0 items-center gap-4">
+              <Link
+                href="/admin/knowledge"
+                className="flex shrink-0 items-center gap-3 text-xl font-bold text-gray-900 no-underline hover:no-underline"
+              >
+                <span className="inline-flex items-center justify-center w-10 h-10">
+                  <img
+                    src="/icons/hr_assistant_logo.svg"
+                    alt="HR AI Assistant logo"
+                    className="w-10 h-10 object-contain"
+                  />
+                </span>
+                Admin Panel
+              </Link>
+              <div className="min-w-0 overflow-x-auto border-l border-border pl-4">
+                <AdminTopNav />
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <LogoutButton />
+              <LanguageSwitcher />
+            </div>
+          </div>
 
-        <div className="flex shrink-0 items-center gap-3">
-          <span className="text-sm text-gray-500">{session.user.email}</span>
-          <LogoutButton />
-          <LanguageSwitcher />
+          <div className="hidden items-center justify-between gap-4 lg:flex">
+            <div className="flex min-w-0 items-center gap-5">
+              <Link
+                href="/admin/knowledge"
+                className="flex shrink-0 items-center gap-3 text-xl font-bold text-gray-900 no-underline hover:no-underline"
+              >
+                <span className="inline-flex items-center justify-center w-10 h-10">
+                  <img
+                    src="/icons/hr_assistant_logo.svg"
+                    alt="HR AI Assistant logo"
+                    className="w-10 h-10 object-contain"
+                  />
+                </span>
+                Admin Panel
+              </Link>
+              <div className="min-w-0 overflow-x-auto border-l border-border pl-5">
+                <AdminTopNav />
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="text-sm text-gray-500">{session.user.email}</span>
+              <LogoutButton />
+              <LanguageSwitcher />
+            </div>
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-[1600px] px-8 py-8 xl:px-10">

@@ -29,6 +29,7 @@ export default function LogoutButton({ callbackUrl = "/login" }: LogoutButtonPro
     <Button
       variant="secondary"
       size="sm"
+      className="whitespace-nowrap px-5"
       type="button"
       disabled={busy}
       onClick={() => void handleLogout()}
