@@ -33,7 +33,7 @@ export default function LogoutButton({ callbackUrl = "/login" }: LogoutButtonPro
       disabled={busy}
       onClick={() => void handleLogout()}
     >
-      {busy ? "Logging out..." : "Logout"}
+      {busy ? "Logging out..." : "Log out"}
     </Button>
   );
 }
