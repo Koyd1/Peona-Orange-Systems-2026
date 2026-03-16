@@ -146,7 +146,7 @@ export default function MessageBubble({
 
             {hasSources ? (
               <div className="mt-4 grid gap-3">
-                {message.sources.map((source, index) => (
+                {(message.sources ?? []).map((source, index) => (
                   <SourceCard key={`${message.id}-src-${index}`} source={source} />
                 ))}
               </div>
