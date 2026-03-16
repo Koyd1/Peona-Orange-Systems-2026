@@ -2,8 +2,15 @@
 
 import { useRef, useState } from "react";
 
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
 type FileUploadProps = {
   onUploaded: () => Promise<void>;
+  compact?: boolean;
+  buttonLabel?: string;
+  className?: string;
 };
 
 const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
@@ -14,7 +21,12 @@ function hasSupportedExtension(filename: string): boolean {
   return SUPPORTED_EXTENSIONS.some((extension) => lower.endsWith(extension));
 }
 
-export default function FileUpload({ onUploaded }: FileUploadProps) {
+export default function FileUpload({
+  onUploaded,
+  compact = false,
+  buttonLabel = "Upload file",
+  className
+}: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,12 +34,12 @@ export default function FileUpload({ onUploaded }: FileUploadProps) {
 
   async function uploadFile(file: File) {
     if (!hasSupportedExtension(file.name)) {
-      setError("Поддерживаются только PDF, DOCX, TXT, MD");
+      setError("Sunt acceptate doar fișiere PDF, DOCX, TXT, MD.");
       return;
     }
 
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      setError(`Файл больше ${MAX_FILE_MB}MB`);
+      setError(`Fișierul depășește limita de ${MAX_FILE_MB} MB.`);
       return;
     }
 
@@ -49,7 +61,7 @@ export default function FileUpload({ onUploaded }: FileUploadProps) {
         throw new Error(body?.detail ?? body?.error ?? "Upload failed");
       }
 
-      setSuccess(`Файл ${file.name} загружен`);
+      setSuccess(`Fișierul ${file.name} a fost încărcat.`);
       await onUploaded();
       if (inputRef.current) {
         inputRef.current.value = "";
@@ -78,10 +90,10 @@ export default function FileUpload({ onUploaded }: FileUploadProps) {
           </p>
         </div>
       ) : null}
-
       <input
         ref={inputRef}
         type="file"
+        className="sr-only"
         accept=".pdf,.docx,.txt,.md"
         disabled={isUploading}
         onChange={async (event) => {
@@ -110,7 +122,6 @@ export default function FileUpload({ onUploaded }: FileUploadProps) {
           După încărcare, documentul va intra automat în pipeline-ul de indexare.
         </p>
       ) : null}
-
     </div>
   );
 }

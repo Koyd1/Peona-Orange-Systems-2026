@@ -1,16 +1,8 @@
 "use client";
 
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge, type BadgeProps } from "@/components/ui/badge";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
+import { useEffect, useMemo, useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 export type KnowledgeFileRow = {
   id: string;
@@ -24,8 +16,11 @@ export type KnowledgeFileRow = {
 
 type FileTableProps = {
   files: KnowledgeFileRow[];
+  totalCount: number;
   loading: boolean;
   busyId: string | null;
+  sortOrder: "newest" | "oldest";
+  onSortOrderChange: (value: "newest" | "oldest") => void;
   onDownload: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReindex: (id: string) => Promise<void>;
@@ -34,20 +29,24 @@ type FileTableProps = {
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const STATUS_VARIANT: Record<KnowledgeFileRow["status"], BadgeProps["variant"]> = {
-  READY: "ready",
-  PENDING: "pending",
-  PROCESSING: "processing",
-  ERROR: "error",
-};
+function formatDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+  return date.toLocaleDateString("sv-SE");
+}
 
 export default function FileTable({
   files,
+  totalCount,
   loading,
   busyId,
+  sortOrder,
+  onSortOrderChange,
   onDownload,
   onDelete,
   onReindex
@@ -179,83 +178,99 @@ export default function FileTable({
                 const status = statusPresentation(file.status);
                 const isBusy = busyId === file.id;
 
-
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Filename</TableHead>
-            <TableHead>Size</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Chunks</TableHead>
-            <TableHead>Updated</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {files.map((file) => (
-            <TableRow key={file.id}>
-              <TableCell>{file.filename}</TableCell>
-              <TableCell>{formatBytes(file.size)}</TableCell>
-              <TableCell>
-                <Badge variant={STATUS_VARIANT[file.status]} dot>
-                  {file.status}
-                </Badge>
-              </TableCell>
-              <TableCell>{file.chunkCount ?? "-"}</TableCell>
-              <TableCell>{new Date(file.updatedAt).toLocaleString()}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={busyId === file.id}
-                    onClick={async () => {
-                      await onDownload(file.id);
-                    }}
+                return (
+                  <tr
+                    key={file.id}
+                    className="border-b border-[#eef1f5] text-[1.02rem] text-[#1f2937] transition-colors hover:bg-[#fafbff]"
                   >
-                    Download
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={busyId === file.id}
-                    onClick={async () => {
-                      const confirmed = window.confirm(
-                        `Удалить ${file.filename} и все векторные чанки?`
-                      );
-                      if (!confirmed) return;
-                      await onDelete(file.id);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={busyId === file.id}
-                    onClick={async () => {
-                      await onReindex(file.id);
-                    }}
-                  >
-                    Re-index
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-          {files.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6}>
-                <div className="flex flex-col items-center justify-center text-center py-16 px-6 text-gray-400">
-                  <div className="text-4xl mb-4 opacity-50">📂</div>
-                  <h3 className="text-gray-500 mb-2 font-semibold">Нет загруженных файлов</h3>
-                  <p className="max-w-[360px] text-sm">Загрузите документы через форму выше</p>
-                </div>
-              </TableCell>
-            </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
-    </Card>
+                    <td className="px-4 py-4 font-medium">{file.filename}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">{formatBytes(file.size)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">{formatDate(file.createdAt)}</td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full px-3 py-1 text-sm font-semibold",
+                          status.className
+                        )}
+                      >
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">{file.chunkCount ?? "-"}</td>
+                    <td className="px-4 py-4">
+                      <div className="relative flex justify-end" data-actions-menu>
+                        <button
+                          type="button"
+                          aria-label="Open actions"
+                          disabled={isBusy}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-[#111827] transition hover:border-[#e5e7eb] hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-60"
+                          onClick={() =>
+                            setOpenMenuId((current) => (current === file.id ? null : file.id))
+                          }
+                        >
+                          <span className="text-lg leading-none">⋮</span>
+                        </button>
+                        {openMenuId === file.id ? (
+                          <div className="absolute right-0 top-11 z-20 min-w-[190px] rounded-2xl border border-[#e4e7ec] bg-white p-2 shadow-[0_16px_38px_-28px_rgba(16,24,40,0.9)]">
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[0.95rem] text-[#1f2937] transition hover:bg-[#f5f7fb]"
+                              onClick={async () => {
+                                setOpenMenuId(null);
+                                await onReindex(file.id);
+                              }}
+                            >
+                              Reindex
+                            </button>
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[0.95rem] text-[#1f2937] transition hover:bg-[#f5f7fb]"
+                              onClick={async () => {
+                                setOpenMenuId(null);
+                                await onDownload(file.id);
+                              }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[0.95rem] text-[#b42318] transition hover:bg-[#fff3f2]"
+                              onClick={async () => {
+                                setOpenMenuId(null);
+                                const confirmed = window.confirm(
+                                  `Ștergi ${file.filename} și toate chunk-urile indexate?`
+                                );
+                                if (!confirmed) return;
+                                await onDelete(file.id);
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {files.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+                      <p className="m-0 text-lg font-semibold text-[#344054]">
+                        Nu există fișiere pentru filtrele selectate.
+                      </p>
+                      <p className="mt-2 max-w-[380px] text-sm text-[#667085]">
+                        Încarcă un document nou sau schimbă căutarea/sortarea pentru a vedea rezultate.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   );
 }
