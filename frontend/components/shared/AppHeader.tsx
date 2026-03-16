@@ -8,7 +8,7 @@ type AppHeaderProps = {
 
 export default function AppHeader({ actions }: AppHeaderProps) {
   return (
-    <header className="flex items-center justify-between px-6 py-3 bg-card border-b border-border">
+    <header className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-card px-6 py-3">
       <Link href="/" className="flex items-center gap-2 text-xl font-bold text-gray-900 no-underline hover:no-underline">
         <span className="inline-flex items-center justify-center w-10 h-10">
           <img

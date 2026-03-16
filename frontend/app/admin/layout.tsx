@@ -24,7 +24,7 @@ export default async function AdminRouteLayout({
 
   return (
     <>
-      <header className="flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-3">
+      <header className="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-3">
         <div className="flex min-w-0 items-center gap-8 overflow-x-auto">
           <Link
             href="/admin/knowledge"
