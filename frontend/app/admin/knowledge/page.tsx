@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import FileTable, { type KnowledgeFileRow } from "@/components/admin/FileTable";
 import FileUpload from "@/components/admin/FileUpload";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { Input } from "@/components/ui/input";
 
 const POLLABLE_STATUSES = new Set<KnowledgeFileRow["status"]>(["PENDING", "PROCESSING"]);
 
@@ -63,28 +65,11 @@ export default function AdminKnowledgePage() {
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const hasPollableRows = useMemo(
     () => files.some((file) => POLLABLE_STATUSES.has(file.status)),
     [files]
   );
-  const filteredFiles = useMemo(() => {
-    const normalized = search.trim().toLowerCase();
-    const filtered = normalized
-      ? files.filter((file) => file.filename.toLowerCase().includes(normalized))
-      : files;
-
-    return [...filtered].sort((left, right) => {
-      const leftDate = new Date(left.createdAt).getTime();
-      const rightDate = new Date(right.createdAt).getTime();
-      if (sortOrder === "oldest") {
-        return leftDate - rightDate;
-      }
-      return rightDate - leftDate;
-    });
-  }, [files, search, sortOrder]);
 
   const loadFiles = useCallback(async ({ silent = false }: LoadFilesOptions = {}) => {
     if (!silent) {

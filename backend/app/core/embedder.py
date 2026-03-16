@@ -6,14 +6,13 @@ from typing import Sequence
 
 from openai import AsyncOpenAI
 
-EMBEDDING_MODEL = "text-embedding-3-small"
-EMBEDDING_DIM = 1536
 LOGGER = logging.getLogger(__name__)
 
 
 class Embedder:
-    def __init__(self, api_key: str) -> None:
-        self._api_key = api_key
+    def __init__(self, *, api_key: str, model: str, dimensions: int) -> None:
+        self._model = model
+        self._dimensions = dimensions
         self._client = AsyncOpenAI(api_key=api_key) if api_key else None
 
     async def embed_texts(self, texts: Sequence[str]) -> list[list[float]]:
@@ -24,7 +23,11 @@ class Embedder:
             return [self._fake_embedding(text) for text in texts]
 
         try:
-            response = await self._client.embeddings.create(model=EMBEDDING_MODEL, input=list(texts))
+            response = await self._client.embeddings.create(
+                model=self._model,
+                input=list(texts),
+                dimensions=self._dimensions,
+            )
             return [item.embedding for item in response.data]
         except Exception as exc:
             LOGGER.warning(
@@ -36,7 +39,7 @@ class Embedder:
     def _fake_embedding(self, text: str) -> list[float]:
         digest = hashlib.sha256(text.encode("utf-8")).digest()
         values = []
-        for i in range(EMBEDDING_DIM):
+        for i in range(self._dimensions):
             byte = digest[i % len(digest)]
             values.append((byte / 255.0) * 2.0 - 1.0)
         return values

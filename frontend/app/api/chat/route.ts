@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { readPublicSessionIdFromRequest } from "@/lib/public-session";
-import {
-  extendSessionIfNeeded,
-  isSessionActive
-} from "@/lib/session";
+import { resolveRequestSession } from "@/lib/request-session";
 
 export const runtime = "nodejs";
 
@@ -207,110 +202,17 @@ async function persistDoneFromSSE(
 }
 
 async function resolveSessionContext(request: Request, bodySessionId?: unknown): Promise<SessionContext | null> {
-  const session = await auth();
-
-  if (session?.sessionId && (await isSessionActive(session.sessionId))) {
-    const appSession = await extendSessionIfNeeded(session.sessionId);
-    if (!appSession || appSession.terminatedAt) return null;
-
-    return {
-      sessionId: session.sessionId,
-      email: session.user.email ?? "unknown@hr.local",
-      role: session.user.role,
-      persistent: appSession.persistent,
-      expiresAt: appSession.expiresAt
-    };
-  }
-
-  /* Signed-in user whose JWT session is terminated/expired,
-     but the request carries a different (new) sessionId. Verify
-     that it's active and owned by the same user. */
-  if (session?.sessionId) {
-    const sidFromBody = typeof bodySessionId === "string" ? bodySessionId.trim() : "";
-    const url = new URL(request.url);
-    const sidFromQuery = url.searchParams.get("sessionId") ?? url.searchParams.get("sid") ?? "";
-    const candidateId = sidFromBody || sidFromQuery;
-
-    if (candidateId && candidateId !== session.sessionId) {
-      const candidateRow = await prisma.session.findUnique({
-        where: { id: candidateId },
-        select: {
-          userId: true,
-          persistent: true,
-          expiresAt: true,
-          terminatedAt: true,
-          user: { select: { email: true, role: true } }
-        }
-      });
-
-      if (!candidateRow || candidateRow.terminatedAt || candidateRow.expiresAt.getTime() <= Date.now()) {
-        return null;
-      }
-
-      const signedInEmail = session.user.email?.trim().toLowerCase();
-      const candidateEmail = candidateRow.user.email?.trim().toLowerCase();
-      let sameOwner = Boolean(
-        signedInEmail && candidateEmail && signedInEmail === candidateEmail
-      );
-
-      if (!sameOwner) {
-        const oldRow = await prisma.session.findUnique({
-          where: { id: session.sessionId },
-          select: { userId: true }
-        });
-        sameOwner = Boolean(oldRow && oldRow.userId === candidateRow.userId);
-      }
-
-      if (sameOwner) {
-        const extendedSession = await extendSessionIfNeeded(candidateId);
-        return {
-          sessionId: candidateId,
-          email: candidateRow.user.email ?? session.user.email ?? "unknown@hr.local",
-          role: (candidateRow.user.role as "ADMIN" | "USER") ?? session.user.role,
-          persistent: candidateRow.persistent,
-          expiresAt: extendedSession?.expiresAt ?? candidateRow.expiresAt
-        };
-      }
-    }
-  }
-
-  const sessionId = readPublicSessionIdFromRequest(request);
-  if (!sessionId) {
+  const resolved = await resolveRequestSession(request, bodySessionId);
+  if (!resolved) {
     return null;
   }
-
-  const sidFromBody = typeof bodySessionId === "string" ? bodySessionId.trim() : "";
-  const url = new URL(request.url);
-  const sidFromQuery = url.searchParams.get("sessionId") ?? url.searchParams.get("sid") ?? "";
-  if ((sidFromBody && sidFromBody !== sessionId) || (sidFromQuery && sidFromQuery !== sessionId)) {
-    return null;
-  }
-
-  if (!(await isSessionActive(sessionId))) {
-    return null;
-  }
-
-  const appSession = await extendSessionIfNeeded(sessionId);
-  if (!appSession || appSession.terminatedAt) return null;
-
-  const row = await prisma.session.findUnique({
-    where: { id: sessionId },
-    select: {
-      user: {
-        select: {
-          email: true,
-          role: true
-        }
-      }
-    }
-  });
 
   return {
-    sessionId,
-    email: row?.user.email ?? "guest@public.local",
-    role: row?.user.role ?? "USER",
-    persistent: appSession.persistent,
-    expiresAt: appSession.expiresAt
+    sessionId: resolved.sessionId,
+    email: resolved.email,
+    role: resolved.role,
+    persistent: resolved.persistent,
+    expiresAt: resolved.expiresAt
   };
 }
 

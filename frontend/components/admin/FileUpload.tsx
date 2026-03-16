@@ -2,15 +2,8 @@
 
 import { useRef, useState } from "react";
 
-import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
 type FileUploadProps = {
   onUploaded: () => Promise<void>;
-  compact?: boolean;
-  buttonLabel?: string;
-  className?: string;
 };
 
 const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
@@ -21,12 +14,7 @@ function hasSupportedExtension(filename: string): boolean {
   return SUPPORTED_EXTENSIONS.some((extension) => lower.endsWith(extension));
 }
 
-export default function FileUpload({
-  onUploaded,
-  compact = false,
-  buttonLabel = "Upload file",
-  className
-}: FileUploadProps) {
+export default function FileUpload({ onUploaded }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,12 +22,12 @@ export default function FileUpload({
 
   async function uploadFile(file: File) {
     if (!hasSupportedExtension(file.name)) {
-      setError("Sunt acceptate doar fișiere PDF, DOCX, TXT, MD.");
+      setError("Поддерживаются только PDF, DOCX, TXT, MD");
       return;
     }
 
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      setError(`Fișierul depășește limita de ${MAX_FILE_MB} MB.`);
+      setError(`Файл больше ${MAX_FILE_MB}MB`);
       return;
     }
 
@@ -61,7 +49,7 @@ export default function FileUpload({
         throw new Error(body?.detail ?? body?.error ?? "Upload failed");
       }
 
-      setSuccess(`Fișierul ${file.name} a fost încărcat.`);
+      setSuccess(`Файл ${file.name} загружен`);
       await onUploaded();
       if (inputRef.current) {
         inputRef.current.value = "";
@@ -90,10 +78,10 @@ export default function FileUpload({
           </p>
         </div>
       ) : null}
+
       <input
         ref={inputRef}
         type="file"
-        className="sr-only"
         accept=".pdf,.docx,.txt,.md"
         disabled={isUploading}
         onChange={async (event) => {
@@ -122,6 +110,7 @@ export default function FileUpload({
           După încărcare, documentul va intra automat în pipeline-ul de indexare.
         </p>
       ) : null}
+
     </div>
   );
 }

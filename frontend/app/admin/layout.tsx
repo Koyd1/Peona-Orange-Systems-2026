@@ -2,9 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
-import AdminTopNav from "@/components/admin/AdminTopNav";
+import AppHeader from "@/components/shared/AppHeader";
 import LogoutButton from "@/components/auth/LogoutButton";
-import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { auth } from "@/lib/auth";
 
 export default async function AdminRouteLayout({
@@ -49,6 +48,7 @@ export default async function AdminRouteLayout({
         </div>
       </header>
       <main className="mx-auto w-full max-w-[1600px] px-8 py-8 xl:px-10">
+
         {children}
       </main>
     </>
