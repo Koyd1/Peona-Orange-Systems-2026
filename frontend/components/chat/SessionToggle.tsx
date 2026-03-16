@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 
@@ -77,43 +77,39 @@ export default function SessionToggle({
   const canAct = canCreateNewSession && !busy;
 
   return (
-    <div className="border border-gray-300 rounded-lg p-2.5 mb-3 bg-slate-50">
-      <div className="flex justify-between gap-3">
-        <div>
-          <div className="font-semibold">Режим сессии: Обычная</div>
-          <div className="text-xs text-gray-500">
-            Expires at: {expiresLabel}
-          </div>
-        </div>
-
-        <div className="flex gap-2 items-start">
-          <button
-            type="button"
-            disabled={!canAct}
-            onClick={() => void terminateNow()}
-            title={
-              !canCreateNewSession
-                ? "Отправьте хотя бы одно сообщение и дождитесь ответа"
-                : "Завершить сессию и начать новую"
-            }
-            className={`inline-flex items-center rounded-lg border border-gray-300 px-4 py-1.5 text-sm font-semibold font-sans transition-all ${
-              canAct
-                ? "bg-white text-gray-800 cursor-pointer hover:bg-gray-50"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed"
-            }`}
-          >
-            Новый чат
-          </button>
-        </div>
-      </div>
-
-      {!canCreateNewSession ? (
-        <p className="text-xs text-gray-500 mt-2">
-          Отправьте сообщение и дождитесь ответа, чтобы начать новый чат.
-        </p>
-      ) : null}
-
-      {error ? <p className="text-red-700 mt-2">{error}</p> : null}
+    <div className="flex flex-col items-start gap-2">
+      <button
+        type="button"
+        disabled={!canAct}
+        onClick={() => void terminateNow()}
+        title={
+          !canCreateNewSession
+            ? "Trimite un mesaj si asteapta raspunsul pentru a incepe un chat nou"
+            : "Incheie sesiunea si incepe un chat nou"
+        }
+        className={`inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-all ${
+          canAct
+            ? "border-transparent bg-[#e58b3a] text-white shadow-[0_10px_24px_rgba(229,139,58,0.35)]"
+            : "border-[#f2c39a] bg-[#fff1e4] text-[#c8772a] cursor-not-allowed"
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
+        <span>Sesiune nouă</span>
+      </button>
+      <span className="sr-only">Regim sesiune: Obisnuita. Expira la: {expiresLabel}</span>
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>
   );
 }
