@@ -17,15 +17,17 @@ export default function FeedbackButtons({
 }) {
   const [rating, setRating] = useState<1 | -1 | undefined>(initialRating);
   const [comment, setComment] = useState(initialComment ?? "");
+  const [isNegativeDraft, setIsNegativeDraft] = useState(initialRating === -1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(initialRating !== undefined);
 
-  async function submit(nextRating: 1 | -1) {
-    if (rating !== undefined) {
+  async function submit(nextRating: 1 | -1, nextComment?: string | null) {
+    if (isSaved || busy) {
       return;
     }
 
-    const nextComment = comment.trim() || null;
+    const normalizedComment = nextComment === undefined ? comment.trim() || null : nextComment;
     const previousRating = rating;
     const previousComment = comment;
 
@@ -41,7 +43,7 @@ export default function FeedbackButtons({
           sessionId,
           messageId,
           rating: nextRating,
-          comment: nextComment ?? undefined
+          comment: normalizedComment ?? undefined
         })
       });
 
@@ -49,7 +51,8 @@ export default function FeedbackButtons({
         const text = await response.text();
         throw new Error(text || "Feedback submit failed");
       }
-      onSaved?.({ rating: nextRating, comment: nextComment });
+      setIsSaved(true);
+      onSaved?.({ rating: nextRating, comment: normalizedComment });
     } catch (submitError) {
       setRating(previousRating);
       setComment(previousComment);
@@ -60,42 +63,19 @@ export default function FeedbackButtons({
   }
 
   async function saveComment() {
-    if (rating === undefined || busy) {
+    if (rating !== -1 || isSaved || busy) {
       return;
     }
 
     const nextComment = comment.trim() || null;
 
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          sessionId,
-          messageId,
-          rating,
-          comment: nextComment ?? undefined
-        })
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Feedback submit failed");
-      }
-      onSaved?.({ rating, comment: nextComment });
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Feedback submit failed");
-    } finally {
-      setBusy(false);
-    }
+    await submit(-1, nextComment);
   }
 
-  const canRate = rating === undefined && !busy;
+  const canRate = !isSaved && !busy;
   const isPositive = rating === 1;
   const isNegative = rating === -1;
-  const canSubmitComment = rating !== undefined && comment.trim().length > 0 && !busy;
+  const showNegativeInput = isNegativeDraft || isNegative;
 
   return (
     <div className="w-full">
@@ -108,7 +88,10 @@ export default function FeedbackButtons({
           <button
             type="button"
             disabled={!canRate}
-            onClick={() => void submit(1)}
+            onClick={() => {
+              setIsNegativeDraft(false);
+              void submit(1, null);
+            }}
             title="Helpful"
             className={`rounded-full border border-border bg-white p-2 transition ${
               !canRate && !isPositive
@@ -132,7 +115,11 @@ export default function FeedbackButtons({
           <button
             type="button"
             disabled={!canRate}
-            onClick={() => void submit(-1)}
+            onClick={() => {
+              setRating(-1);
+              setIsNegativeDraft(true);
+              setError(null);
+            }}
             title="Not helpful"
             className={`rounded-full border border-border bg-white p-2 transition ${
               !canRate && !isNegative
@@ -154,14 +141,16 @@ export default function FeedbackButtons({
             </svg>
           </button>
           {busy ? <span className="text-xs text-slate-400">Se salvează...</span> : null}
-          {rating !== undefined && !busy ? (
-            <span className="text-xs font-semibold text-emerald-600">Salvat</span>
-          ) : null}
         </div>
       </div>
 
-      {isNegative ? (
-        <div className="mt-3 flex justify-end">
+      <div
+        className={`grid transition-all duration-250 ease-out ${
+          showNegativeInput ? "mt-3 grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className={`flex justify-end transition duration-250 ${showNegativeInput ? "translate-y-0" : "-translate-y-2"}`}>
           <div className="w-full max-w-full sm:max-w-[360px]">
             <div className="relative">
               <input
@@ -169,15 +158,15 @@ export default function FeedbackButtons({
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 maxLength={600}
-                disabled={busy}
+                disabled={busy || isSaved}
                 className="w-full rounded-full border border-border bg-card px-5 py-2.5 pr-12 text-sm text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] outline-none placeholder:text-slate-400 focus:border-[#f2c39a] focus:ring-2 focus:ring-[#f2c39a]/40"
               />
               <button
                 type="button"
-                disabled={!canSubmitComment}
+                disabled={busy || isSaved}
                 onClick={() => void saveComment()}
                 className={`absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition ${
-                  canSubmitComment ? "hover:text-slate-600" : "opacity-40 cursor-not-allowed"
+                  busy || isSaved ? "opacity-40 cursor-not-allowed" : "hover:text-slate-600"
                 }`}
                 aria-label="Trimite comentariul"
               >
@@ -197,7 +186,8 @@ export default function FeedbackButtons({
             </div>
           </div>
         </div>
-      ) : null}
+        </div>
+      </div>
 
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
     </div>

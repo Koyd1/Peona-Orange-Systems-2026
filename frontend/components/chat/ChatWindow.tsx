@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import MessageBubble, { type ChatMessageVM } from "@/components/chat/MessageBubble";
 import PromptCards from "@/components/chat/PromptCards";
@@ -61,6 +61,9 @@ export default function ChatWindow({
     "unknown"
   );
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const [showJumpToBottom, setShowJumpToBottom] = useState(false);
+  const messagesViewportRef = useRef<HTMLDivElement | null>(null);
+  const shouldAutoScrollRef = useRef(true);
 
   const canSend = input.trim().length > 0 && !loading;
   const isEmpty = messages.length === 0;
@@ -123,6 +126,21 @@ export default function ChatWindow({
     void sendMessage();
     setPendingPrompt(null);
   }, [pendingPrompt, input, loading]);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const viewport = messagesViewportRef.current;
+    if (!viewport) return;
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior });
+  }, []);
+
+  const updateScrollState = useCallback(() => {
+    const viewport = messagesViewportRef.current;
+    if (!viewport) return;
+    const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const isNearBottom = distanceFromBottom < 72;
+    shouldAutoScrollRef.current = isNearBottom;
+    setShowJumpToBottom(!isNearBottom);
+  }, []);
 
   async function sendMessage() {
     const userText = input.trim();
@@ -270,6 +288,17 @@ export default function ChatWindow({
   const showGreeting =
     messages.length > 0 && (isFreshSession || sessionInitState === "unknown");
 
+  useEffect(() => {
+    if (showWelcome) return;
+    if (!shouldAutoScrollRef.current) return;
+    const frame = window.requestAnimationFrame(() => {
+      scrollToBottom();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [messages, showWelcome, scrollToBottom]);
+
   return (
     <div className="relative left-1/2 right-1/2 -my-6 h-[calc(100dvh-64px)] w-[100dvw] -ml-[50dvw] -mr-[50dvw] overflow-hidden bg-page">
       <div className="pointer-events-none absolute inset-0">
@@ -290,10 +319,10 @@ export default function ChatWindow({
           ) : null}
         </header>
 
-        <main className="flex min-h-0 flex-1 flex-col pb-8 pt-2 sm:pb-10">
-          <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-8 sm:gap-12">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden pb-4 pt-2 sm:pb-6">
+          <div className="relative flex h-full w-full min-h-0 flex-1 flex-col">
             {showWelcome ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-8 pb-6 text-center">
+              <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col items-center justify-center gap-8 pb-6 text-center">
                 <div>
                   <h1 className="text-4xl font-semibold text-[#e58b3a] sm:text-5xl">
                     Bine ai venit!
@@ -324,8 +353,12 @@ export default function ChatWindow({
             ) : null}
 
             {!showWelcome ? (
-              <div className="w-full flex-1 min-h-0">
-                <div className="flex min-h-0 flex-col gap-6 overflow-y-auto pr-2 sm:gap-10">
+              <div
+                ref={messagesViewportRef}
+                onScroll={updateScrollState}
+                className="w-full min-h-0 flex-1 overflow-y-auto"
+              >
+                <div className="mx-auto flex min-h-full w-full max-w-[1200px] flex-col gap-6 pb-4 pr-2 sm:gap-10">
                   {showGreeting ? (
                     <div className="flex items-start gap-4 sm:gap-5">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e58b3a] shadow-[0_8px_20px_rgba(15,23,42,0.12)]">
@@ -397,7 +430,7 @@ export default function ChatWindow({
               </div>
             ) : null}
 
-            <div className="mt-auto w-full">
+            <div className="mx-auto w-full max-w-[1200px] shrink-0 pt-2 sm:pt-3">
               {!isEmpty && loading ? (
                 <p className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.3em] text-slate-400">
                   Se trimite mesajul
@@ -409,7 +442,7 @@ export default function ChatWindow({
                   event.preventDefault();
                   await sendMessage();
                 }}
-                className="flex items-center gap-3 rounded-full bg-card px-5 py-3 shadow-[0_12px_30px_rgba(15,23,42,0.12)] ring-1 ring-black/5 transition focus-within:ring-2 focus-within:ring-[#f2c39a] sm:px-8 sm:py-4"
+                className="flex items-center gap-3 overflow-hidden rounded-full border border-white/60 bg-white/72 px-5 py-3 shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-[2px] transition focus-within:border-[#f2c39a] focus-within:shadow-[0_0_0_3px_rgba(242,195,154,0.28)] sm:px-8 sm:py-4"
               >
                 <input
                   value={input}
@@ -448,10 +481,37 @@ export default function ChatWindow({
                 </button>
               </form>
             </div>
+
+            {!showWelcome && showJumpToBottom ? (
+              <button
+                type="button"
+                onClick={() => {
+                  shouldAutoScrollRef.current = true;
+                  setShowJumpToBottom(false);
+                  scrollToBottom("smooth");
+                }}
+                className="absolute bottom-24 right-8 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-slate-600 shadow-[0_12px_24px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:text-slate-800 sm:bottom-28 sm:right-26"
+                aria-label="Scroll to latest messages"
+                title="Mesaje noi"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14" />
+                  <path d="m6 13 6 6 6-6" />
+                </svg>
+              </button>
+            ) : null}
           </div>
         </main>
       </div>
     </div>
   );
 }
-

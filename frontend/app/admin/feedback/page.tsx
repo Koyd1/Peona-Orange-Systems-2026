@@ -30,6 +30,8 @@ type NegativeRow = {
   messageContent: string;
 };
 
+const PAGE_SIZE = 15;
+
 export default function AdminFeedbackPage() {
   const [summary, setSummary] = useState<Summary>({
     total: 0,
@@ -39,40 +41,77 @@ export default function AdminFeedbackPage() {
   });
   const [series, setSeries] = useState<Point[]>([]);
   const [negative, setNegative] = useState<NegativeRow[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [negativeTotal, setNegativeTotal] = useState(0);
+  const [negativeTotalPages, setNegativeTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [negativeLoading, setNegativeLoading] = useState(false);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
+  async function loadSummaryAndSeries() {
     try {
-      const [summaryRes, timeseriesRes, negativeRes] = await Promise.all([
+      const [summaryRes, timeseriesRes] = await Promise.all([
         fetch("/api/admin/feedback/summary", { cache: "no-store" }),
         fetch("/api/admin/feedback/timeseries", { cache: "no-store" }),
-        fetch("/api/admin/feedback/negative", { cache: "no-store" })
       ]);
 
-      if (!summaryRes.ok || !timeseriesRes.ok || !negativeRes.ok) {
+      if (!summaryRes.ok || !timeseriesRes.ok) {
         throw new Error("Failed to load feedback analytics");
       }
 
       const summaryData = (await summaryRes.json()) as Summary;
       const seriesData = (await timeseriesRes.json()) as { items: Point[] };
-      const negativeData = (await negativeRes.json()) as { items: NegativeRow[] };
 
       setSummary(summaryData);
       setSeries(seriesData.items);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Load error");
+    }
+  }
+
+  async function loadNegative(page: number) {
+    setNegativeLoading(true);
+    setError(null);
+    try {
+      const negativeRes = await fetch(
+        `/api/admin/feedback/negative?page=${page}&pageSize=${PAGE_SIZE}`,
+        { cache: "no-store" }
+      );
+
+      if (!negativeRes.ok) {
+        throw new Error("Failed to load feedback analytics");
+      }
+
+      const negativeData = (await negativeRes.json()) as {
+        items: NegativeRow[];
+        total: number;
+        totalPages: number;
+        page: number;
+      };
+
+      setNegativeTotal(negativeData.total);
+      setNegativeTotalPages(negativeData.totalPages);
       setNegative(negativeData.items);
+      if (negativeData.page > negativeData.totalPages) {
+        setCurrentPage(negativeData.totalPages);
+      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Load error");
     } finally {
-      setLoading(false);
+      setNegativeLoading(false);
     }
   }
 
   useEffect(() => {
-    void load();
+    void loadSummaryAndSeries();
   }, []);
+
+  useEffect(() => {
+    void loadNegative(currentPage);
+  }, [currentPage]);
+
+  const pageFrom = negativeTotal === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const pageTo = negativeTotal === 0 ? 0 : Math.min(currentPage * PAGE_SIZE, negativeTotal);
 
   return (
     <div className="space-y-7">
@@ -91,7 +130,12 @@ export default function AdminFeedbackPage() {
               variant="secondary"
               size="sm"
               className="h-11 px-5 text-sm"
-              onClick={() => void load()}
+              onClick={async () => {
+                setLoading(true);
+                setError(null);
+                await Promise.all([loadSummaryAndSeries(), loadNegative(currentPage)]);
+                setLoading(false);
+              }}
               disabled={loading}
             >
               {loading ? (
@@ -163,6 +207,36 @@ export default function AdminFeedbackPage() {
             </tbody>
           </table>
         </div>
+        {negativeTotal > 0 ? (
+          <div className="mt-4 flex flex-col gap-3 text-sm text-[#667085] md:flex-row md:items-center md:justify-between">
+            <div>
+              Showing {pageFrom}-{pageTo} of {negativeTotal}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-9 px-4"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={loading || negativeLoading || currentPage <= 1}
+              >
+                Previous
+              </Button>
+              <span className="px-2 text-[#98a2b3]">
+                Page {currentPage} / {negativeTotalPages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-9 px-4"
+                onClick={() => setCurrentPage((prev) => Math.min(negativeTotalPages, prev + 1))}
+                disabled={loading || negativeLoading || currentPage >= negativeTotalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </section>
     </div>
   );
