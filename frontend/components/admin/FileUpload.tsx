@@ -13,7 +13,7 @@ type FileUploadProps = {
   className?: string;
 };
 
-const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
+const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md", ".png", ".jpg", ".jpeg", ".webp"];
 const MAX_FILE_MB = 15;
 
 function hasSupportedExtension(filename: string): boolean {
@@ -86,7 +86,7 @@ export default function FileUpload({
         <div className="space-y-1">
           <h2 className="m-0 text-lg font-semibold text-[#101828]">Încarcă document</h2>
           <p className="m-0 text-sm text-[#667085]">
-            Formate: PDF, DOCX, TXT, MD. Dimensiune maximă: {MAX_FILE_MB} MB.
+            Formate: PDF, DOCX, TXT, MD, PNG, JPG, WEBP. Dimensiune maximă: {MAX_FILE_MB} MB.
           </p>
         </div>
       ) : null}
@@ -94,7 +94,7 @@ export default function FileUpload({
         ref={inputRef}
         type="file"
         className="sr-only"
-        accept=".pdf,.docx,.txt,.md"
+        accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp"
         disabled={isUploading}
         onChange={async (event) => {
           const selected = event.currentTarget.files?.[0];

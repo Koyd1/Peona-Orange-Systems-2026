@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     openai_embedding_dim: int = 3072
     ingest_tmp_dir: str = "/tmp/rag"
     ingest_max_file_size_mb: int = 15
+    ingest_image_max_file_size_mb: int = 5
+    ingest_allowed_image_mime_types: str = "image/png,image/jpeg,image/webp"
+    image_preview_expires_seconds: int = 3600
     openai_chat_model: str = "gpt-4o"
     openai_chat_fallback_models: str = "gpt-4o"
     openai_judge_model: str = "gpt-4o"
