@@ -129,6 +129,7 @@ make prod-down
 - `OPENAI_CHAT_MODEL`
 - `OPENAI_CHAT_FALLBACK_MODELS`
 - `OPENAI_JUDGE_MODEL`
+- `OPENAI_MODEL_PRICING_JSON`
 - `RAG_TOP_K`, `RAG_SIM_THRESHOLD`
 - `HEALTH_OPENAI_WARN_MS`, `HEALTH_HALL_WARN_THRESHOLD`
 - `LOG_LEVEL`, `LOG_JSON`, `LOG_TO_FILE`, `LOG_FILE_PATH`
@@ -164,6 +165,7 @@ Workflow: `.github/workflows/ci.yml`
 - `GET /api/v1/health/detailed` (backend)
 - `POST /api/v1/evaluate` (hallucination judge)
 - Admin UI: `/admin/health`
+- Dashboard включает service health, usage/cost по моделям, legacy estimates, hallucination analytics и coverage warnings
 
 ## Runbook деплоя
 

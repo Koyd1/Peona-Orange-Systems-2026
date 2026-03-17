@@ -4,8 +4,13 @@ import json
 import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from time import perf_counter
+from typing import Awaitable, Callable
 
 from openai import AsyncOpenAI
+
+from app.core.chat_prompt import HR_ASSISTANT_SYSTEM_PROMPT
+from app.core.usage import UsageTelemetry
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,57 +47,12 @@ class ChatStreamer:
         *,
         user_message: str,
         sources: list[Source],
+        usage_callback: Callable[[UsageTelemetry], Awaitable[None] | None] | None = None,
     ) -> AsyncIterator[str]:
         if self._client is None:
             async for token in self._fallback_tokens(user_message, sources):
                 yield token
             return
-
-        system_prompt = """
-You are an HR assistant.
-
-You will receive context blocks in the following format:
-
-[S1] Document: <document name>
-Content: <text chunk>
-
-[S2] Document: <document name>
-Content: <text chunk>
-
-Rules:
-- Each context block has a source ID (S1, S2, etc.) and a document name.
-- When creating the SOURCES section you MUST use the real document name.
-- NEVER write "S1", "S2" as document names.
-- Instead use the document name that appears in the context block.
-
-Response structure MUST follow this format:
-
-1) Write the main answer for the user.
-
-2) After the answer write exactly:
-
-[[SOURCES]]
-
-3) Then list the sources used.
-
-Format:
-
-Document: <document name> | Citations: <citation1>; <citation2>
-
-Rules for citations:
-- A citation must be a short clear statement that reflects the document content.
-- If multiple statements come from the same document, combine them.
-- Do NOT repeat the same document twice.
-- Only include documents that appear in the context blocks.
-
-Example:
-
-Employees are entitled to paid annual leave.
-
-[[SOURCES]]
-
-Document: Vacation_Policy.pdf | Citations: Employees receive a fixed number of paid vacation days annually; Vacation must be approved by the manager.
-"""
 
         context_text = self._format_context_blocks(sources) if sources else "No context provided."
 
@@ -108,22 +68,40 @@ Document: Vacation_Policy.pdf | Citations: Employees receive a fixed number of p
         try:
             for model_name in deduped_models:
                 try:
+                    started = perf_counter()
+                    final_usage: UsageTelemetry | None = None
 
                     stream = await self._client.chat.completions.create(
                         model=model_name,
                         stream=True,
+                        stream_options={"include_usage": True},
                         temperature=0.2,
                         messages=[
-                            {"role": "system", "content": system_prompt},
+                            {"role": "system", "content": HR_ASSISTANT_SYSTEM_PROMPT},
                             {"role": "system", "content": f"Context:\n{context_text}"},
                             {"role": "user", "content": user_message},
                         ],
                     )
 
                     async for chunk in stream:
+                        if getattr(chunk, "usage", None) is not None:
+                            usage = chunk.usage
+                            final_usage = UsageTelemetry(
+                                operation="chat",
+                                model=model_name,
+                                prompt_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+                                completion_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+                                total_tokens=int(getattr(usage, "total_tokens", 0) or 0),
+                                latency_ms=int((perf_counter() - started) * 1000),
+                            )
                         delta = chunk.choices[0].delta.content if chunk.choices else None
                         if delta:
                             yield delta
+
+                    if final_usage is not None and usage_callback is not None:
+                        maybe_awaitable = usage_callback(final_usage)
+                        if maybe_awaitable is not None:
+                            await maybe_awaitable
 
                     return
 
@@ -161,4 +139,3 @@ Document: Vacation_Policy.pdf | Citations: Employees receive a fixed number of p
         for token in fallback.split(" "):
             yield f"{token} "
     
-

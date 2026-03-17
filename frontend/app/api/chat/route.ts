@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { calculateUsageCosts, type PersistableUsageEvent } from "@/lib/aiUsage";
 import { prisma } from "@/lib/db";
 import { resolveRequestSession } from "@/lib/request-session";
 
@@ -14,6 +15,8 @@ type DoneEventPayload = {
   answer?: string;
   session_id?: string;
   hallScore?: number;
+  hallReason?: string;
+  hallScoreSource?: string;
 };
 
 type SourcePayload = {
@@ -21,6 +24,19 @@ type SourcePayload = {
   filename?: string;
   similarity?: number;
   snippet?: string;
+};
+
+type TelemetryPayload = {
+  operation?: unknown;
+  model?: unknown;
+  provider?: unknown;
+  usage_source?: unknown;
+  prompt_tokens?: unknown;
+  completion_tokens?: unknown;
+  total_tokens?: unknown;
+  latency_ms?: unknown;
+  status?: unknown;
+  error_code?: unknown;
 };
 
 type SessionContext = {
@@ -71,10 +87,85 @@ async function ensureUserAndSession(params: {
   return user;
 }
 
+function normalizeTelemetryEvent(payload: TelemetryPayload): PersistableUsageEvent | null {
+  const operation = typeof payload.operation === "string" ? payload.operation : null;
+  const model = typeof payload.model === "string" ? payload.model : null;
+  if (!operation || !model) {
+    return null;
+  }
+
+  const promptTokens =
+    typeof payload.prompt_tokens === "number" && Number.isFinite(payload.prompt_tokens)
+      ? Math.max(0, Math.round(payload.prompt_tokens))
+      : 0;
+  const completionTokens =
+    typeof payload.completion_tokens === "number" && Number.isFinite(payload.completion_tokens)
+      ? Math.max(0, Math.round(payload.completion_tokens))
+      : 0;
+  const totalTokens =
+    typeof payload.total_tokens === "number" && Number.isFinite(payload.total_tokens)
+      ? Math.max(0, Math.round(payload.total_tokens))
+      : promptTokens + completionTokens;
+
+  return {
+    operation,
+    model,
+    provider: typeof payload.provider === "string" ? payload.provider : "openai",
+    usageSource: typeof payload.usage_source === "string" ? payload.usage_source : "exact",
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    latencyMs:
+      typeof payload.latency_ms === "number" && Number.isFinite(payload.latency_ms)
+        ? Math.max(0, Math.round(payload.latency_ms))
+        : null,
+    status: typeof payload.status === "string" ? payload.status : "ok",
+    errorCode: typeof payload.error_code === "string" ? payload.error_code : null
+  };
+}
+
+async function persistUsageEvents(params: {
+  messageId: string;
+  sessionId: string;
+  events: PersistableUsageEvent[];
+}) {
+  if (params.events.length === 0) {
+    return;
+  }
+
+  await prisma.aiUsageEvent.createMany({
+    data: params.events.map((event) => {
+      const costs = calculateUsageCosts(event.model, event.promptTokens, event.completionTokens);
+
+      return {
+        sessionId: params.sessionId,
+        messageId: params.messageId,
+        operation: event.operation,
+        model: event.model,
+        provider: event.provider ?? "openai",
+        usageSource: event.usageSource ?? "exact",
+        promptTokens: event.promptTokens,
+        completionTokens: event.completionTokens,
+        totalTokens: event.totalTokens,
+        latencyMs: event.latencyMs ?? null,
+        costInputUsd: costs.costInputUsd,
+        costOutputUsd: costs.costOutputUsd,
+        costTotalUsd: costs.costTotalUsd,
+        status: event.status ?? "ok",
+        errorCode: event.errorCode ?? null
+      };
+    })
+  });
+}
+
 async function backfillHallScore(params: {
   messageId: string;
+  sessionId: string;
   answer: string;
   sources: SourcePayload[];
+  fallbackHallScore: number | null;
+  fallbackHallReason: string | null;
+  fallbackHallScoreSource: string | null;
 }) {
   try {
     const response = await fetch(backendUrl("/api/v1/evaluate"), {
@@ -90,19 +181,58 @@ async function backfillHallScore(params: {
     });
     if (!response.ok) return;
 
-    const payload = (await response.json()) as { hallScore?: unknown };
+    const payload = (await response.json()) as {
+      hallScore?: unknown;
+      reason?: unknown;
+      model?: unknown;
+      source?: unknown;
+      latencyMs?: unknown;
+      usage?: TelemetryPayload | null;
+    };
     const score =
       typeof payload.hallScore === "number" && Number.isFinite(payload.hallScore)
         ? payload.hallScore
         : null;
-
-    if (score === null) return;
+    const reason = typeof payload.reason === "string" ? payload.reason : params.fallbackHallReason;
+    const judgeModel = typeof payload.model === "string" ? payload.model : null;
+    const scoreSource =
+      typeof payload.source === "string"
+        ? payload.source
+        : params.fallbackHallScoreSource ?? "heuristic";
 
     await prisma.message.update({
       where: { id: params.messageId },
-      data: { hallScore: score }
+      data: {
+        hallScore: score ?? params.fallbackHallScore,
+        hallReason: reason,
+        hallJudgeModel: judgeModel,
+        hallScoreSource: scoreSource,
+        hallEvaluatedAt: new Date()
+      }
     });
+
+    const usageEvent = payload.usage ? normalizeTelemetryEvent(payload.usage) : null;
+    if (usageEvent) {
+      usageEvent.latencyMs =
+        typeof payload.latencyMs === "number" && Number.isFinite(payload.latencyMs)
+          ? payload.latencyMs
+          : usageEvent.latencyMs;
+      await persistUsageEvents({
+        messageId: params.messageId,
+        sessionId: params.sessionId,
+        events: [usageEvent]
+      });
+    }
   } catch {
+    await prisma.message.update({
+      where: { id: params.messageId },
+      data: {
+        hallScore: params.fallbackHallScore,
+        hallReason: params.fallbackHallReason,
+        hallScoreSource: params.fallbackHallScoreSource ?? "heuristic",
+        hallEvaluatedAt: new Date()
+      }
+    }).catch(() => undefined);
     return;
   }
 }
@@ -115,6 +245,7 @@ async function persistDoneFromSSE(
   const decoder = new TextDecoder();
   let buffer = "";
   let sources: SourcePayload[] = [];
+  let telemetryEvents: PersistableUsageEvent[] = [];
 
   try {
     await ensureUserAndSession({
@@ -162,6 +293,13 @@ async function persistDoneFromSSE(
             sources = event.data as SourcePayload[];
           }
 
+          if (event.type === "telemetry" && event.data && typeof event.data === "object") {
+            const normalized = normalizeTelemetryEvent(event.data as TelemetryPayload);
+            if (normalized) {
+              telemetryEvents = [...telemetryEvents, normalized];
+            }
+          }
+
           if (event.type === "done") {
             const data = (event.data ?? {}) as DoneEventPayload;
             const answer = typeof data.answer === "string" ? data.answer : "";
@@ -169,6 +307,9 @@ async function persistDoneFromSSE(
               typeof data.hallScore === "number" && Number.isFinite(data.hallScore)
                 ? data.hallScore
                 : null;
+            const hallReason = typeof data.hallReason === "string" ? data.hallReason : null;
+            const hallScoreSource =
+              typeof data.hallScoreSource === "string" ? data.hallScoreSource : "heuristic";
 
             const saved = await prisma.message.create({
               data: {
@@ -176,14 +317,27 @@ async function persistDoneFromSSE(
                 role: "assistant",
                 content: answer,
                 sources,
-                hallScore
+                hallScore,
+                hallReason,
+                hallScoreSource
               }
             });
-            if (hallScore === null && answer.trim().length > 0) {
+            if (telemetryEvents.length > 0) {
+              void persistUsageEvents({
+                messageId: saved.id,
+                sessionId: ctx.sessionId,
+                events: telemetryEvents
+              });
+            }
+            if (answer.trim().length > 0) {
               void backfillHallScore({
                 messageId: saved.id,
+                sessionId: ctx.sessionId,
                 answer,
-                sources
+                sources,
+                fallbackHallScore: hallScore,
+                fallbackHallReason: hallReason,
+                fallbackHallScoreSource: hallScoreSource
               });
             }
 
