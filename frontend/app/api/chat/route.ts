@@ -274,16 +274,33 @@ export async function POST(request: Request) {
   const messages = payload.messages ?? [];
   const lastUserMessage = [...messages].reverse().find((msg) => msg.role === "user")?.content ?? "";
 
-  const upstream = await fetch(backendUrl("/api/v1/chat"), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      session_id: ctx.sessionId,
-      messages
-    })
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(backendUrl("/api/v1/chat"), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        session_id: ctx.sessionId,
+        messages
+      })
+    });
+  } catch (error) {
+    const maybeCode =
+      error && typeof error === "object" && "cause" in error
+        ? (error as { cause?: { code?: string } }).cause?.code
+        : undefined;
+
+    const isBackendUnavailable = maybeCode === "ECONNREFUSED" || maybeCode === "ENOTFOUND";
+
+    return NextResponse.json(
+      {
+        error: isBackendUnavailable ? "Chat backend is unavailable" : "Failed to connect to chat backend"
+      },
+      { status: 503 }
+    );
+  }
 
   if (!upstream.ok || !upstream.body) {
     const text = await upstream.text();
