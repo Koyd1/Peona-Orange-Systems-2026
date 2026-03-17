@@ -8,7 +8,7 @@ export default function AdminHealthPage() {
           System Health
         </h1>
         <p className="mt-3 max-w-[680px] text-base leading-relaxed text-[#6b7280]">
-          Verifici starea serviciilor critice și calitatea răspunsurilor, cu refresh automat la 30s.
+          Verifici serviciile critice, costurile AI, distribuția modelelor și riscurile de halucinație, cu refresh automat la 30s.
         </p>
       </section>
       <HealthPanel />

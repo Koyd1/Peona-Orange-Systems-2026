@@ -14,7 +14,7 @@ class EvaluateRequest(BaseModel):
 
 
 @router.post("")
-async def evaluate(request: EvaluateRequest) -> dict[str, float | str]:
+async def evaluate(request: EvaluateRequest) -> dict[str, object]:
     return await hallucination_judge.score(
         answer=request.answer,
         context_blocks=request.contextBlocks,
