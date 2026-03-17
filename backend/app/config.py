@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     openai_chat_model: str = "gpt-4o"
     openai_chat_fallback_models: str = "gpt-4o"
     openai_judge_model: str = "gpt-4o"
+    openai_model_pricing_json: str = ""
     rag_top_k: int = 5
     rag_sim_threshold: float = 0.05
     health_openai_warn_ms: int = 1800

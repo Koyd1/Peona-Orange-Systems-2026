@@ -24,8 +24,18 @@ type Props = {
 type SSEEvent =
   | { type: "sources"; data: ChatSource[] }
   | { type: "updated_sources"; data: ChatSource[] }
+  | { type: "telemetry"; data: Record<string, unknown> }
   | { type: "token"; data: string }
-  | { type: "done"; data: { answer: string; session_id: string; hallScore: number } };
+  | {
+      type: "done";
+      data: {
+        answer: string;
+        session_id: string;
+        hallScore: number;
+        hallReason?: string;
+        hallScoreSource?: string;
+      };
+    };
 
 const CHAT_STATUS_TEXT = {
   noMessages: "No messages.",

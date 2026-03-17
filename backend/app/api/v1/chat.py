@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from enum import unique
-import math
 import logging
+import math
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -40,7 +39,8 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
         extra={"session_id": request.session_id, "messages_count": len(request.messages)},
     )
 
-    query_embedding = (await embedder.embed_texts([last_user.content]))[0]
+    query_embeddings, embedding_telemetry = await embedder.embed_texts_with_telemetry([last_user.content])
+    query_embedding = query_embeddings[0]
     sources = await retriever.retrieve(db, query_embedding)
 #     sources = sorted(
 #     sources,
@@ -56,16 +56,19 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
     )
 
     async def event_generator(sources=sources):
+        pending_telemetry: list[dict[str, object]] = []
         files_map: dict[str, str] = {}
+        if embedding_telemetry is not None:
+            pending_telemetry.append(embedding_telemetry.as_payload())
         if sources:
             file_ids = list({source.file_id for source in sources})
             from sqlalchemy import select
-            unique = {}
+            deduped_sources = {}
             for source in sources:
                 key = (source.file_id, source.content[:80])
-                if key not in unique:
-                    unique[key] = source
-            sources = list(unique.values())
+                if key not in deduped_sources:
+                    deduped_sources[key] = source
+            sources = list(deduped_sources.values())
             result = await db.execute(
                 select(KnowledgeFile.id, KnowledgeFile.filename).where(KnowledgeFile.id.in_(file_ids))
             )
@@ -96,6 +99,8 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
             for source in sources
         ]
         yield encode_sse({"type": "sources", "data": sources_payload})
+        for telemetry in pending_telemetry:
+            yield encode_sse({"type": "telemetry", "data": telemetry})
 
         if not sources:
             LOGGER.info("chat.no_context", extra={"session_id": request.session_id})
@@ -103,13 +108,16 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
                 "В базе знаний пока нет релевантной информация по этому вопросу. "
                 "Загрузите HR-документы в раздел Knowledge и повторите запрос."
             )
+            heuristic = score_hallucination(answer, [])
             yield encode_sse(
                 {
                     "type": "done",
                     "data": {
                         "answer": answer,
                         "session_id": request.session_id,
-                        "hallScore": 0.0,
+                        "hallScore": heuristic["hallScore"],
+                        "hallReason": heuristic["reason"],
+                        "hallScoreSource": heuristic["source"],
                     },
                 }
             )
@@ -126,9 +134,14 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
         ]
 
         full_answer_parts: list[str] = []
+
+        async def emit_usage(telemetry):
+            pending_telemetry.append(telemetry.as_payload())
+
         async for token in chat_streamer.stream_answer(
             user_message=last_user.content,
             sources=sources_for_streamer,
+            usage_callback=emit_usage,
         ):
             full_answer_parts.append(token)
             yield encode_sse({"type": "token", "data": token})
@@ -170,22 +183,27 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
             )
         
         context_blocks = [source.content for source in sources_for_streamer]
-        hall_score = score_hallucination(answer_text, context_blocks)
+        heuristic = score_hallucination(answer_text, context_blocks)
         LOGGER.info(
             "chat.completed",
             extra={
                 "session_id": request.session_id,
                 "answer_len": len(answer_text),
-                "hall_score": round(hall_score, 4),
+                "hall_score": round(float(heuristic["hallScore"]), 4),
             },
         )
+        if len(pending_telemetry) > 1:
+            for telemetry in pending_telemetry[1:]:
+                yield encode_sse({"type": "telemetry", "data": telemetry})
         yield encode_sse(
             {
                 "type": "done",
                 "data": {
                     "answer": answer_text,
                     "session_id": request.session_id,
-                    "hallScore": hall_score,
+                    "hallScore": heuristic["hallScore"],
+                    "hallReason": heuristic["reason"],
+                    "hallScoreSource": heuristic["source"],
                 },
             }
         )

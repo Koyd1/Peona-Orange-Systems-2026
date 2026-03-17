@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -32,6 +33,16 @@ function createEmptyDraft(order = 100): Draft {
     category: "",
     order,
     isActive: true
+  };
+}
+
+function createDraftFromItem(item: FaqItem): Draft {
+  return {
+    question: item.question,
+    answer: item.answer,
+    category: item.category ?? "",
+    order: item.order,
+    isActive: item.isActive
   };
 }
 
@@ -64,6 +75,8 @@ export default function FaqEditor() {
   const [error, setError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<FaqItem | null>(null);
+  const [editDraft, setEditDraft] = useState<Draft>(createEmptyDraft());
 
   const sortedItems = useMemo(
     () =>
@@ -151,10 +164,12 @@ export default function FaqEditor() {
       }
 
       await load();
+      return true;
     } catch (updateError) {
       setError(
         updateError instanceof Error ? updateError.message : "Actualizarea FAQ-ului a eșuat."
       );
+      return false;
     } finally {
       setBusyId(null);
     }
@@ -185,14 +200,25 @@ export default function FaqEditor() {
     }
   }
 
-  async function editItem(item: FaqItem) {
-    const question = window.prompt("Întrebare nouă", item.question);
-    if (question === null) return;
+  function openEditDialog(item: FaqItem) {
+    setEditingItem(item);
+    setEditDraft(createDraftFromItem(item));
+  }
 
-    const answer = window.prompt("Răspuns nou", item.answer);
-    if (answer === null) return;
+  function closeEditDialog() {
+    setEditingItem(null);
+    setEditDraft(createEmptyDraft());
+  }
 
-    await patchItem(item.id, { question, answer });
+  async function saveEditedItem() {
+    if (!editingItem) {
+      return;
+    }
+
+    const success = await patchItem(editingItem.id, editDraft);
+    if (success) {
+      closeEditDialog();
+    }
   }
 
   function resetEditor() {
@@ -325,6 +351,109 @@ export default function FaqEditor() {
         </section>
       ) : null}
 
+      <Dialog
+        open={editingItem !== null}
+        onClose={() => {
+          if (editingItem && busyId === editingItem.id) {
+            return;
+          }
+          closeEditDialog();
+        }}
+        title="Editează FAQ"
+        description="Editează rapid conținutul fără să ieși din pagină."
+        panelClassName="max-w-[680px]"
+      >
+        <form
+          className="grid gap-3 md:grid-cols-2"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await saveEditedItem();
+          }}
+        >
+          <label className="md:col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Întrebare</span>
+            <Input
+              placeholder="Întrebare"
+              value={editDraft.question}
+              onChange={(event) =>
+                setEditDraft((prev) => ({ ...prev, question: event.target.value }))
+              }
+              className="bg-white"
+            />
+          </label>
+
+          <label className="md:col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Răspuns</span>
+            <Textarea
+              placeholder="Răspuns"
+              value={editDraft.answer}
+              onChange={(event) =>
+                setEditDraft((prev) => ({ ...prev, answer: event.target.value }))
+              }
+              rows={5}
+              className="min-h-[140px] bg-white"
+            />
+          </label>
+
+          <label>
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Categorie</span>
+            <Input
+              placeholder="Categorie"
+              value={editDraft.category}
+              onChange={(event) =>
+                setEditDraft((prev) => ({ ...prev, category: event.target.value }))
+              }
+              className="bg-white"
+            />
+          </label>
+
+          <label>
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Ordine</span>
+            <Input
+              type="number"
+              min={0}
+              max={9999}
+              value={editDraft.order}
+              onChange={(event) =>
+                setEditDraft((prev) => ({
+                  ...prev,
+                  order: Number.isNaN(Number(event.target.value))
+                    ? prev.order
+                    : Number(event.target.value)
+                }))
+              }
+              className="bg-white"
+            />
+          </label>
+
+          <label className="inline-flex items-center gap-2 rounded-xl border border-[#e4e7ec] bg-[#f8fafc] px-3.5 py-3 text-sm text-[#344054] md:col-span-2">
+            <input
+              type="checkbox"
+              checked={editDraft.isActive}
+              onChange={(event) =>
+                setEditDraft((prev) => ({ ...prev, isActive: event.target.checked }))
+              }
+              className="accent-orange-500"
+            />
+            Activ
+          </label>
+
+          <div className="mt-1 flex flex-wrap items-center justify-end gap-2 md:col-span-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={closeEditDialog}
+              disabled={editingItem ? busyId === editingItem.id : false}
+            >
+              Anulează
+            </Button>
+            <Button type="submit" disabled={editingItem ? busyId === editingItem.id : false}>
+              {editingItem && busyId === editingItem.id ? "Se salvează..." : "Salvează"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
       <section className="space-y-3">
         {sortedItems.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#d5dae1] bg-white/65 p-5 text-[#6b7280]">
@@ -367,36 +496,10 @@ export default function FaqEditor() {
                       className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[#1f2937] hover:bg-[#f3f4f6]"
                       onClick={async () => {
                         setOpenMenuId(null);
-                        await editItem(item);
+                        openEditDialog(item);
                       }}
                     >
-                      Editează întrebarea + răspunsul
-                    </button>
-                    <button
-                      type="button"
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[#1f2937] hover:bg-[#f3f4f6]"
-                      onClick={async () => {
-                        const nextCategory = window.prompt("Categorie nouă", item.category ?? "");
-                        setOpenMenuId(null);
-                        if (nextCategory === null) return;
-                        await patchItem(item.id, { category: nextCategory });
-                      }}
-                    >
-                      Schimbă categoria
-                    </button>
-                    <button
-                      type="button"
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[#1f2937] hover:bg-[#f3f4f6]"
-                      onClick={async () => {
-                        const nextOrder = window.prompt("Ordine nouă", String(item.order));
-                        setOpenMenuId(null);
-                        if (nextOrder === null) return;
-                        const parsed = Number(nextOrder);
-                        if (Number.isNaN(parsed)) return;
-                        await patchItem(item.id, { order: parsed });
-                      }}
-                    >
-                      Schimbă ordinea
+                      Editează
                     </button>
                     <button
                       type="button"
