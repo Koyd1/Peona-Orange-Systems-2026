@@ -132,7 +132,7 @@ export default function FeedbackChart({
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#d1d5db" />
                 <YAxis domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} stroke="#d1d5db" />
                 <Tooltip
-                  formatter={(value) => `${value}%`}
+                  formatter={(value: unknown) => `${value}%`}
                   contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
                 />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
