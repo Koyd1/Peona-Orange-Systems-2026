@@ -2,27 +2,21 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  getCachedPromptTemplates,
-  loadPromptTemplates,
-  type PromptTemplate
-} from "@/lib/chatSuggestionsCache";
+import { getCachedFaqItems, loadFaqItems, type FaqItem } from "@/lib/chatSuggestionsCache";
 
-export default function PromptCards({
+export default function FaqCards({
   onPick,
-  layout = "row",
-  activeId = null
+  layout = "grid"
 }: {
-  onPick: (item: PromptTemplate) => void;
+  onPick: (item: FaqItem) => void;
   layout?: "row" | "grid";
-  activeId?: string | null;
 }) {
-  const [items, setItems] = useState<PromptTemplate[]>([]);
+  const [items, setItems] = useState<FaqItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const cached = getCachedPromptTemplates();
+    const cached = getCachedFaqItems();
     if (cached) {
       setItems(cached);
       setLoading(false);
@@ -31,10 +25,10 @@ export default function PromptCards({
     async function load() {
       setError(null);
       try {
-        const freshItems = await loadPromptTemplates({ force: !cached });
+        const freshItems = await loadFaqItems({ force: !cached });
         setItems(freshItems);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Failed to load prompt cards");
+        setError(loadError instanceof Error ? loadError.message : "Failed to load FAQ items");
       } finally {
         setLoading(false);
       }
@@ -48,7 +42,7 @@ export default function PromptCards({
   }
 
   if (items.length === 0) {
-    return <p className="text-sm text-slate-400">Nu exista sabloane active.</p>;
+    return <p className="text-sm text-slate-400">Nu exista intrebari FAQ active.</p>;
   }
 
   const containerClass =
@@ -61,13 +55,13 @@ export default function PromptCards({
   if (loading) {
     return (
       <div className={containerClass}>
-        {Array.from({ length: layout === "grid" ? 4 : 4 }).map((_, index) => (
+        {Array.from({ length: layout === "grid" ? 4 : 3 }).map((_, index) => (
           <div
-            key={`prompt-skeleton-${index}`}
+            key={`faq-skeleton-${index}`}
             className={
               layout === "grid"
                 ? "h-[56px] w-full animate-pulse rounded-2xl border border-border bg-white/70"
-                : "h-[40px] w-[170px] shrink-0 animate-pulse rounded-full border border-border bg-white/70"
+                : "h-[40px] w-[180px] shrink-0 animate-pulse rounded-full border border-border bg-white/70"
             }
           />
         ))}
@@ -81,15 +75,11 @@ export default function PromptCards({
         <button
           key={item.id}
           type="button"
-          title={item.content}
+          title={item.question}
           onClick={() => onPick(item)}
-          className={`${buttonClass} ${
-            activeId === item.id
-              ? "border-[#e58b3a] bg-orange-50/80 text-slate-900 shadow-[0_12px_30px_rgba(229,139,58,0.22)]"
-              : ""
-          }`}
+          className={buttonClass}
         >
-          {item.title}
+          {item.question}
         </button>
       ))}
     </div>
