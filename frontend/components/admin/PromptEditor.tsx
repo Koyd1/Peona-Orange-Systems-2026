@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert } from "@/components/ui/alert";
 
 type PromptTemplate = {
   id: string;
@@ -32,6 +33,16 @@ function createEmptyDraft(order = 100): Draft {
     category: "",
     order,
     isActive: true
+  };
+}
+
+function createDraftFromTemplate(item: PromptTemplate): Draft {
+  return {
+    title: item.title,
+    content: item.content,
+    category: item.category ?? "",
+    order: item.order,
+    isActive: item.isActive
   };
 }
 
@@ -64,6 +75,8 @@ export default function PromptEditor() {
   const [error, setError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<PromptTemplate | null>(null);
+  const [editDraft, setEditDraft] = useState<Draft>(createEmptyDraft());
 
   const sortedItems = useMemo(
     () =>
@@ -153,10 +166,12 @@ export default function PromptEditor() {
       }
 
       await load();
+      return true;
     } catch (updateError) {
       setError(
         updateError instanceof Error ? updateError.message : "Actualizarea template-ului a eșuat."
       );
+      return false;
     } finally {
       setBusyId(null);
     }
@@ -187,14 +202,25 @@ export default function PromptEditor() {
     }
   }
 
-  async function editTemplate(item: PromptTemplate) {
-    const title = window.prompt("Titlu nou", item.title);
-    if (title === null) return;
+  function openEditDialog(item: PromptTemplate) {
+    setEditingItem(item);
+    setEditDraft(createDraftFromTemplate(item));
+  }
 
-    const content = window.prompt("Conținut nou", item.content);
-    if (content === null) return;
+  function closeEditDialog() {
+    setEditingItem(null);
+    setEditDraft(createEmptyDraft());
+  }
 
-    await patchTemplate(item.id, { title, content });
+  async function saveEditedTemplate() {
+    if (!editingItem) {
+      return;
+    }
+
+    const success = await patchTemplate(editingItem.id, editDraft);
+    if (success) {
+      closeEditDialog();
+    }
   }
 
   function resetEditor() {
@@ -326,6 +352,102 @@ export default function PromptEditor() {
         </section>
       ) : null}
 
+      <Dialog
+        open={editingItem !== null}
+        onClose={() => {
+          if (editingItem && busyId === editingItem.id) {
+            return;
+          }
+          closeEditDialog();
+        }}
+        title="Edit Prompt Template"
+        description="Quick popup pentru editarea template-ului direct peste pagină."
+        panelClassName="max-w-[760px]"
+      >
+        <form
+          className="grid gap-3 md:grid-cols-2"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await saveEditedTemplate();
+          }}
+        >
+          <label className="md:col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Title</span>
+            <Input
+              placeholder="Title"
+              value={editDraft.title}
+              onChange={(event) => setEditDraft((prev) => ({ ...prev, title: event.target.value }))}
+              className="bg-white"
+            />
+          </label>
+
+          <label>
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Category</span>
+            <Input
+              placeholder="Category"
+              value={editDraft.category}
+              onChange={(event) =>
+                setEditDraft((prev) => ({ ...prev, category: event.target.value }))
+              }
+              className="bg-white"
+            />
+          </label>
+
+          <label>
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Order</span>
+            <Input
+              type="number"
+              min={0}
+              max={9999}
+              value={editDraft.order}
+              className="bg-white"
+              onChange={(event) =>
+                setEditDraft((prev) => ({ ...prev, order: Number(event.target.value || 0) }))
+              }
+            />
+          </label>
+
+          <label className="md:col-span-2">
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Content</span>
+            <Textarea
+              placeholder="Content"
+              value={editDraft.content}
+              onChange={(event) =>
+                setEditDraft((prev) => ({ ...prev, content: event.target.value }))
+              }
+              rows={7}
+              className="min-h-[180px] bg-white"
+            />
+          </label>
+
+          <label className="inline-flex items-center gap-2 rounded-xl border border-[#e4e7ec] bg-[#f8fafc] px-3.5 py-3 text-sm text-[#344054] md:col-span-2">
+            <input
+              type="checkbox"
+              checked={editDraft.isActive}
+              onChange={(event) =>
+                setEditDraft((prev) => ({ ...prev, isActive: event.target.checked }))
+              }
+              className="accent-orange-500"
+            />
+            Active
+          </label>
+
+          <div className="mt-1 flex flex-wrap items-center justify-end gap-2 md:col-span-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={closeEditDialog}
+              disabled={editingItem ? busyId === editingItem.id : false}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={editingItem ? busyId === editingItem.id : false}>
+              {editingItem && busyId === editingItem.id ? "Saving..." : "Save changes"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
       <section className="grid gap-5 lg:grid-cols-2">
         {sortedItems.map((item) => (
           <article
@@ -378,22 +500,10 @@ export default function PromptEditor() {
                       className="w-full rounded-xl px-3 py-2 text-left text-[0.96rem] text-[#1f2937] transition hover:bg-[#f5f7fb]"
                       onClick={async () => {
                         setOpenMenuId(null);
-                        await editTemplate(item);
+                        openEditDialog(item);
                       }}
                     >
                       Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full rounded-xl px-3 py-2 text-left text-[0.96rem] text-[#1f2937] transition hover:bg-[#f5f7fb]"
-                      onClick={async () => {
-                        setOpenMenuId(null);
-                        const nextOrder = window.prompt("Ordine nouă", String(item.order));
-                        if (nextOrder === null) return;
-                        await patchTemplate(item.id, { order: Number(nextOrder) || 0 });
-                      }}
-                    >
-                      Change order
                     </button>
                     <button
                       type="button"
@@ -420,7 +530,7 @@ export default function PromptEditor() {
               </div>
             </div>
 
-            <p className="mt-5 min-h-[112px] overflow-hidden text-[1.02rem] leading-relaxed text-[#475467] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:4]">
+            <p className="mt-5 whitespace-pre-wrap break-words text-[1.02rem] leading-relaxed text-[#475467]">
               {item.content}
             </p>
 
