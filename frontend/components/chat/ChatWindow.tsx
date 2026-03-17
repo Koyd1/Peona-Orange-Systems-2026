@@ -21,6 +21,13 @@ type SSEEvent =
   | { type: "token"; data: string }
   | { type: "done"; data: { answer: string; session_id: string; hallScore: number } };
 
+const CHAT_STATUS_TEXT = {
+  noMessages: "No messages.",
+  streamError: "Stream error.",
+  sending: "Sending message.",
+  reloadingHistory: "Reloading history."
+} as const;
+
 function parseSSELines(buffer: string): { events: SSEEvent[]; rest: string } {
   const events: SSEEvent[] = [];
   let remaining = buffer;
@@ -56,6 +63,7 @@ export default function ChatWindow({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [hasResponse, setHasResponse] = useState(false);
   const [sessionInitState, setSessionInitState] = useState<"unknown" | "empty" | "history">(
     "unknown"
@@ -70,45 +78,50 @@ export default function ChatWindow({
   const isFreshSession = sessionInitState === "empty";
 
   const loadHistory = useCallback(async () => {
-    const response = await fetch(`/api/chat?sessionId=${encodeURIComponent(sessionId)}`, {
-      cache: "no-store"
-    });
-    if (!response.ok) {
-      return;
-    }
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`/api/chat?sessionId=${encodeURIComponent(sessionId)}`, {
+        cache: "no-store"
+      });
+      if (!response.ok) {
+        return;
+      }
 
-    const payload = (await response.json()) as {
-      items: Array<{
-        id: string;
-        role: "user" | "assistant" | "system";
-        content: string;
-        sources?: ChatSource[];
-        feedbackRating?: number | null;
-        feedbackComment?: string | null;
-      }>;
-    };
+      const payload = (await response.json()) as {
+        items: Array<{
+          id: string;
+          role: "user" | "assistant" | "system";
+          content: string;
+          sources?: ChatSource[];
+          feedbackRating?: number | null;
+          feedbackComment?: string | null;
+        }>;
+      };
 
-    const filtered = payload.items
-      .filter((item) => item.role === "user" || item.role === "assistant")
-      .map((item) => ({
-        id: item.id,
-        role: item.role as "user" | "assistant",
-        content: item.content,
-        sources: item.sources,
-        feedbackRating:
-          item.feedbackRating === 1 || item.feedbackRating === -1
-            ? (item.feedbackRating as 1 | -1)
-            : undefined,
-        feedbackComment: item.feedbackComment ?? null
-      }));
+      const filtered = payload.items
+        .filter((item) => item.role === "user" || item.role === "assistant")
+        .map((item) => ({
+          id: item.id,
+          role: item.role as "user" | "assistant",
+          content: item.content,
+          sources: item.sources,
+          feedbackRating:
+            item.feedbackRating === 1 || item.feedbackRating === -1
+              ? (item.feedbackRating as 1 | -1)
+              : undefined,
+          feedbackComment: item.feedbackComment ?? null
+        }));
 
-    setMessages(filtered);
-    setSessionInitState((prev) =>
-      prev === "unknown" ? (filtered.length === 0 ? "empty" : "history") : prev
-    );
+      setMessages(filtered);
+      setSessionInitState((prev) =>
+        prev === "unknown" ? (filtered.length === 0 ? "empty" : "history") : prev
+      );
 
-    if (filtered.some((m) => m.role === "assistant" && m.content.length > 0)) {
-      setHasResponse(true);
+      if (filtered.some((m) => m.role === "assistant" && m.content.length > 0)) {
+        setHasResponse(true);
+      }
+    } finally {
+      setHistoryLoading(false);
     }
   }, [sessionId]);
 
@@ -278,7 +291,7 @@ export default function ChatWindow({
         }
       }
     } catch (sendError) {
-      setError(sendError instanceof Error ? sendError.message : "Eroare la trimitere");
+      setError(CHAT_STATUS_TEXT.streamError);
     } finally {
       setLoading(false);
     }
@@ -359,6 +372,9 @@ export default function ChatWindow({
                 className="w-full min-h-0 flex-1 overflow-y-auto"
               >
                 <div className="mx-auto flex min-h-full w-full max-w-[1200px] flex-col gap-6 pb-4 pr-2 sm:gap-10">
+                  {messages.length === 0 ? (
+                    <p className="text-sm text-slate-500">{CHAT_STATUS_TEXT.noMessages}</p>
+                  ) : null}
                   {showGreeting ? (
                     <div className="flex items-start gap-4 sm:gap-5">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e58b3a] shadow-[0_8px_20px_rgba(15,23,42,0.12)]">
@@ -431,9 +447,14 @@ export default function ChatWindow({
             ) : null}
 
             <div className="mx-auto w-full max-w-[1200px] shrink-0 pt-2 sm:pt-3">
+              {historyLoading ? (
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                  {CHAT_STATUS_TEXT.reloadingHistory}
+                </p>
+              ) : null}
               {!isEmpty && loading ? (
                 <p className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.3em] text-slate-400">
-                  Se trimite mesajul
+                  {CHAT_STATUS_TEXT.sending}
                   <TypingDots className="text-slate-400" size="sm" />
                 </p>
               ) : null}
@@ -490,7 +511,7 @@ export default function ChatWindow({
                   setShowJumpToBottom(false);
                   scrollToBottom("smooth");
                 }}
-                className="absolute bottom-24 right-8 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-slate-600 shadow-[0_12px_24px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:text-slate-800 sm:bottom-28 sm:right-26"
+                className="absolute bottom-24 right-8 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-slate-600 shadow-[0_12px_24px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:text-slate-800 sm:bottom-28 sm:right-10"
                 aria-label="Scroll to latest messages"
                 title="Mesaje noi"
               >
