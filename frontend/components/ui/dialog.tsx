@@ -72,11 +72,18 @@ export function Dialog({
       <div className="fixed inset-0 bg-[#101828]/20 backdrop-blur-[1.5px]" aria-hidden="true" />
       <div
         className={cn(
-          "relative mx-auto my-auto w-full max-w-[720px] overflow-hidden rounded-[24px] border border-[#f2ddcc] bg-[linear-gradient(180deg,#fffaf6_0%,#ffffff_24%)] shadow-[0_30px_80px_-40px_rgba(16,24,40,0.45)] ring-1 ring-[#fff7f2] animate-[dialog-pop_180ms_ease-out]",
+          "relative mx-auto my-auto w-full max-w-[720px] overflow-hidden rounded-[24px] border border-[#f2ddcc] bg-[linear-gradient(180deg,#fff9f5_0%,#fffdfb_24%,#ffffff_44%)] shadow-[0_30px_80px_-40px_rgba(16,24,40,0.45)] ring-1 ring-[#fff7f2] animate-[dialog-pop_180ms_ease-out]",
           panelClassName
         )}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[radial-gradient(circle_at_top,#f7d7ba_0%,rgba(247,215,186,0.16)_42%,transparent_72%)]" />
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[linear-gradient(180deg,rgba(247,215,186,0.2)_0%,rgba(247,215,186,0.08)_52%,rgba(255,255,255,0)_100%)]"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 h-40 w-[140%] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(247,215,186,0.72)_0%,rgba(247,215,186,0.22)_38%,rgba(255,255,255,0)_76%)] blur-2xl"
+          aria-hidden="true"
+        />
 
         <div className="relative border-b border-[#f2ede7] px-5 pb-4 pt-5 md:px-6">
           <div className="flex items-start justify-between gap-4">
