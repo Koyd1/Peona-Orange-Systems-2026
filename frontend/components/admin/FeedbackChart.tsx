@@ -1,8 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-
-import { Button } from "@/components/ui/button";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type Summary = {
   total: number;
@@ -18,119 +27,157 @@ type Point = {
   negative: number;
 };
 
-const CHART_PAGE_SIZE = 2;
+const STAT_CARDS = [
+  {
+    label: "Total recenzii",
+    key: "total" as const,
+    icon: "/icons/blue_message.svg",
+    iconBg: "bg-blue-50",
+  },
+  {
+    label: "Pozitive",
+    key: "positiveRate" as const,
+    icon: "/icons/like_logo.svg",
+    iconBg: "bg-green-50",
+    suffix: "%",
+  },
+  {
+    label: "Negative",
+    key: "negativeRate" as const,
+    icon: "/icons/dislike_logo.svg",
+    iconBg: "bg-red-50",
+    suffix: "%",
+  },
+  {
+    label: "Comentarii",
+    key: "comments" as const,
+    icon: "/icons/comments_logo.svg",
+    iconBg: "bg-yellow-50",
+  },
+] as const;
 
 export default function FeedbackChart({
   summary,
-  series
+  series,
 }: {
   summary: Summary;
   series: Point[];
 }) {
-  const orderedSeries = useMemo(() => [...series].reverse(), [series]);
-  const [chartPage, setChartPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(orderedSeries.length / CHART_PAGE_SIZE));
-  const maxTotal = Math.max(1, ...orderedSeries.map((item) => item.total));
+  const negativeRate =
+    summary.total > 0 ? 100 - summary.positiveRate : 0;
 
-  useEffect(() => {
-    setChartPage(1);
-  }, [orderedSeries.length]);
+  const statValues: Record<string, number> = {
+    total: summary.total,
+    positiveRate: summary.positiveRate,
+    negativeRate,
+    comments: summary.negative,
+  };
 
-  useEffect(() => {
-    if (chartPage > totalPages) {
-      setChartPage(totalPages);
-    }
-  }, [chartPage, totalPages]);
+  const barData = series.map((p) => ({
+    name: p.day.slice(5), // MM-DD
+    Pozitive: p.positive,
+    Negative: p.negative,
+  }));
 
-  const pageFrom = (chartPage - 1) * CHART_PAGE_SIZE;
-  const visibleSeries = orderedSeries.slice(pageFrom, pageFrom + CHART_PAGE_SIZE);
-  const rangeFrom = orderedSeries.length === 0 ? 0 : pageFrom + 1;
-  const rangeTo = orderedSeries.length === 0 ? 0 : Math.min(pageFrom + CHART_PAGE_SIZE, orderedSeries.length);
+  const lineData = series.map((p) => {
+    const total = p.positive + p.negative;
+    return {
+      name: p.day.slice(5),
+      "Pozitive %": total > 0 ? Math.round((p.positive / total) * 100) : 0,
+      "Negative %": total > 0 ? Math.round((p.negative / total) * 100) : 0,
+    };
+  });
+
+  const emptyLine = (
+    <p className="py-16 text-center text-sm text-gray-400">
+      Nu există încă date pentru grafic.
+    </p>
+  );
 
   return (
-    <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-5 py-6 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-7">
-      <h2 className="m-0 text-[1.7rem] font-bold tracking-[-0.02em] text-[#111827]">
-        Feedback analytics
-      </h2>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-[#e9edf5] bg-[#fbfcff] p-4">
-          <div className="text-xs font-semibold uppercase tracking-[0.08em] text-[#98a2b3]">Total</div>
-          <div className="mt-2 text-2xl font-bold text-[#111827]">{summary.total}</div>
-        </div>
-        <div className="rounded-2xl border border-[#d9f5e5] bg-[#f1fdf6] p-4">
-          <div className="text-xs font-semibold uppercase tracking-[0.08em] text-[#0f8a4a]">Positive</div>
-          <div className="mt-2 text-2xl font-bold text-[#027a48]">{summary.positive}</div>
-        </div>
-        <div className="rounded-2xl border border-[#fee4e2] bg-[#fff5f4] p-4">
-          <div className="text-xs font-semibold uppercase tracking-[0.08em] text-[#b42318]">Negative</div>
-          <div className="mt-2 text-2xl font-bold text-[#b42318]">{summary.negative}</div>
-        </div>
-        <div className="rounded-2xl border border-[#e7edff] bg-[#f5f8ff] p-4">
-          <div className="text-xs font-semibold uppercase tracking-[0.08em] text-[#4a63d9]">
-            Positive rate
-          </div>
-          <div className="mt-2 text-2xl font-bold text-[#1d2939]">{summary.positiveRate}%</div>
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-3">
-        {series.length === 0 ? (
-          <p className="m-0 rounded-2xl border border-dashed border-[#d0d5dd] bg-[#fcfdff] px-4 py-10 text-center text-sm text-[#667085]">
-            Nu există încă date pentru grafic.
-          </p>
-        ) : null}
-        {visibleSeries.map((point) => (
-          <div key={point.day} className="rounded-2xl border border-[#edf0f5] bg-[#fbfcff] px-4 py-3">
-            <div className="mb-2 flex items-center justify-between text-sm text-[#667085]">
-              <span className="font-semibold text-[#344054]">{point.day}</span>
-              <span className="font-medium">
-                {point.positive} / {point.negative} / {point.total}
-              </span>
+    <div className="space-y-5">
+      {/* ── stat cards ── */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {STAT_CARDS.map((card) => (
+          <div
+            key={card.key}
+            className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+          >
+            <div>
+              <p className="m-0 text-sm text-gray-500">{card.label}</p>
+              <p className="m-0 mt-1 text-3xl font-bold text-gray-900">
+                {statValues[card.key]}
+                {"suffix" in card ? card.suffix : ""}
+              </p>
             </div>
-            <div className="flex h-2.5 overflow-hidden rounded-full bg-[#eef2f7]">
-              <div
-                className="bg-[#12b76a]"
-                style={{ width: `${(point.positive / maxTotal) * 100}%` }}
-              />
-              <div
-                className="bg-[#f04438]"
-                style={{ width: `${(point.negative / maxTotal) * 100}%` }}
-              />
+            <div
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}
+            >
+              <img src={card.icon} alt="" className="h-6 w-6" />
             </div>
           </div>
         ))}
-        {orderedSeries.length > CHART_PAGE_SIZE ? (
-          <div className="mt-2 flex flex-col gap-3 text-sm text-[#667085] md:flex-row md:items-center md:justify-between">
-            <div>
-              Showing {rangeFrom}-{rangeTo} of {orderedSeries.length} days
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="h-9 px-4"
-                onClick={() => setChartPage((prev) => Math.max(1, prev - 1))}
-                disabled={chartPage <= 1}
-              >
-                Previous
-              </Button>
-              <span className="px-2 text-[#98a2b3]">
-                Page {chartPage} / {totalPages}
-              </span>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="h-9 px-4"
-                onClick={() => setChartPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={chartPage >= totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        ) : null}
       </div>
-    </section>
+
+      {/* ── charts ── */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {}
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <h3 className="m-0 mb-1 text-base font-semibold text-gray-900">Statistici</h3>
+          <p className="m-0 mb-4 text-xs text-gray-400">% din recenzii pe zi</p>
+          {lineData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={lineData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#d1d5db" />
+                <YAxis domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} stroke="#d1d5db" />
+                <Tooltip
+                  formatter={(value) => `${value}%`}
+                  contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
+                />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
+                <Line
+                  type="monotone"
+                  dataKey="Pozitive %"
+                  stroke="#2dd4bf"
+                  strokeWidth={2.5}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Negative %"
+                  stroke="#f472b6"
+                  strokeWidth={2.5}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : emptyLine}
+        </div>
+
+        {}
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <h3 className="m-0 mb-1 text-base font-semibold text-gray-900">Histogramă</h3>
+          <p className="m-0 mb-4 text-xs text-gray-400">Număr de recenzii pe zi</p>
+          {barData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={barData} barGap={2} barSize={12} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#d1d5db" />
+                <YAxis tick={{ fontSize: 11 }} stroke="#d1d5db" />
+                <Tooltip
+                  contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
+                />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Pozitive" fill="#fb923c" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Negative" fill="#f87171" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : emptyLine}
+        </div>
+      </div>
+    </div>
   );
 }
