@@ -11,6 +11,7 @@ type AdminHref =
   | "/admin/knowledge"
   | "/admin/feedback"
   | "/admin/prompts"
+  | "/admin/faq"
   | "/admin/health";
 
 type NavItem = {
@@ -49,6 +50,12 @@ const navItems: NavItem[] = [
     Icon: FileIcon,
     isActive: (pathname) =>
       pathname === "/admin/prompts" || pathname.startsWith("/admin/prompts/"),
+  },
+  {
+    href: "/admin/faq",
+    label: "FAQ",
+    Icon: HelpIcon,
+    isActive: (pathname) => pathname === "/admin/faq" || pathname.startsWith("/admin/faq/"),
   },
   {
     href: "/admin/health",
@@ -162,6 +169,16 @@ function ActivityIcon(props: SVGProps<SVGSVGElement>) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+function HelpIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" {...props}>
+      <path d="M9.1 9a3 3 0 1 1 5.8 1c-.4 1.1-1.4 1.6-2.1 2.1-.8.5-1.3 1-1.3 1.9" />
+      <path d="M12 17h.01" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="9" />
     </svg>
   );
 }

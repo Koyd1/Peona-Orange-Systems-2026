@@ -102,3 +102,16 @@ model PromptTemplate {
   @@index([isActive, order])
   @@map("prompt_templates")
 }
+
+model FaqItem {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true) @map("is_active")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, order])
+  @@map("faq_items")
+}
