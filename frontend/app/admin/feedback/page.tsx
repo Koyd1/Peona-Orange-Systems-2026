@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import FeedbackChart from "@/components/admin/FeedbackChart";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 
 type Summary = {
@@ -115,21 +115,19 @@ export default function AdminFeedbackPage() {
 
   return (
     <div className="space-y-7">
-      <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-7 py-7 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-10 md:py-9">
-        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-          <div className="max-w-[620px]">
-            <h1 className="m-0 text-[2rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.35rem]">
+      <section>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h1 className="m-0 text-[2.25rem] font-bold tracking-[-0.02em] text-[#111827]">
               Feedback
             </h1>
-            <p className="mt-3 text-base leading-relaxed text-[#6b7280]">
-              Monitorizezi satisfacția utilizatorilor prin indicatori zilnici și feedback negativ.
+            <p className="mt-2 text-base text-[#6b7280]">
+              Recenziile utilizatorilor despre funcționarea asistentului AI
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="h-11 px-5 text-sm"
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            <button
+              type="button"
               onClick={async () => {
                 setLoading(true);
                 setError(null);
@@ -137,29 +135,27 @@ export default function AdminFeedbackPage() {
                 setLoading(false);
               }}
               disabled={loading}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
             >
               {loading ? (
-                <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#cbd5e1] border-t-[#475467]" />
+                <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
               ) : (
                 <span className="text-base leading-none">↻</span>
               )}
               Refresh
-            </Button>
+            </button>
             <a
               href="/api/admin/feedback/export"
               target="_blank"
               rel="noreferrer"
-              className={`${buttonVariants({
-                variant: "outline",
-                size: "sm"
-              })} h-11 px-5 text-sm`}
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-orange-600"
             >
-              <span className="text-base leading-none">↓</span>
-              Download CSV
+              <img src="/icons/upload_logo.svg" alt="" aria-hidden="true" className="h-3 w-3" />
+              Exportă CSV
             </a>
           </div>
         </div>
-        {error ? <Alert variant="error" className="mt-6">{error}</Alert> : null}
+        {error ? <Alert variant="error" className="mt-4">{error}</Alert> : null}
       </section>
 
       <FeedbackChart summary={summary} series={series} />

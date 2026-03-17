@@ -3,10 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import MessageBubble, { type ChatMessageVM } from "@/components/chat/MessageBubble";
+import FaqCards from "@/components/chat/FaqCards";
 import PromptCards from "@/components/chat/PromptCards";
 import SessionToggle from "@/components/chat/SessionToggle";
 import TypingDots from "@/components/chat/TypingDots";
 import type { ChatSource } from "@/components/chat/SourceCard";
+import {
+  type FaqItem,
+  type PromptTemplate,
+  warmChatSuggestionCaches
+} from "@/lib/chatSuggestionsCache";
 
 type Props = {
   sessionId: string;
@@ -20,6 +26,14 @@ type SSEEvent =
   | { type: "updated_sources"; data: ChatSource[] }
   | { type: "token"; data: string }
   | { type: "done"; data: { answer: string; session_id: string; hallScore: number } };
+
+const CHAT_STATUS_TEXT = {
+  noMessages: "No messages.",
+  streamError: "Stream error.",
+  sending: "Sending message.",
+  reloadingHistory: "Reloading history."
+} as const;
+const PROMPT_POPUP_PREF_KEY = "chat_prompt_popup_enabled_v1";
 
 function parseSSELines(buffer: string): { events: SSEEvent[]; rest: string } {
   const events: SSEEvent[] = [];
@@ -56,65 +70,101 @@ export default function ChatWindow({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [hasResponse, setHasResponse] = useState(false);
   const [sessionInitState, setSessionInitState] = useState<"unknown" | "empty" | "history">(
     "unknown"
   );
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const [selectedPromptCardId, setSelectedPromptCardId] = useState<string | null>(null);
+  const [promptToast, setPromptToast] = useState<string | null>(null);
+  const [upgradeFlash, setUpgradeFlash] = useState(false);
+  const [inputEmptyFlash, setInputEmptyFlash] = useState(false);
+  const [autoPromptPopupEnabled, setAutoPromptPopupEnabled] = useState(true);
   const [showJumpToBottom, setShowJumpToBottom] = useState(false);
   const messagesViewportRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
+  const promptToastTimeoutRef = useRef<number | null>(null);
 
   const canSend = input.trim().length > 0 && !loading;
   const isEmpty = messages.length === 0;
   const isFreshSession = sessionInitState === "empty";
 
   const loadHistory = useCallback(async () => {
-    const response = await fetch(`/api/chat?sessionId=${encodeURIComponent(sessionId)}`, {
-      cache: "no-store"
-    });
-    if (!response.ok) {
-      return;
-    }
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`/api/chat?sessionId=${encodeURIComponent(sessionId)}`, {
+        cache: "no-store"
+      });
+      if (!response.ok) {
+        return;
+      }
 
-    const payload = (await response.json()) as {
-      items: Array<{
-        id: string;
-        role: "user" | "assistant" | "system";
-        content: string;
-        sources?: ChatSource[];
-        feedbackRating?: number | null;
-        feedbackComment?: string | null;
-      }>;
-    };
+      const payload = (await response.json()) as {
+        items: Array<{
+          id: string;
+          role: "user" | "assistant" | "system";
+          content: string;
+          sources?: ChatSource[];
+          feedbackRating?: number | null;
+          feedbackComment?: string | null;
+        }>;
+      };
 
-    const filtered = payload.items
-      .filter((item) => item.role === "user" || item.role === "assistant")
-      .map((item) => ({
-        id: item.id,
-        role: item.role as "user" | "assistant",
-        content: item.content,
-        sources: item.sources,
-        feedbackRating:
-          item.feedbackRating === 1 || item.feedbackRating === -1
-            ? (item.feedbackRating as 1 | -1)
-            : undefined,
-        feedbackComment: item.feedbackComment ?? null
-      }));
+      const filtered = payload.items
+        .filter((item) => item.role === "user" || item.role === "assistant")
+        .map((item) => ({
+          id: item.id,
+          role: item.role as "user" | "assistant",
+          content: item.content,
+          sources: item.sources,
+          feedbackRating:
+            item.feedbackRating === 1 || item.feedbackRating === -1
+              ? (item.feedbackRating as 1 | -1)
+              : undefined,
+          feedbackComment: item.feedbackComment ?? null
+        }));
 
-    setMessages(filtered);
-    setSessionInitState((prev) =>
-      prev === "unknown" ? (filtered.length === 0 ? "empty" : "history") : prev
-    );
+      setMessages(filtered);
+      setSessionInitState((prev) =>
+        prev === "unknown" ? (filtered.length === 0 ? "empty" : "history") : prev
+      );
 
-    if (filtered.some((m) => m.role === "assistant" && m.content.length > 0)) {
-      setHasResponse(true);
+      if (filtered.some((m) => m.role === "assistant" && m.content.length > 0)) {
+        setHasResponse(true);
+      }
+    } finally {
+      setHistoryLoading(false);
     }
   }, [sessionId]);
 
   useEffect(() => {
     void loadHistory();
   }, [loadHistory]);
+
+  useEffect(() => {
+    warmChatSuggestionCaches();
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(PROMPT_POPUP_PREF_KEY);
+      if (raw === "0") {
+        setAutoPromptPopupEnabled(false);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(PROMPT_POPUP_PREF_KEY, autoPromptPopupEnabled ? "1" : "0");
+    } catch {
+      // ignore storage errors
+    }
+  }, [autoPromptPopupEnabled]);
 
   useEffect(() => {
     if (!pendingPrompt) return;
@@ -278,7 +328,7 @@ export default function ChatWindow({
         }
       }
     } catch (sendError) {
-      setError(sendError instanceof Error ? sendError.message : "Eroare la trimitere");
+      setError(CHAT_STATUS_TEXT.streamError);
     } finally {
       setLoading(false);
     }
@@ -287,6 +337,74 @@ export default function ChatWindow({
   const showWelcome = isEmpty && sessionInitState !== "history";
   const showGreeting =
     messages.length > 0 && (isFreshSession || sessionInitState === "unknown");
+
+  const resizeComposer = useCallback(() => {
+    const element = composerRef.current;
+    if (!element) return;
+    element.style.height = "0px";
+    const nextHeight = Math.min(element.scrollHeight, 180);
+    element.style.height = `${Math.max(nextHeight, 24)}px`;
+  }, []);
+
+  const showPromptToast = useCallback((message: string) => {
+    setPromptToast(message);
+    if (promptToastTimeoutRef.current) {
+      window.clearTimeout(promptToastTimeoutRef.current);
+    }
+    promptToastTimeoutRef.current = window.setTimeout(() => {
+      setPromptToast(null);
+      promptToastTimeoutRef.current = null;
+    }, 1800);
+  }, []);
+
+  const applyPromptTemplate = useCallback(
+    (template: PromptTemplate) => {
+      const userPrompt = input.trim();
+      if (!userPrompt || loading) {
+        showPromptToast("Сначала напишите ваш вопрос.");
+        setInputEmptyFlash(true);
+        window.setTimeout(() => setInputEmptyFlash(false), 1000);
+        return;
+      }
+
+      const placeholderPattern = /\$\{\s*(?:промпт|prompt)\s*\}/iu;
+      const placeholderRegexGlobal = /\$\{\s*(?:промпт|prompt)\s*\}/giu;
+      const hasPlaceholder = placeholderPattern.test(template.content);
+      const improvedPrompt = hasPlaceholder
+        ? template.content.replace(placeholderRegexGlobal, userPrompt)
+        : `${template.content.trim()}\n\n${userPrompt}`;
+
+      setSelectedPromptCardId(template.id);
+      setUpgradeFlash(true);
+      window.setTimeout(() => setUpgradeFlash(false), 1400);
+      window.setTimeout(() => setSelectedPromptCardId(null), 1400);
+      setInput(improvedPrompt);
+      setPendingPrompt(improvedPrompt);
+    },
+    [input, loading, showPromptToast]
+  );
+
+  const applyFaqQuestion = useCallback(
+    (item: FaqItem) => {
+      if (loading) return;
+      setInput(item.question);
+      setPendingPrompt(item.question);
+    },
+    [loading]
+  );
+
+  useEffect(
+    () => () => {
+      if (promptToastTimeoutRef.current) {
+        window.clearTimeout(promptToastTimeoutRef.current);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    resizeComposer();
+  }, [input, resizeComposer]);
 
   useEffect(() => {
     if (showWelcome) return;
@@ -332,16 +450,8 @@ export default function ChatWindow({
                   </p>
                 </div>
                 <div className="w-full max-w-[920px] text-left">
-                  <p className="mb-3 text-sm font-semibold text-slate-500">
-                    Prompt-uri sugerate:
-                  </p>
-                  <PromptCards
-                    layout="grid"
-                    onPick={(content) => {
-                      setInput(content);
-                      setPendingPrompt(content);
-                    }}
-                  />
+                  <p className="mb-3 text-sm font-semibold text-slate-500">FAQ:</p>
+                  <FaqCards layout="grid" onPick={applyFaqQuestion} />
                 </div>
               </div>
             ) : null}
@@ -359,6 +469,29 @@ export default function ChatWindow({
                 className="w-full min-h-0 flex-1 overflow-y-auto"
               >
                 <div className="mx-auto flex min-h-full w-full max-w-[1200px] flex-col gap-6 pb-4 pr-2 sm:gap-10">
+                  {historyLoading && messages.length === 0 ? (
+                    <div className="space-y-6">
+                      <div className="flex items-start gap-4 sm:gap-5">
+                        <div className="h-12 w-12 shrink-0 animate-pulse rounded-full bg-orange-200/70" />
+                        <div className="w-full max-w-[760px] animate-pulse rounded-3xl border border-border bg-white/85 px-5 py-4 sm:px-6">
+                          <div className="h-3.5 w-3/4 rounded-full bg-slate-200" />
+                          <div className="mt-3 h-3.5 w-full rounded-full bg-slate-200" />
+                          <div className="mt-3 h-3.5 w-5/6 rounded-full bg-slate-200" />
+                        </div>
+                      </div>
+                      <div className="flex items-start justify-end gap-4 sm:gap-5">
+                        <div className="w-full max-w-[640px] animate-pulse rounded-3xl bg-orange-200/65 px-5 py-4 sm:px-6">
+                          <div className="h-3.5 w-2/3 rounded-full bg-orange-100" />
+                          <div className="mt-3 h-3.5 w-11/12 rounded-full bg-orange-100" />
+                        </div>
+                        <div className="h-12 w-12 shrink-0 animate-pulse rounded-full bg-orange-200/70" />
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {!historyLoading && messages.length === 0 ? (
+                    <p className="text-sm text-slate-500">{CHAT_STATUS_TEXT.noMessages}</p>
+                  ) : null}
                   {showGreeting ? (
                     <div className="flex items-start gap-4 sm:gap-5">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e58b3a] shadow-[0_8px_20px_rgba(15,23,42,0.12)]">
@@ -430,10 +563,39 @@ export default function ChatWindow({
               </div>
             ) : null}
 
-            <div className="mx-auto w-full max-w-[1200px] shrink-0 pt-2 sm:pt-3">
+            <div className="relative mx-auto w-full max-w-[1200px] shrink-0 pt-2 sm:pt-3">
+              <div
+                className={`absolute inset-x-0 bottom-[calc(100%+0.55rem)] z-10 transition-all duration-200 ${
+                  autoPromptPopupEnabled && input.trim().length > 0
+                    ? "pointer-events-auto translate-y-0 opacity-100"
+                    : "pointer-events-none translate-y-2 opacity-0"
+                }`}
+              >
+                <div className="rounded-2xl border border-[#f3d1ad]/80 bg-gradient-to-r from-white/90 via-white/85 to-orange-50/80 px-3 py-3 shadow-[0_18px_34px_-22px_rgba(15,23,42,0.38)] backdrop-blur-[2px] sm:px-4">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                      Upgrade your prompt
+                    </p>
+                    <span className="rounded-full border border-orange-200/90 bg-white/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange-700">
+                      Smart
+                    </span>
+                  </div>
+                  <PromptCards
+                    layout="row"
+                    activeId={selectedPromptCardId}
+                    onPick={applyPromptTemplate}
+                  />
+                </div>
+              </div>
+
+              {historyLoading ? (
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                  {CHAT_STATUS_TEXT.reloadingHistory}
+                </p>
+              ) : null}
               {!isEmpty && loading ? (
                 <p className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.3em] text-slate-400">
-                  Se trimite mesajul
+                  {CHAT_STATUS_TEXT.sending}
                   <TypingDots className="text-slate-400" size="sm" />
                 </p>
               ) : null}
@@ -442,14 +604,61 @@ export default function ChatWindow({
                   event.preventDefault();
                   await sendMessage();
                 }}
-                className="flex items-center gap-3 overflow-hidden rounded-full border border-white/60 bg-white/72 px-5 py-3 shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-[2px] transition focus-within:border-[#f2c39a] focus-within:shadow-[0_0_0_3px_rgba(242,195,154,0.28)] sm:px-8 sm:py-4"
+                className={`flex items-center gap-3 overflow-hidden rounded-full border bg-white/72 px-5 py-3 shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-[2px] transition sm:px-8 sm:py-4 ${
+                  inputEmptyFlash
+                    ? "animate-pulse border-red-300 shadow-[0_0_0_3px_rgba(248,113,113,0.18)]"
+                    : upgradeFlash
+                      ? "border-[#f0b783] shadow-[0_0_0_3px_rgba(229,139,58,0.22)]"
+                      : "border-white/60 focus-within:border-[#f2c39a] focus-within:shadow-[0_0_0_3px_rgba(242,195,154,0.28)]"
+                }`}
               >
-                <input
+                <button
+                  type="button"
+                  onClick={() => setAutoPromptPopupEnabled((prev) => !prev)}
+                  className={`-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition sm:-ml-0.5 ${
+                    autoPromptPopupEnabled
+                      ? "border-[#f0b783] bg-orange-50 text-[#e58b3a]"
+                      : "border-border bg-white/80 text-slate-500 hover:text-slate-700"
+                  }`}
+                  title={
+                    autoPromptPopupEnabled
+                      ? "Disable upgrade popup while typing"
+                      : "Enable upgrade popup while typing"
+                  }
+                  aria-label={
+                    autoPromptPopupEnabled
+                      ? "Disable upgrade popup while typing"
+                      : "Enable upgrade popup while typing"
+                  }
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <path d="m12 2 1.8 4.3L18 8.1l-4.2 1.8L12 14l-1.8-4.1L6 8.1l4.2-1.8L12 2Z" />
+                    <path d="M18.5 15.5 19.4 18l2.6.9-2.6.9-.9 2.5-.9-2.5-2.6-.9 2.6-.9.9-2.5Z" />
+                  </svg>
+                </button>
+                <textarea
+                  ref={composerRef}
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={async (event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      await sendMessage();
+                    }
+                  }}
                   placeholder="Scrie un mesaj..."
                   disabled={loading}
-                  className="flex-1 bg-transparent text-[15px] text-slate-800 outline-none placeholder:text-slate-400"
+                  rows={1}
+                  className="max-h-[180px] min-h-[24px] flex-1 resize-none overflow-y-auto bg-transparent py-1 text-[15px] leading-6 text-slate-800 outline-none placeholder:text-slate-400"
                 />
                 <button
                   type="submit"
@@ -482,6 +691,14 @@ export default function ChatWindow({
               </form>
             </div>
 
+            {promptToast ? (
+              <div className="pointer-events-none absolute bottom-20 left-1/2 z-30 -translate-x-1/2 px-4 sm:bottom-24">
+                <div className="rounded-full border border-red-200/80 bg-white/95 px-4 py-2 text-sm font-medium text-red-600 shadow-[0_14px_28px_rgba(15,23,42,0.2)] backdrop-blur">
+                  {promptToast}
+                </div>
+              </div>
+            ) : null}
+
             {!showWelcome && showJumpToBottom ? (
               <button
                 type="button"
@@ -490,7 +707,7 @@ export default function ChatWindow({
                   setShowJumpToBottom(false);
                   scrollToBottom("smooth");
                 }}
-                className="absolute bottom-24 right-8 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-slate-600 shadow-[0_12px_24px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:text-slate-800 sm:bottom-28 sm:right-26"
+                className="absolute bottom-24 right-8 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-slate-600 shadow-[0_12px_24px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:text-slate-800 sm:bottom-28 sm:right-10"
                 aria-label="Scroll to latest messages"
                 title="Mesaje noi"
               >

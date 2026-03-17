@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const EXTEND_BY_MS = 2 * 60 * 60 * 1000;
+const DB_RETRY_ATTEMPTS = 3;
+const DB_RETRY_DELAY_MS = 250;
 
 export type AppSession = {
   id: string;
@@ -11,6 +13,41 @@ export type AppSession = {
   expiresAt: Date;
   terminatedAt?: Date;
 };
+
+function isRetryableDbError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("can't reach database server") ||
+    message.includes("prismaclientinitializationerror") ||
+    message.includes("timed out") ||
+    message.includes("connection")
+  );
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function withDbRetry<T>(operation: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= DB_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableDbError(error) || attempt === DB_RETRY_ATTEMPTS) {
+        throw error;
+      }
+      await delay(DB_RETRY_DELAY_MS * attempt);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Database query failed");
+}
 
 export async function ensurePublicUserId(): Promise<string> {
   const guest = await prisma.user.upsert({
@@ -98,13 +135,15 @@ export async function findEmptyActiveSession(userId: string): Promise<AppSession
 }
 
 export async function isSessionActive(sessionId: string): Promise<boolean> {
-  const found = await prisma.session.findUnique({
-    where: { id: sessionId },
-    select: {
-      expiresAt: true,
-      terminatedAt: true
-    }
-  });
+  const found = await withDbRetry(() =>
+    prisma.session.findUnique({
+      where: { id: sessionId },
+      select: {
+        expiresAt: true,
+        terminatedAt: true
+      }
+    })
+  );
 
   if (!found) return false;
   if (found.terminatedAt) return false;
@@ -113,16 +152,18 @@ export async function isSessionActive(sessionId: string): Promise<boolean> {
 }
 
 export async function getSessionById(sessionId: string): Promise<AppSession | null> {
-  const found = await prisma.session.findUnique({
-    where: { id: sessionId },
-    select: {
-      id: true,
-      userId: true,
-      persistent: true,
-      expiresAt: true,
-      terminatedAt: true
-    }
-  });
+  const found = await withDbRetry(() =>
+    prisma.session.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true,
+        userId: true,
+        persistent: true,
+        expiresAt: true,
+        terminatedAt: true
+      }
+    })
+  );
 
   return found ? toAppSession(found) : null;
 }
