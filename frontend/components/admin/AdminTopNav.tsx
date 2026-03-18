@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactElement, SVGProps } from "react";
 
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 type AdminHref =
@@ -16,7 +17,7 @@ type AdminHref =
 
 type NavItem = {
   href: AdminHref;
-  label: string;
+  labelKey: string;
   Icon: (props: SVGProps<SVGSVGElement>) => ReactElement;
   isActive: (pathname: string) => boolean;
 };
@@ -24,13 +25,13 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
     href: "/chat",
-    label: "Back to chat",
+    labelKey: "admin.nav.backToChat",
     Icon: BackIcon,
     isActive: (pathname) => pathname === "/chat" || pathname.startsWith("/chat/"),
   },
   {
     href: "/admin/knowledge",
-    label: "Knowledge Base",
+    labelKey: "admin.nav.knowledge",
     Icon: KnowledgeIcon,
     isActive: (pathname) =>
       pathname === "/admin" ||
@@ -39,27 +40,27 @@ const navItems: NavItem[] = [
   },
   {
     href: "/admin/feedback",
-    label: "Feedback",
+    labelKey: "admin.nav.feedback",
     Icon: MessageIcon,
     isActive: (pathname) =>
       pathname === "/admin/feedback" || pathname.startsWith("/admin/feedback/"),
   },
   {
     href: "/admin/prompts",
-    label: "Prompt Templates",
+    labelKey: "admin.nav.prompts",
     Icon: FileIcon,
     isActive: (pathname) =>
       pathname === "/admin/prompts" || pathname.startsWith("/admin/prompts/"),
   },
   {
     href: "/admin/faq",
-    label: "FAQ",
+    labelKey: "admin.nav.faq",
     Icon: HelpIcon,
     isActive: (pathname) => pathname === "/admin/faq" || pathname.startsWith("/admin/faq/"),
   },
   {
     href: "/admin/health",
-    label: "Health",
+    labelKey: "admin.nav.health",
     Icon: ActivityIcon,
     isActive: (pathname) =>
       pathname === "/admin/health" || pathname.startsWith("/admin/health/"),
@@ -67,6 +68,7 @@ const navItems: NavItem[] = [
 ];
 
 export default function AdminTopNav() {
+  const { t } = useAppTranslation();
   const pathname = usePathname();
 
   return (
@@ -89,7 +91,7 @@ export default function AdminTopNav() {
             <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
               <item.Icon className="block h-full w-full" />
             </span>
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         );
       })}

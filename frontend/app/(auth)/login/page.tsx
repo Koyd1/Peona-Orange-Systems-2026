@@ -6,6 +6,7 @@ import { signIn } from "@/lib/auth";
 import LoginForm from "@/components/auth/LoginForm";
 import { Card } from "@/components/ui/card";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
+import { getServerTranslator } from "@/lib/i18n/server";
 
 type PageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -13,6 +14,7 @@ type PageProps = {
 
 export default async function LoginPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const { t } = await getServerTranslator();
 
   async function loginAction(formData: FormData) {
     "use server";
@@ -44,20 +46,20 @@ export default async function LoginPage({ searchParams }: PageProps) {
         <div className="flex justify-center mb-3">
           <img
             src="/icons/hr_assistant_logo.svg"
-            alt="HR AI Assistant logo"
+            alt={t("home.title")}
             className="h-[88px] w-[88px] object-contain"
           />
         </div>
-        <h1 className="text-2xl font-semibold leading-snug">Panoul de administrare</h1>
+        <h1 className="mb-3 text-2xl font-semibold leading-snug">{t("auth.adminPanelTitle")}</h1>
         <p className="text-sm text-gray-400 mb-6">
-          Autentificați-vă în sistemul de administrare HR AI Assistant
+          {t("auth.adminPanelDescription")}
         </p>
 
         <LoginForm loginAction={loginAction} serverError={params.error} />
 
         <p className="text-sm mt-4">
           <Link href="/chat" className="text-orange-600 no-underline hover:underline">
-            Întoarce-te la chat
+            {t("common.actions.backToChat")}
           </Link>
         </p>
       </Card>

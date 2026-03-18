@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
+
 export type ChatSource = {
   fileId?: string;
   filename?: string;
@@ -8,18 +10,20 @@ export type ChatSource = {
 };
 
 export default function SourceCard({ source }: { source: ChatSource }) {
+  const { t } = useAppTranslation();
+
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)]">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
-          Source
+          {t("chat.message.source")}
         </span>
         <span className="text-sm font-semibold text-slate-800">
-          {source.filename ?? "unknown"}
+          {source.filename ?? t("chat.message.unknown")}
         </span>
         {typeof source.similarity === "number" ? (
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
-            Similarity {source.similarity.toFixed(3)}
+            {t("chat.message.similarity")} {source.similarity.toFixed(3)}
           </span>
         ) : null}
       </div>

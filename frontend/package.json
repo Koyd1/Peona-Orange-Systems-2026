@@ -13,11 +13,13 @@
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "i18next": "^25.6.0",
     "lucide-react": "^0.577.0",
     "next": "^15.0.0",
     "next-auth": "^5.0.0-beta.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-i18next": "^15.7.3",
     "recharts": "^2.15.4",
     "tailwind-merge": "^3.5.0",
     "zod": "^3.23.8"
