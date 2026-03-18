@@ -33,9 +33,12 @@ type UsageSummary = {
 };
 
 type UsageWindow = {
-  exact: UsageSummary;
-  estimatedLegacy: UsageSummary;
-  combined: Omit<UsageSummary, "avgLatencyMs">;
+  requests: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  spendUsd: number;
+  avgLatencyMs?: number | null;
 };
 
 type UsageRow = {
@@ -87,9 +90,7 @@ type HealthPayload = {
     trends30d: Array<{
       day: string;
       exactTokens: number;
-      estimatedTokens: number;
       exactSpendUsd: number;
-      estimatedSpendUsd: number;
       requests: number;
     }>;
     operations30d: UsageRow[];
@@ -102,7 +103,6 @@ type HealthPayload = {
       day: string;
       avgHallScore: number;
       p95HallScore: number;
-      maxHallScore: number;
       judgedSamples: number;
       heuristicSamples: number;
       highRiskCount: number;
@@ -128,7 +128,6 @@ type HealthPayload = {
     };
     missingPricingModels: string[];
     lastExactUsageEventAt?: string | null;
-    legacyEstimateMessages30d: number;
   };
 };
 
@@ -158,9 +157,11 @@ function formatPct(value: number | null | undefined) {
 
 function emptyUsageWindow(): UsageWindow {
   return {
-    exact: { requests: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, spendUsd: 0 },
-    estimatedLegacy: { requests: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, spendUsd: 0 },
-    combined: { requests: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, spendUsd: 0 },
+    requests: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    totalTokens: 0,
+    spendUsd: 0,
   };
 }
 
@@ -234,8 +235,7 @@ function WindowTable({
         <thead className="bg-[#fafbfe]">
           <tr className="border-b border-[#eef1f5]">
             <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Window</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Exact tokens</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Legacy tokens</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Tokens</th>
             <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Avg risk</th>
             <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Judged</th>
             <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Needs review</th>
@@ -245,8 +245,7 @@ function WindowTable({
           {rows.map((label) => (
             <tr key={label} className="border-b border-[#eef1f5] text-[#1f2937]">
               <td className="px-4 py-3 font-medium">{label}</td>
-              <td className="px-4 py-3">{formatNumber(usage[label].exact.totalTokens)}</td>
-              <td className="px-4 py-3">{formatNumber(usage[label].estimatedLegacy.totalTokens)}</td>
+              <td className="px-4 py-3">{formatNumber(usage[label].totalTokens)}</td>
               <td className="px-4 py-3">{quality[label].avgHallScore.toFixed(3)}</td>
               <td className="px-4 py-3">{formatNumber(quality[label].judgedSamples)}</td>
               <td className="px-4 py-3">{formatNumber(quality[label].highRiskCount)}</td>
@@ -278,9 +277,6 @@ function ModelTable({ rows }: { rows: UsageRow[] }) {
               <td className="px-4 py-3">{row.operation}</td>
               <td className="px-4 py-3">
                 {formatNumber(row.totalTokens)}
-                {row.estimatedTokens > 0 ? (
-                  <span className="ml-2 text-xs text-[#98a2b3]">legacy {formatNumber(row.estimatedTokens)}</span>
-                ) : null}
               </td>
               <td className="px-4 py-3">
                 {formatUsd(row.costTotalUsd)}
@@ -348,14 +344,12 @@ export function HealthPanel() {
   const exactEmpty = (data?.coverage.telemetryCoverage30d.withExactUsage ?? 0) === 0;
   const trendData = (data?.usage.trends30d ?? []).map((item) => ({
     day: item.day.slice(5),
-    Exact: item.exactTokens,
-    Legacy: item.estimatedTokens,
+    Tokens: item.exactTokens,
   }));
   const qualityTrendData = (data?.quality.trends30d ?? []).map((item) => ({
     day: item.day.slice(5),
     Average: item.avgHallScore,
     P95: item.p95HallScore,
-    Max: item.maxHallScore,
   }));
 
   return (
@@ -418,31 +412,31 @@ export function HealthPanel() {
 
         <div className="grid gap-3 lg:grid-cols-4">
           <StatCard
-            label="Exact tokens 24h"
-            value={formatNumber(usage24h.exact.totalTokens)}
-            hint={`${formatNumber(usage24h.exact.requests)} exact requests`}
-          />
-          <StatCard
-            label="Legacy tokens 24h"
-            value={formatNumber(usage24h.estimatedLegacy.totalTokens)}
-            hint={`${formatNumber(usage24h.estimatedLegacy.requests)} estimated messages`}
+            label="Tokens 24h"
+            value={formatNumber(usage24h.totalTokens)}
+            hint={`${formatNumber(usage24h.requests)} requests`}
           />
           <StatCard
             label="Spend 30d"
-            value={formatUsd(usage30d.combined.spendUsd)}
-            hint={`${formatNumber(usage30d.combined.totalTokens)} total tokens`}
+            value={formatUsd(usage30d.spendUsd)}
+            hint={`${formatNumber(usage30d.totalTokens)} total tokens`}
           />
           <StatCard
-            label="Exact coverage"
+            label="Coverage"
             value={formatPct(data?.coverage.telemetryCoverage30d.coveragePct)}
-            hint={`${formatNumber(data?.coverage.telemetryCoverage30d.withExactUsage)} exact / ${formatNumber(data?.coverage.telemetryCoverage30d.assistantMessages)} assistant messages`}
+            hint={`${formatNumber(data?.coverage.telemetryCoverage30d.withExactUsage)} / ${formatNumber(data?.coverage.telemetryCoverage30d.assistantMessages)} messages`}
+          />
+          <StatCard
+            label="Judged"
+            value={formatPct(data?.coverage.judgeCoverage30d.coveragePct)}
+            hint={`${formatNumber(data?.coverage.judgeCoverage30d.judged)} judged answers`}
           />
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
           <div className="rounded-2xl border border-[#edf0f5] bg-[#fbfcff] p-5">
             <h4 className="m-0 text-base font-semibold text-[#111827]">Token trend</h4>
-            <p className="m-0 mt-1 text-xs text-[#98a2b3]">Exact vs legacy token volume over the last 30 days</p>
+            <p className="m-0 mt-1 text-xs text-[#98a2b3]">Token volume over the last 30 days</p>
             <div className="mt-4 h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData}>
@@ -451,8 +445,7 @@ export function HealthPanel() {
                   <YAxis tick={{ fontSize: 11 }} stroke="#cbd5e1" />
                   <Tooltip />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-                  <Area type="monotone" dataKey="Exact" stroke="#f97316" fill="#fed7aa" />
-                  <Area type="monotone" dataKey="Legacy" stroke="#64748b" fill="#e2e8f0" />
+                  <Area type="monotone" dataKey="Tokens" stroke="#f97316" fill="#fed7aa" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -504,7 +497,7 @@ export function HealthPanel() {
         <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_0.8fr]">
           <div className="rounded-2xl border border-[#edf0f5] bg-[#fbfcff] p-5">
             <h4 className="m-0 text-base font-semibold text-[#111827]">Support-risk trend</h4>
-            <p className="m-0 mt-1 text-xs text-[#98a2b3]">Average, p95, and daily max support-risk score</p>
+            <p className="m-0 mt-1 text-xs text-[#98a2b3]">Average and p95 support-risk score by day</p>
             <div className="mt-4 h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={qualityTrendData}>
@@ -515,7 +508,6 @@ export function HealthPanel() {
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
                   <Line type="monotone" dataKey="Average" stroke="#f97316" strokeWidth={2.5} dot={false} />
                   <Line type="monotone" dataKey="P95" stroke="#ef4444" strokeWidth={2.5} dot={false} />
-                  <Line type="monotone" dataKey="Max" stroke="#0f766e" strokeWidth={2.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -527,7 +519,6 @@ export function HealthPanel() {
               <p className="m-0">This is a support-risk score, not a truth score.</p>
               <p className="m-0">Higher values mean the answer relies more on weak or missing support in retrieved context.</p>
               <p className="m-0">A score like 0.8 can still be a strict grounding warning, not necessarily a true hallucination.</p>
-              <p className="m-0">Legacy traffic is estimated from stored prompts and snippets, so those totals are directional.</p>
             </div>
             <div className="mt-4 space-y-2">
               {(data?.quality.reasonBreakdown30d ?? []).slice(0, 4).map((item, index) => (
