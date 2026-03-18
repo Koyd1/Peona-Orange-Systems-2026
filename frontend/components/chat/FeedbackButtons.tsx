@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState } from "react";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 export default function FeedbackButtons({
   sessionId,
@@ -15,6 +16,7 @@ export default function FeedbackButtons({
   initialComment?: string | null;
   onSaved?: (payload: { rating: 1 | -1; comment: string | null }) => void;
 }) {
+  const { t } = useAppTranslation();
   const [rating, setRating] = useState<1 | -1 | undefined>(initialRating);
   const [comment, setComment] = useState(initialComment ?? "");
   const [isNegativeDraft, setIsNegativeDraft] = useState(initialRating === -1);
@@ -49,14 +51,14 @@ export default function FeedbackButtons({
 
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(text || "Feedback submit failed");
+        throw new Error(text || t("chat.feedback.submitFailed"));
       }
       setIsSaved(true);
       onSaved?.({ rating: nextRating, comment: normalizedComment });
     } catch (submitError) {
       setRating(previousRating);
       setComment(previousComment);
-      setError(submitError instanceof Error ? submitError.message : "Feedback submit failed");
+      setError(submitError instanceof Error ? submitError.message : t("chat.feedback.submitFailed"));
     } finally {
       setBusy(false);
     }
@@ -81,8 +83,7 @@ export default function FeedbackButtons({
     <div className="w-full">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="text-sm text-slate-600 flex-1">
-          Cum ți s-a părut experiența? Evaluează conversația și ajută-ne să îmbunătățim
-          asistentul.
+          {t("chat.feedback.intro")}
         </p>
         <div className="flex items-center gap-4 self-start">
           <button
@@ -92,7 +93,7 @@ export default function FeedbackButtons({
               setIsNegativeDraft(false);
               void submit(1, null);
             }}
-            title="Helpful"
+            title={t("chat.feedback.helpful")}
             className={`rounded-full border border-border bg-white p-2 transition ${
               !canRate && !isPositive
                 ? "opacity-40 cursor-not-allowed"
@@ -100,8 +101,8 @@ export default function FeedbackButtons({
             }`}
           >
             <svg
-              viewBox="0 0 40 40"
-              className="h-6 w-6"
+              viewBox="-4 -4 48 48"
+              className="h-6 w-6 overflow-visible"
               aria-hidden="true"
             >
               <path
@@ -120,7 +121,7 @@ export default function FeedbackButtons({
               setIsNegativeDraft(true);
               setError(null);
             }}
-            title="Not helpful"
+            title={t("chat.feedback.notHelpful")}
             className={`rounded-full border border-border bg-white p-2 transition ${
               !canRate && !isNegative
                 ? "opacity-40 cursor-not-allowed"
@@ -128,8 +129,8 @@ export default function FeedbackButtons({
             }`}
           >
             <svg
-              viewBox="0 0 40 40"
-              className="h-6 w-6"
+              viewBox="-4 -4 48 48"
+              className="h-6 w-6 overflow-visible"
               aria-hidden="true"
             >
               <path
@@ -140,7 +141,7 @@ export default function FeedbackButtons({
               />
             </svg>
           </button>
-          {busy ? <span className="text-xs text-slate-400">Se salvează...</span> : null}
+          {busy ? <span className="text-xs text-slate-400">{t("chat.feedback.saving")}</span> : null}
         </div>
       </div>
 
@@ -154,7 +155,7 @@ export default function FeedbackButtons({
           <div className="w-full max-w-full sm:max-w-[360px]">
             <div className="relative">
               <input
-                placeholder="Comentează..."
+                placeholder={t("chat.feedback.commentPlaceholder")}
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 maxLength={600}
@@ -168,7 +169,7 @@ export default function FeedbackButtons({
                 className={`absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition ${
                   busy || isSaved ? "opacity-40 cursor-not-allowed" : "hover:text-slate-600"
                 }`}
-                aria-label="Trimite comentariul"
+                aria-label={t("chat.feedback.submitComment")}
               >
                 <svg
                   viewBox="0 0 24 24"

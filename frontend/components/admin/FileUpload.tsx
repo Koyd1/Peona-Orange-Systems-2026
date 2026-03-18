@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 type FileUploadProps = {
@@ -24,9 +25,10 @@ function hasSupportedExtension(filename: string): boolean {
 export default function FileUpload({
   onUploaded,
   compact = false,
-  buttonLabel = "Upload file",
+  buttonLabel,
   className
 }: FileUploadProps) {
+  const { t } = useAppTranslation();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,12 +36,12 @@ export default function FileUpload({
 
   async function uploadFile(file: File) {
     if (!hasSupportedExtension(file.name)) {
-      setError("Sunt acceptate doar fișiere PDF, DOCX, TXT, MD.");
+      setError(t("admin.fileUpload.unsupported"));
       return;
     }
 
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      setError(`Fișierul depășește limita de ${MAX_FILE_MB} MB.`);
+      setError(t("admin.fileUpload.fileTooLarge", { size: MAX_FILE_MB }));
       return;
     }
 
@@ -58,16 +60,16 @@ export default function FileUpload({
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body?.detail ?? body?.error ?? "Upload failed");
+        throw new Error(body?.detail ?? body?.error ?? t("admin.fileUpload.uploadFailed"));
       }
 
-      setSuccess(`Fișierul ${file.name} a fost încărcat.`);
+      setSuccess(t("admin.fileUpload.uploaded", { name: file.name }));
       await onUploaded();
       if (inputRef.current) {
         inputRef.current.value = "";
       }
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Upload failed");
+      setError(uploadError instanceof Error ? uploadError.message : t("admin.fileUpload.uploadFailed"));
     } finally {
       setIsUploading(false);
     }
@@ -84,9 +86,9 @@ export default function FileUpload({
     >
       {!compact ? (
         <div className="space-y-1">
-          <h2 className="m-0 text-lg font-semibold text-[#101828]">Încarcă document</h2>
+          <h2 className="m-0 text-lg font-semibold text-[#101828]">{t("admin.fileUpload.title")}</h2>
           <p className="m-0 text-sm text-[#667085]">
-            Formate: PDF, DOCX, TXT, MD, PNG, JPG, WEBP. Dimensiune maximă: {MAX_FILE_MB} MB.
+            {t("admin.fileUpload.description", { size: MAX_FILE_MB })}
           </p>
         </div>
       ) : null}
@@ -112,14 +114,14 @@ export default function FileUpload({
         onClick={() => inputRef.current?.click()}
       >
         <span className="text-base leading-none">↑</span>
-        {isUploading ? "Se încarcă..." : buttonLabel}
+        {isUploading ? t("admin.fileUpload.buttonUploading") : buttonLabel ?? t("admin.knowledge.uploadButton")}
       </Button>
 
       {error ? <Alert variant="error" className={compact ? "w-full" : undefined}>{error}</Alert> : null}
       {success ? <Alert variant="success" className={compact ? "w-full" : undefined}>{success}</Alert> : null}
       {!compact ? (
         <p className="m-0 text-xs text-[#98a2b3]">
-          După încărcare, documentul va intra automat în pipeline-ul de indexare.
+          {t("admin.fileUpload.footer")}
         </p>
       ) : null}
     </div>

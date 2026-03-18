@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 export type KnowledgeFileRow = {
@@ -51,6 +52,7 @@ export default function FileTable({
   onDelete,
   onReindex
 }: FileTableProps) {
+  const { t } = useAppTranslation();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,38 +75,38 @@ export default function FileTable({
 
   const totalLabel = useMemo(() => {
     if (totalCount === 1) {
-      return "1 fișier în baza de cunoștințe";
+      return t("admin.fileTable.countOne");
     }
-    return `${totalCount} fișiere în baza de cunoștințe`;
-  }, [totalCount]);
+    return t("admin.fileTable.countOther", { count: totalCount });
+  }, [t, totalCount]);
 
   function statusPresentation(status: KnowledgeFileRow["status"]) {
     if (status === "PENDING") {
       return {
-        label: "În așteptare",
+        label: t("admin.fileTable.status.pending"),
         className: "bg-slate-100 text-slate-700"
       };
     }
     if (status === "PROCESSING") {
       return {
-        label: "În procesare",
+        label: t("admin.fileTable.status.processing"),
         className: "bg-amber-100 text-amber-700"
       };
     }
     if (status === "READY") {
       return {
-        label: "Finalizat",
+        label: t("admin.fileTable.status.ready"),
         className: "bg-emerald-100 text-emerald-700"
       };
     }
     if (status === "ERROR") {
       return {
-        label: "Eroare",
+        label: t("admin.fileTable.status.error"),
         className: "bg-red-100 text-red-700"
       };
     }
     return {
-      label: "Eroare",
+      label: t("admin.fileTable.status.error"),
       className: "bg-red-100 text-red-700"
     };
   }
@@ -114,7 +116,7 @@ export default function FileTable({
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="m-0 text-[1.9rem] font-bold tracking-[-0.02em] text-[#0f172a]">
-            Fișiere încărcate
+            {t("admin.fileTable.title")}
           </h2>
           <p className="mt-2 text-[1.02rem] text-[#667085]">{totalLabel}</p>
         </div>
@@ -122,11 +124,11 @@ export default function FileTable({
           {loading ? (
             <span className="inline-flex items-center gap-2 rounded-full bg-[#eef2ff] px-3 py-1.5 text-sm text-[#4338ca]">
               <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#a5b4fc] border-t-[#4338ca]" />
-              Actualizare...
+              {t("admin.fileTable.refreshing")}
             </span>
           ) : null}
           <label className="inline-flex items-center gap-3 rounded-2xl border border-[#eef2f7] bg-[#f6f8fc] px-4 py-2.5 text-sm font-medium text-[#6b7280] shadow-[0_12px_28px_-24px_rgba(15,23,42,0.45)]">
-            <span>Sortează după:</span>
+            <span>{t("admin.fileTable.sortBy")}</span>
             <span className="relative inline-flex min-w-[92px] items-center">
               <select
                 value={sortOrder}
@@ -135,8 +137,8 @@ export default function FileTable({
                 }
                 className="h-10 w-full appearance-none rounded-xl border border-[#e8ecf4] bg-white px-3 pr-10 text-sm font-semibold text-[#1f2937] shadow-[0_8px_20px_-18px_rgba(15,23,42,0.45)] outline-none transition hover:border-[#d7ddea] focus:border-[#f28c28] focus:ring-2 focus:ring-[#fde6d2]"
               >
-                <option value="newest">Noi</option>
-                <option value="oldest">Vechi</option>
+                <option value="newest">{t("admin.fileTable.newest")}</option>
+                <option value="oldest">{t("admin.fileTable.oldest")}</option>
               </select>
               <span className="pointer-events-none absolute right-3 text-[#475467]">
                 <svg
@@ -165,12 +167,12 @@ export default function FileTable({
           <table className="w-full min-w-[740px] border-collapse">
             <thead className="sticky top-0 z-10 bg-[#fafbfe]">
               <tr className="border-b border-[#eef1f5]">
-                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">Denumire</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">Mărimea fișierului</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">Data încărcării</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">Statut</th>
-                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">Chunks</th>
-                <th className="px-4 py-4 text-right text-sm font-semibold text-[#98a2b3]">Acțiuni</th>
+                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">{t("admin.fileTable.columns.name")}</th>
+                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">{t("admin.fileTable.columns.size")}</th>
+                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">{t("admin.fileTable.columns.uploadedAt")}</th>
+                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">{t("admin.fileTable.columns.status")}</th>
+                <th className="px-4 py-4 text-left text-sm font-semibold text-[#98a2b3]">{t("admin.fileTable.columns.chunks")}</th>
+                <th className="px-4 py-4 text-right text-sm font-semibold text-[#98a2b3]">{t("admin.fileTable.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -201,7 +203,7 @@ export default function FileTable({
                       <div className="relative flex justify-end" data-actions-menu>
                         <button
                           type="button"
-                          aria-label="Open actions"
+                          aria-label={t("admin.fileTable.openActions")}
                           disabled={isBusy}
                           className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-transparent text-[#111827] transition hover:border-[#e5e7eb] hover:bg-[#f9fafb] disabled:cursor-not-allowed disabled:opacity-60"
                           onClick={() =>
@@ -220,7 +222,7 @@ export default function FileTable({
                                 await onReindex(file.id);
                               }}
                             >
-                              Reindex
+                              {t("admin.fileTable.actions.reindex")}
                             </button>
                             <button
                               type="button"
@@ -230,7 +232,7 @@ export default function FileTable({
                                 await onDownload(file.id);
                               }}
                             >
-                              Save
+                              {t("admin.fileTable.actions.save")}
                             </button>
                             <button
                               type="button"
@@ -238,13 +240,13 @@ export default function FileTable({
                               onClick={async () => {
                                 setOpenMenuId(null);
                                 const confirmed = window.confirm(
-                                  `Ștergi ${file.filename} și toate chunk-urile indexate?`
+                                  t("admin.fileTable.confirmDelete", { name: file.filename })
                                 );
                                 if (!confirmed) return;
                                 await onDelete(file.id);
                               }}
                             >
-                              Delete
+                              {t("admin.fileTable.actions.delete")}
                             </button>
                           </div>
                         ) : null}
@@ -258,10 +260,10 @@ export default function FileTable({
                   <td colSpan={6}>
                     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                       <p className="m-0 text-lg font-semibold text-[#344054]">
-                        Nu există fișiere pentru filtrele selectate.
+                        {t("admin.fileTable.emptyTitle")}
                       </p>
                       <p className="mt-2 max-w-[380px] text-sm text-[#667085]">
-                        Încarcă un document nou sau schimbă căutarea/sortarea pentru a vedea rezultate.
+                        {t("admin.fileTable.emptyDescription")}
                       </p>
                     </div>
                   </td>
