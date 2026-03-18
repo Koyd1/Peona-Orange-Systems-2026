@@ -567,7 +567,7 @@ export default function ChatWindow({
               </div>
             ) : null}
 
-            <div className="relative mx-auto w-full max-w-[1200px] shrink-0 pt-2 sm:pt-3">
+            <div className="relative mx-auto w-full max-w-[920px] shrink-0 pt-2 sm:pt-3">
               <div
                 className={`absolute inset-x-0 bottom-[calc(100%+0.55rem)] z-10 transition-all duration-200 ${
                   autoPromptPopupEnabled && input.trim().length > 0
