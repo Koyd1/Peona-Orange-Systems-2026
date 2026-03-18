@@ -6,6 +6,7 @@ import AdminTopNav from "@/components/admin/AdminTopNav";
 import LogoutButton from "@/components/auth/LogoutButton";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { auth } from "@/lib/auth";
+import { getServerTranslator } from "@/lib/i18n/server";
 
 export default async function AdminRouteLayout({
   children,
@@ -13,6 +14,7 @@ export default async function AdminRouteLayout({
   children: ReactNode;
 }) {
   const session = await auth();
+  const { t } = await getServerTranslator();
 
   if (!session) {
     redirect("/login");
@@ -35,11 +37,11 @@ export default async function AdminRouteLayout({
                 <span className="inline-flex items-center justify-center w-10 h-10">
                   <img
                     src="/icons/hr_assistant_logo.svg"
-                    alt="HR AI Assistant logo"
+                    alt={t("home.title")}
                     className="w-10 h-10 object-contain"
                   />
                 </span>
-                Admin Panel
+                {t("home.adminCard.title")}
               </Link>
               <div className="min-w-0 overflow-x-auto border-l border-border pl-4">
                 <AdminTopNav />
@@ -60,11 +62,11 @@ export default async function AdminRouteLayout({
                 <span className="inline-flex items-center justify-center w-10 h-10">
                   <img
                     src="/icons/hr_assistant_logo.svg"
-                    alt="HR AI Assistant logo"
+                    alt={t("home.title")}
                     className="w-10 h-10 object-contain"
                   />
                 </span>
-                Admin Panel
+                {t("home.adminCard.title")}
               </Link>
               <div className="min-w-0 overflow-x-auto border-l border-border pl-5">
                 <AdminTopNav />

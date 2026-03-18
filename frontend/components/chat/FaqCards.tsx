@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { getCachedFaqItems, loadFaqItems, type FaqItem } from "@/lib/chatSuggestionsCache";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 export default function FaqCards({
   onPick,
@@ -11,6 +12,7 @@ export default function FaqCards({
   onPick: (item: FaqItem) => void;
   layout?: "row" | "grid";
 }) {
+  const { t } = useAppTranslation();
   const [items, setItems] = useState<FaqItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,7 @@ export default function FaqCards({
         const freshItems = await loadFaqItems({ force: !cached });
         setItems(freshItems);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Failed to load FAQ items");
+        setError(loadError instanceof Error ? loadError.message : t("chat.faq.loadFailed"));
       } finally {
         setLoading(false);
       }
@@ -42,7 +44,7 @@ export default function FaqCards({
   }
 
   if (items.length === 0) {
-    return <p className="text-sm text-slate-400">Nu exista intrebari FAQ active.</p>;
+    return <p className="text-sm text-slate-400">{t("chat.faq.empty")}</p>;
   }
 
   const containerClass =

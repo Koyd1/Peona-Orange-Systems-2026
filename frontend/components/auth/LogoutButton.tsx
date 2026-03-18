@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 type LogoutButtonProps = {
   callbackUrl?: string;
 };
 
 export default function LogoutButton({ callbackUrl = "/login" }: LogoutButtonProps) {
+  const { t } = useAppTranslation();
   const [busy, setBusy] = useState(false);
 
   async function handleLogout() {
@@ -34,7 +36,7 @@ export default function LogoutButton({ callbackUrl = "/login" }: LogoutButtonPro
       disabled={busy}
       onClick={() => void handleLogout()}
     >
-      {busy ? "Logging out..." : "Log out"}
+      {busy ? t("common.actions.loggingOut", "Logging out...") : t("common.actions.logout")}
     </Button>
   );
 }

@@ -13,6 +13,7 @@ import {
   type PromptTemplate,
   warmChatSuggestionCaches
 } from "@/lib/chatSuggestionsCache";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 type Props = {
   sessionId: string;
@@ -37,12 +38,6 @@ type SSEEvent =
       };
     };
 
-const CHAT_STATUS_TEXT = {
-  noMessages: "No messages.",
-  streamError: "Stream error.",
-  sending: "Sending message.",
-  reloadingHistory: "Reloading history."
-} as const;
 const PROMPT_POPUP_PREF_KEY = "chat_prompt_popup_enabled_v1";
 
 function parseSSELines(buffer: string): { events: SSEEvent[]; rest: string } {
@@ -76,6 +71,7 @@ export default function ChatWindow({
   initialExpiresAt,
   showSessionControls = true
 }: Props) {
+  const { t } = useAppTranslation();
   const [messages, setMessages] = useState<ChatMessageVM[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -338,7 +334,7 @@ export default function ChatWindow({
         }
       }
     } catch (sendError) {
-      setError(CHAT_STATUS_TEXT.streamError);
+      setError(t("chat.status.streamError"));
     } finally {
       setLoading(false);
     }
@@ -371,7 +367,7 @@ export default function ChatWindow({
     (template: PromptTemplate) => {
       const userPrompt = input.trim();
       if (!userPrompt || loading) {
-        showPromptToast("Сначала напишите ваш вопрос.");
+        showPromptToast(t("chat.promptUpgrade.emptyInput"));
         setInputEmptyFlash(true);
         window.setTimeout(() => setInputEmptyFlash(false), 1000);
         return;
@@ -430,7 +426,6 @@ export default function ChatWindow({
   return (
     <div className="relative left-1/2 right-1/2 -my-6 h-[calc(100dvh-64px)] w-[100dvw] -ml-[50dvw] -mr-[50dvw] overflow-hidden bg-page">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 right-[-80px] h-72 w-72 rounded-full bg-orange-100/80 blur-3xl" />
         <div className="absolute bottom-[-120px] left-[-80px] h-72 w-72 rounded-full bg-orange-50/80 blur-3xl" />
       </div>
       <div className="relative flex h-full w-full flex-col px-4 py-4 sm:px-6">
@@ -453,14 +448,14 @@ export default function ChatWindow({
               <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col items-center justify-center gap-8 pb-6 text-center">
                 <div>
                   <h1 className="text-4xl font-semibold text-[#e58b3a] sm:text-5xl">
-                    Bine ai venit!
+                    {t("chat.welcome.title")}
                   </h1>
                   <p className="mt-2 text-2xl font-semibold text-[#e58b3a] sm:text-3xl">
-                    Cum te pot ajuta astăzi?
+                    {t("chat.welcome.subtitle")}
                   </p>
                 </div>
                 <div className="w-full max-w-[920px] text-left">
-                  <p className="mb-3 text-sm font-semibold text-slate-500">FAQ:</p>
+                  <p className="mb-3 text-sm font-semibold text-slate-500">{t("chat.welcome.faqLabel")}</p>
                   <FaqCards layout="grid" onPick={applyFaqQuestion} />
                 </div>
               </div>
@@ -500,7 +495,7 @@ export default function ChatWindow({
                   ) : null}
 
                   {!historyLoading && messages.length === 0 ? (
-                    <p className="text-sm text-slate-500">{CHAT_STATUS_TEXT.noMessages}</p>
+                    <p className="text-sm text-slate-500">{t("chat.status.noMessages")}</p>
                   ) : null}
                   {showGreeting ? (
                     <div className="flex items-start gap-4 sm:gap-5">
@@ -542,10 +537,9 @@ export default function ChatWindow({
                         </svg>
                       </div>
                       <div className="w-full rounded-3xl border border-border bg-card px-5 py-3 text-[15px] leading-relaxed text-slate-800 shadow-[0_12px_30px_rgba(15,23,42,0.08)] sm:px-6 sm:py-4">
-                        Bună ziua! 👋 Sunt asistentul HR. Vă voi ajuta să găsiți postul vacant
-                        potrivit, vă voi explica procesul de angajare și voi analiza CV-ul.
+                        {t("chat.greeting.intro")}
                         <br />
-                        Cu ce vă pot ajuta?
+                        {t("chat.greeting.question")}
                       </div>
                     </div>
                   ) : null}
@@ -573,7 +567,7 @@ export default function ChatWindow({
               </div>
             ) : null}
 
-            <div className="relative mx-auto w-full max-w-[1200px] shrink-0 pt-2 sm:pt-3">
+            <div className="relative mx-auto w-full max-w-[920px] shrink-0 pt-2 sm:pt-3">
               <div
                 className={`absolute inset-x-0 bottom-[calc(100%+0.55rem)] z-10 transition-all duration-200 ${
                   autoPromptPopupEnabled && input.trim().length > 0
@@ -584,10 +578,10 @@ export default function ChatWindow({
                 <div className="rounded-2xl border border-[#f3d1ad]/80 bg-gradient-to-r from-white/90 via-white/85 to-orange-50/80 px-3 py-3 shadow-[0_18px_34px_-22px_rgba(15,23,42,0.38)] backdrop-blur-[2px] sm:px-4">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                      Upgrade your prompt
+                      {t("chat.promptUpgrade.title")}
                     </p>
                     <span className="rounded-full border border-orange-200/90 bg-white/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange-700">
-                      Smart
+                      {t("chat.promptUpgrade.badge")}
                     </span>
                   </div>
                   <PromptCards
@@ -598,17 +592,6 @@ export default function ChatWindow({
                 </div>
               </div>
 
-              {historyLoading ? (
-                <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                  {CHAT_STATUS_TEXT.reloadingHistory}
-                </p>
-              ) : null}
-              {!isEmpty && loading ? (
-                <p className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.3em] text-slate-400">
-                  {CHAT_STATUS_TEXT.sending}
-                  <TypingDots className="text-slate-400" size="sm" />
-                </p>
-              ) : null}
               <form
                 onSubmit={async (event) => {
                   event.preventDefault();
@@ -632,13 +615,13 @@ export default function ChatWindow({
                   }`}
                   title={
                     autoPromptPopupEnabled
-                      ? "Disable upgrade popup while typing"
-                      : "Enable upgrade popup while typing"
+                      ? t("chat.promptUpgrade.disable")
+                      : t("chat.promptUpgrade.enable")
                   }
                   aria-label={
                     autoPromptPopupEnabled
-                      ? "Disable upgrade popup while typing"
-                      : "Enable upgrade popup while typing"
+                      ? t("chat.promptUpgrade.disable")
+                      : t("chat.promptUpgrade.enable")
                   }
                 >
                   <svg
@@ -665,7 +648,7 @@ export default function ChatWindow({
                       await sendMessage();
                     }
                   }}
-                  placeholder="Scrie un mesaj..."
+                  placeholder={t("chat.composer.placeholder")}
                   disabled={loading}
                   rows={1}
                   className="max-h-[180px] min-h-[24px] flex-1 resize-none overflow-y-auto bg-transparent py-1 text-[15px] leading-6 text-slate-800 outline-none placeholder:text-slate-400"
@@ -678,7 +661,7 @@ export default function ChatWindow({
                       ? "bg-[#e58b3a] text-white shadow-[0_12px_26px_rgba(233,139,58,0.4)]"
                       : "bg-[#f3d2b1] text-white/70 cursor-not-allowed"
                   }`}
-                  aria-label={loading ? "Sending message" : "Send message"}
+                  aria-label={loading ? t("chat.composer.sending") : t("chat.composer.send")}
                 >
                   {loading ? (
                     <TypingDots className="text-white" size="sm" />
@@ -718,8 +701,8 @@ export default function ChatWindow({
                   scrollToBottom("smooth");
                 }}
                 className="absolute bottom-24 right-8 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-slate-600 shadow-[0_12px_24px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:text-slate-800 sm:bottom-28 sm:right-10"
-                aria-label="Scroll to latest messages"
-                title="Mesaje noi"
+                aria-label={t("chat.jumpToLatest.ariaLabel")}
+                title={t("chat.jumpToLatest.title")}
               >
                 <svg
                   viewBox="0 0 24 24"

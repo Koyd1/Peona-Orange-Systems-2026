@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 type Props = {
   sessionId: string;
@@ -14,6 +15,7 @@ export default function SessionToggle({
   initialExpiresAt,
   canCreateNewSession = false
 }: Props) {
+  const { t } = useAppTranslation();
   const [expiresAt, setExpiresAt] = useState<string | undefined>(initialExpiresAt);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +26,7 @@ export default function SessionToggle({
 
   const expiresLabel = expiresAt
     ? new Date(expiresAt).toISOString().replace("T", " ").replace(".000Z", " UTC")
-    : "unknown";
+    : t("chat.session.unknownExpiry");
 
   useEffect(() => {
     const timer = window.setInterval(async () => {
@@ -62,13 +64,13 @@ export default function SessionToggle({
           return;
         }
         const text = await response.text();
-        throw new Error(text || "Failed to terminate session");
+        throw new Error(text || t("chat.session.terminateFailed"));
       }
 
       recoverToFreshSession();
     } catch (terminateError) {
       setError(
-        terminateError instanceof Error ? terminateError.message : "Failed to terminate session"
+        terminateError instanceof Error ? terminateError.message : t("chat.session.terminateFailed")
       );
       setBusy(false);
     }
@@ -84,8 +86,8 @@ export default function SessionToggle({
         onClick={() => void terminateNow()}
         title={
           !canCreateNewSession
-            ? "Trimite un mesaj si asteapta raspunsul pentru a incepe un chat nou"
-            : "Incheie sesiunea si incepe un chat nou"
+            ? t("chat.session.hintNeedsAnswer")
+            : t("chat.session.hintNewSession")
         }
         className={`inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-all ${
           canAct
@@ -106,9 +108,9 @@ export default function SessionToggle({
           <path d="M12 5v14" />
           <path d="M5 12h14" />
         </svg>
-        <span>Sesiune nouă</span>
+        <span>{t("chat.session.new")}</span>
       </button>
-      <span className="sr-only">Regim sesiune: Obisnuita. Expira la: {expiresLabel}</span>
+      <span className="sr-only">{t("chat.session.modeScreenReader", { expiresLabel })}</span>
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>
   );

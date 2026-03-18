@@ -6,6 +6,7 @@ import FileTable, { type KnowledgeFileRow } from "@/components/admin/FileTable";
 import FileUpload from "@/components/admin/FileUpload";
 import { Alert } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 const POLLABLE_STATUSES = new Set<KnowledgeFileRow["status"]>(["PENDING", "PROCESSING"]);
 
@@ -59,6 +60,7 @@ function filesAreEqual(current: KnowledgeFileRow[], next: KnowledgeFileRow[]): b
 }
 
 export default function AdminKnowledgePage() {
+  const { t } = useAppTranslation();
   const [files, setFiles] = useState<KnowledgeFileRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -96,14 +98,14 @@ export default function AdminKnowledgePage() {
       const response = await fetch("/api/upload", { cache: "no-store" });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body?.error ?? body?.detail ?? "Не удалось загрузить список файлов");
+        throw new Error(body?.error ?? body?.detail ?? t("admin.knowledge.loadFailed"));
       }
       const payload = (await response.json()) as ListResponse;
       const nextFiles = payload.items ?? [];
       setFiles((current) => (filesAreEqual(current, nextFiles) ? current : nextFiles));
     } catch (loadError) {
       if (!silent) {
-        setError(loadError instanceof Error ? loadError.message : "Ошибка загрузки");
+        setError(loadError instanceof Error ? loadError.message : t("admin.knowledge.loadFailed"));
       }
     } finally {
       if (!silent) {
@@ -137,11 +139,11 @@ export default function AdminKnowledgePage() {
       const response = await fetch(`/api/upload/${id}`, { method: "DELETE" });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body?.error ?? body?.detail ?? "Удаление не удалось");
+        throw new Error(body?.error ?? body?.detail ?? t("admin.knowledge.deleteFailed"));
       }
       await loadFiles();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Ошибка удаления");
+      setError(deleteError instanceof Error ? deleteError.message : t("admin.knowledge.deleteFailed"));
     } finally {
       setBusyId(null);
     }
@@ -157,7 +159,7 @@ export default function AdminKnowledgePage() {
       });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body?.error ?? body?.detail ?? "Скачивание не удалось");
+        throw new Error(body?.error ?? body?.detail ?? t("admin.knowledge.downloadFailed"));
       }
 
       const blob = await response.blob();
@@ -174,7 +176,7 @@ export default function AdminKnowledgePage() {
       anchor.remove();
       URL.revokeObjectURL(objectUrl);
     } catch (downloadError) {
-      setError(downloadError instanceof Error ? downloadError.message : "Ошибка скачивания");
+      setError(downloadError instanceof Error ? downloadError.message : t("admin.knowledge.downloadFailed"));
     } finally {
       setBusyId(null);
     }
@@ -187,11 +189,11 @@ export default function AdminKnowledgePage() {
       const response = await fetch(`/api/upload/${id}`, { method: "POST" });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body?.error ?? body?.detail ?? "Re-index не удался");
+        throw new Error(body?.error ?? body?.detail ?? t("admin.knowledge.reindexFailed"));
       }
       await loadFiles();
     } catch (reindexError) {
-      setError(reindexError instanceof Error ? reindexError.message : "Ошибка re-index");
+      setError(reindexError instanceof Error ? reindexError.message : t("admin.knowledge.reindexFailed"));
     } finally {
       setBusyId(null);
     }
@@ -203,16 +205,16 @@ export default function AdminKnowledgePage() {
         <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-[760px]">
             <h1 className="m-0 text-[2.25rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.75rem]">
-              Knowledge Base
+              {t("admin.knowledge.title")}
             </h1>
             <p className="mt-3 text-lg leading-relaxed text-[#6b7280]">
-              Gestionarea fișierelor și documentelor pentru asistentul AI.
+              {t("admin.knowledge.description")}
             </p>
           </div>
           <FileUpload
             onUploaded={loadFiles}
             compact
-            buttonLabel="Încarcă fișierul"
+            buttonLabel={t("admin.knowledge.uploadButton")}
             className="w-full xl:w-[560px] xl:max-w-[560px] xl:shrink-0"
           />
         </div>
@@ -241,10 +243,10 @@ export default function AdminKnowledgePage() {
             }
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search"
+            placeholder={t("admin.knowledge.searchPlaceholder")}
             wrapperClassName="rounded-2xl bg-[#f6f8fc] border-[#eef1f6] px-4 py-0"
             className="py-3 text-sm"
-            aria-label="Search files"
+            aria-label={t("admin.knowledge.searchAriaLabel")}
           />
         </div>
       </section>

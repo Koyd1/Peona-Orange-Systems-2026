@@ -4,7 +4,7 @@
 
 ## Состав
 
-- `frontend/` — Next.js 15 (BFF + UI), запускается на хосте
+- `frontend/` — Next.js 16 (BFF + UI), запускается на хосте
 - `backend/` — FastAPI (ingest/chat/health/evaluate), запускается в Docker
 - `infra/` — nginx конфиг для production reverse proxy
 - `tasks/` — декомпозиция и roadmap
@@ -22,8 +22,23 @@
 ## Prerequisites
 
 - Docker + Docker Compose plugin
-- Node.js 20+
+- Node.js >= 20.9.0
 - npm
+
+## После обновления проекта
+
+Если вы подтянули последние изменения, обновите frontend-зависимости и проверьте локальную версию Node.js:
+
+```bash
+git pull
+cd frontend
+node -v
+npm ci
+npm run build
+```
+
+Если `node -v` ниже `20.9.0`, сначала обновите Node.js.
+Если были локальные изменения в старом `frontend/middleware.ts`, перенесите их в `frontend/proxy.ts` перед запуском.
 
 ## Быстрый старт (dev)
 

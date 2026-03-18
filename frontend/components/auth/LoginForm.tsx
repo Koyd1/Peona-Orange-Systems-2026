@@ -5,10 +5,7 @@ import { useState } from "react";
 import SubmitButton from "./SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
-
-const ERROR_MESSAGES: Record<string, string> = {
-  credentials: "Email sau parolă incorectă",
-};
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 type Props = {
   loginAction: (formData: FormData) => Promise<void>;
@@ -16,6 +13,7 @@ type Props = {
 };
 
 export default function LoginForm({ loginAction, serverError }: Props) {
+  const { t } = useAppTranslation();
   const [fieldErrors, setFieldErrors] = useState<{
     email?: string;
     password?: string;
@@ -29,13 +27,13 @@ export default function LoginForm({ loginAction, serverError }: Props) {
     const errors: { email?: string; password?: string } = {};
 
     if (!email) {
-      errors.email = "Introduceți adresa de email";
+      errors.email = t("auth.validation.emailRequired");
     }
 
     if (!password) {
-      errors.password = "Introduceți parola";
+      errors.password = t("auth.validation.passwordRequired");
     } else if (password.length < 8) {
-      errors.password = "Parola trebuie să aibă cel puțin 8 caractere";
+      errors.password = t("auth.validation.passwordMin");
     }
 
     setFieldErrors(errors);
@@ -46,7 +44,7 @@ export default function LoginForm({ loginAction, serverError }: Props) {
   }
 
   const errorMessage = serverError
-    ? ERROR_MESSAGES[serverError] ?? serverError
+    ? t(`auth.errors.${serverError}`, serverError)
     : undefined;
 
   return (
@@ -60,17 +58,17 @@ export default function LoginForm({ loginAction, serverError }: Props) {
       <form action={loginAction} onSubmit={handleSubmit} noValidate autoComplete="on" className="grid gap-4 text-left">
         <div className="flex flex-col gap-1.5" >
           <label htmlFor="email" className="text-sm font-semibold text-gray-900 ">
-            Email
+            {t("auth.fields.email")}
           </label>
           <Input
             id="email"
             name="email"
             type="email"
             autoComplete="username"
-            placeholder="admin@company.com"
+            placeholder={t("auth.placeholders.email")}
             className="w-full border border-gray-300 rounded-full px-2 py-2"
             icon={<span className="flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7" ><img src="/icons/logo_message.svg" 
-                             alt="Email icon"
+                             alt={t("auth.accessibility.emailIcon")}
                               className="w-full h-full object-contain" /></span>}
           />
           {fieldErrors.email ? (
@@ -80,23 +78,25 @@ export default function LoginForm({ loginAction, serverError }: Props) {
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="password" className="text-sm font-semibold text-gray-900">
-            Parolă
+            {t("auth.fields.password")}
           </label>
           <Input
             id="password"
             name="password"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
-            placeholder="••••••••"
+            placeholder={t("auth.placeholders.password")}
             className="w-full border border-gray-300 rounded-xl px-2 py-2"
             icon={<span className="flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7" ><img src="/icons/square-lock.svg"
-                             alt="Password icon"
+                             alt={t("auth.accessibility.passwordIcon")}
                              className="w-full h-full object-contain"
                  /></span>}
             suffix={
               <button
                 type="button"
-                aria-label={showPassword ? "Ascunde parola" : "Arată parola"}
+                aria-label={
+                  showPassword ? t("auth.accessibility.hidePassword") : t("auth.accessibility.showPassword")
+                }
                 aria-pressed={showPassword}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => setShowPassword((prev) => !prev)}
@@ -115,7 +115,7 @@ export default function LoginForm({ loginAction, serverError }: Props) {
           ) : null}
         </div>
 
-        <SubmitButton>Autentificare</SubmitButton>
+        <SubmitButton>{t("common.actions.login")}</SubmitButton>
       </form>
     </>
   );

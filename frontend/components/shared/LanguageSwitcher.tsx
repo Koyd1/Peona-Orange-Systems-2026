@@ -2,48 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type LocaleCode = "ro" | "ru" | "en";
-
-type LocaleOption = {
-  code: LocaleCode;
-  label: string;
-};
-
-const LOCALES: LocaleOption[] = [
-  { code: "ro", label: "Română" },
-  { code: "ru", label: "Русский" },
-  { code: "en", label: "English" },
-];
-
-const STORAGE_KEY = "peona_locale";
-
-function isLocale(value: string | null): value is LocaleCode {
-  return value === "ro" || value === "ru" || value === "en";
-}
+import {
+  LOCALE_DISPLAY_CODES,
+  LOCALE_LABELS,
+  LOCALE_STORAGE_KEY,
+  SUPPORTED_LOCALES,
+  isAppLocale,
+  type AppLocale
+} from "@/lib/i18n/config";
+import { useAppTranslation, useLocale } from "@/lib/i18n/I18nProvider";
 
 export default function LanguageSwitcher() {
+  const { t } = useAppTranslation();
+  const { locale: current, setLocale } = useLocale();
   const [open, setOpen] = useState(false);
-  const [current, setCurrent] = useState<LocaleCode>("ro");
   const rootRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (isLocale(saved)) {
-      setCurrent(saved);
-      document.documentElement.lang = saved;
-      return;
-    }
-
-    const initial = document.documentElement.lang.toLowerCase();
-    if (isLocale(initial)) {
-      setCurrent(initial);
-      window.localStorage.setItem(STORAGE_KEY, initial);
-      return;
-    }
-
-    document.documentElement.lang = "ro";
-    window.localStorage.setItem(STORAGE_KEY, "ro");
-  }, []);
+  const didSyncStoredLocaleRef = useRef(false);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -71,33 +45,48 @@ export default function LanguageSwitcher() {
     };
   }, []);
 
-  function applyLocale(next: LocaleCode) {
-    setCurrent(next);
+  useEffect(() => {
+    if (didSyncStoredLocaleRef.current) {
+      return;
+    }
+
+    didSyncStoredLocaleRef.current = true;
+    const saved = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    if (isAppLocale(saved) && saved !== current) {
+      void setLocale(saved);
+    }
+  }, [current, setLocale]);
+
+  function applyLocale(next: AppLocale) {
+    if (next === current) {
+      setOpen(false);
+      return;
+    }
+
     setOpen(false);
-    window.localStorage.setItem(STORAGE_KEY, next);
-    document.documentElement.lang = next;
+    void setLocale(next);
   }
 
   return (
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        aria-label="Schimbă limba"
+        aria-label={t("common.languageSwitcher.ariaLabel")}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((state) => !state)}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white outline-none ring-0 focus:outline-none focus-visible:outline-none"
       >
-        {current.toUpperCase()}
+        {LOCALE_DISPLAY_CODES[current]}
       </button>
 
       {open ? (
         <div className="absolute right-0 top-11 z-40 min-w-[228px] rounded-2xl border border-[#d9dde6] bg-white p-1.5 shadow-[0_10px_24px_-18px_rgba(16,24,40,0.48)] outline-none ring-0">
-          {LOCALES.map((locale) => {
-            const selected = locale.code === current;
+          {SUPPORTED_LOCALES.map((locale) => {
+            const selected = locale === current;
             return (
               <button
-                key={locale.code}
+                key={locale}
                 type="button"
                 role="menuitemradio"
                 aria-checked={selected}
@@ -106,12 +95,12 @@ export default function LanguageSwitcher() {
                     ? "bg-[#ead6c4] text-[#2f2f2f]"
                     : "text-[#2f2f2f] hover:bg-[#f6eee7]"
                 }`}
-                onClick={() => applyLocale(locale.code)}
+                onClick={() => applyLocale(locale)}
               >
                 <span className="shrink-0 text-[0.95rem] font-medium tracking-normal">
-                  {locale.code.toUpperCase()}
+                  {LOCALE_DISPLAY_CODES[locale]}
                 </span>
-                <span>{locale.label}</span>
+                <span>{LOCALE_LABELS[locale]}</span>
               </button>
             );
           })}
