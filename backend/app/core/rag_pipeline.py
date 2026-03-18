@@ -11,12 +11,14 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.core.embedder import Embedder
+from app.core.image_captioner import ImageCaptioner
 from app.db.models import KnowledgeFile, VectorChunk
 from app.storage.minio import MinioStorage
 
 LOGGER = logging.getLogger(__name__)
 
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md", ".png", ".jpg", ".jpeg", ".webp"}
+SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
 
 @dataclass(slots=True)
@@ -31,11 +33,13 @@ class RAGIngestPipeline:
         session_factory: async_sessionmaker,
         storage: MinioStorage,
         embedder: Embedder,
+        image_captioner: ImageCaptioner,
         tmp_dir: str,
     ) -> None:
         self._session_factory = session_factory
         self._storage = storage
         self._embedder = embedder
+        self._image_captioner = image_captioner
         self._tmp_dir = tmp_dir
         Path(self._tmp_dir).mkdir(parents=True, exist_ok=True)
 
@@ -108,7 +112,26 @@ class RAGIngestPipeline:
         with tempfile.TemporaryDirectory(prefix="ingest-", dir=self._tmp_dir) as temp_dir:
             local_path = Path(temp_dir) / filename
             local_path.write_bytes(blob)
-            text = await asyncio.to_thread(self._extract_text_from_file, local_path)
+
+            # For image files, generate a comprehensive caption using vision AI.
+            if local_path.suffix.lower() in SUPPORTED_IMAGE_EXTENSIONS:
+                try:
+                    from PIL import Image
+
+                    with Image.open(local_path) as img:
+                        img.verify()
+                except Exception as exc:  # pragma: no cover - corrupted image
+                    raise RuntimeError("Invalid image file") from exc
+
+                try:
+                    caption = await self._image_captioner.generate_caption(blob)
+                except Exception as exc:
+                    LOGGER.exception("ingest.caption_generation_failed", extra={"file_id": filename})
+                    raise RuntimeError(f"Failed to generate image caption: {exc}") from exc
+
+                text = caption
+            else:
+                text = await asyncio.to_thread(self._extract_text_from_file, local_path)
 
         chunks = [chunk for chunk in self._split_text(text) if chunk.strip()]
         if not chunks:

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.core.embedder import Embedder
 from app.core.hallucination import HallucinationJudge
+from app.core.image_captioner import ImageCaptioner
 from app.core.retriever import Retriever
 from app.core.rag_pipeline import RAGIngestPipeline
 from app.core.streamer import ChatStreamer
@@ -43,10 +44,15 @@ hallucination_judge = HallucinationJudge(
     api_key=settings.openai_api_key,
     model=settings.openai_judge_model,
 )
+image_captioner = ImageCaptioner(
+    api_key=settings.openai_api_key,
+    model=settings.openai_chat_model,
+)
 ingest_pipeline = RAGIngestPipeline(
     session_factory=AsyncSessionLocal,
     storage=storage,
     embedder=embedder,
+    image_captioner=image_captioner,
     tmp_dir=settings.ingest_tmp_dir,
 )
 

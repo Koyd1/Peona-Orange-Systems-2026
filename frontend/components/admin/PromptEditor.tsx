@@ -182,7 +182,7 @@ export default function PromptEditor() {
     if (!confirmed) return;
 
     setBusyId(id);
-    setError(null);
+    (null);
 
     try {
       const response = await fetch(`/api/admin/prompts/${id}`, {
