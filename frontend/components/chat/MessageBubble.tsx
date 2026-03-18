@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import SourceCard, { type ChatSource } from "@/components/chat/SourceCard";
 import FeedbackButtons from "@/components/chat/FeedbackButtons";
 import TypingDots from "@/components/chat/TypingDots";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 export type ChatMessageVM = {
   id: string;
@@ -30,6 +31,7 @@ export default function MessageBubble({
   sessionId: string;
   onFeedbackSaved?: (messageId: string, payload: { rating: 1 | -1; comment: string | null }) => void;
 }) {
+  const { t } = useAppTranslation();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [kbFiles, setKbFiles] = useState<KnowledgeDoc[]>([]);
   const [kbLoaded, setKbLoaded] = useState(false);
@@ -49,7 +51,7 @@ export default function MessageBubble({
       try {
         const response = await fetch("/api/upload", { cache: "no-store" });
         if (!response.ok) {
-          throw new Error("Failed to load knowledge files");
+          throw new Error(t("chat.message.loadSourcesFailed"));
         }
         const payload = (await response.json()) as { items?: KnowledgeDoc[] };
         if (!active) return;
@@ -57,7 +59,7 @@ export default function MessageBubble({
         setKbLoaded(true);
       } catch (loadError) {
         if (!active) return;
-        setKbError(loadError instanceof Error ? loadError.message : "Failed to load knowledge files");
+        setKbError(loadError instanceof Error ? loadError.message : t("chat.message.loadSourcesFailed"));
         setKbLoaded(true);
       }
     }
@@ -139,7 +141,7 @@ export default function MessageBubble({
               }`}
             >
               {isStreaming ? (
-                <TypingDots className="text-slate-500" label="Asistentul scrie" />
+                <TypingDots className="text-slate-500" label={t("chat.message.assistantTyping")} />
               ) : (
                 message.content || "..."
               )}
@@ -161,7 +163,7 @@ export default function MessageBubble({
                   className="rounded-full border border-border bg-white px-4 py-1 text-xs font-semibold text-slate-600 shadow-[0_6px_14px_rgba(15,23,42,0.08)] transition hover:bg-slate-50"
                   aria-expanded={detailsOpen}
                 >
-                  Detalii
+                  {t("chat.message.details")}
                 </button>
 
                 {detailsOpen ? (
@@ -188,11 +190,11 @@ export default function MessageBubble({
                                   rel="noreferrer"
                                   className="text-sm font-semibold text-slate-800 underline decoration-slate-300 underline-offset-4 hover:text-slate-900"
                                 >
-                                  {source.filename ?? "unknown"}
+                                  {source.filename ?? t("chat.message.unknown")}
                                 </a>
                               ) : (
                                 <span className="text-sm font-semibold text-slate-800">
-                                  {source.filename ?? "unknown"}
+                                  {source.filename ?? t("chat.message.unknown")}
                                 </span>
                               )}
                               {source.snippet ? (
@@ -226,12 +228,12 @@ export default function MessageBubble({
                       </div>
                     ) : kbLoaded && kbFiles.length === 0 ? (
                       <p className="text-xs text-slate-500">
-                        Nu există surse disponibile pentru acest răspuns.
+                        {t("chat.message.noSources")}
                       </p>
                     ) : kbError ? (
                       <p className="text-xs text-red-500">{kbError}</p>
                     ) : (
-                      <p className="text-xs text-slate-500">Se încarcă sursele...</p>
+                      <p className="text-xs text-slate-500">{t("chat.message.loadingSources")}</p>
                     )}
                   </div>
                 ) : null}

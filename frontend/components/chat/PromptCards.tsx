@@ -7,6 +7,7 @@ import {
   loadPromptTemplates,
   type PromptTemplate
 } from "@/lib/chatSuggestionsCache";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 export default function PromptCards({
   onPick,
@@ -17,6 +18,7 @@ export default function PromptCards({
   layout?: "row" | "grid";
   activeId?: string | null;
 }) {
+  const { t } = useAppTranslation();
   const [items, setItems] = useState<PromptTemplate[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function PromptCards({
         const freshItems = await loadPromptTemplates({ force: !cached });
         setItems(freshItems);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Failed to load prompt cards");
+        setError(loadError instanceof Error ? loadError.message : t("chat.prompts.loadFailed"));
       } finally {
         setLoading(false);
       }
@@ -48,7 +50,7 @@ export default function PromptCards({
   }
 
   if (items.length === 0) {
-    return <p className="text-sm text-slate-400">Nu exista sabloane active.</p>;
+    return <p className="text-sm text-slate-400">{t("chat.prompts.empty")}</p>;
   }
 
   const containerClass =

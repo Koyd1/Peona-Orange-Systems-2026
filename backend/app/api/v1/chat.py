@@ -87,18 +87,20 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
                     filename_to_similarity[fname] = sim
                     filename_to_fileid[fname] = source.file_id
 
-        sources_payload = [
-            {
-                "fileId": source.file_id,
-                "filename": getattr(source, 'filename', files_map.get(source.file_id, "unknown")),
-                "similarity": round(source.similarity, 4)
-                if isinstance(source.similarity, float) and math.isfinite(source.similarity)
-                else 0.0,
-                "snippet": source.content[:220],
-            }
-            for source in sources
-        ]
-        yield encode_sse({"type": "sources", "data": sources_payload})
+        # We used to send the retrieved chunks as sources here (from the DB).
+        #
+        # sources_payload = [
+        #     {
+        #         "fileId": source.file_id,
+        #         "filename": getattr(source, 'filename', files_map.get(source.file_id, "unknown")),
+        #         "similarity": round(source.similarity, 4)
+        #         if isinstance(source.similarity, float) and math.isfinite(source.similarity)
+        #         else 0.0,
+        #         "snippet": source.content[:220],
+        #     }
+        #     for source in sources
+        # ]
+        # yield encode_sse({"type": "sources", "data": sources_payload})
         for telemetry in pending_telemetry:
             yield encode_sse({"type": "telemetry", "data": telemetry})
 

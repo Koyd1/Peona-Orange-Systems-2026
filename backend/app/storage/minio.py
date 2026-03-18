@@ -46,6 +46,14 @@ class MinioStorage:
         response = self._client.get_object(Bucket=self.bucket, Key=object_name)
         return response["Body"].read()
 
+    def generate_presigned_url(self, object_name: str, expires_in: int = 3600) -> str:
+        # AWS S3 compatible presigned URL
+        return self._client.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": self.bucket, "Key": object_name},
+            ExpiresIn=expires_in,
+        )
+
     def delete_object(self, object_name: str) -> None:
         try:
             self._client.delete_object(Bucket=self.bucket, Key=object_name)

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 type PromptTemplate = {
   id: string;
@@ -26,7 +27,7 @@ type Draft = {
   isActive: boolean;
 };
 
-function createEmptyDraft(order = 100): Draft {
+function createEmptyDraft(order = 1): Draft {
   return {
     title: "",
     content: "",
@@ -46,7 +47,7 @@ function createDraftFromTemplate(item: PromptTemplate): Draft {
   };
 }
 
-async function readPromptApiError(response: Response, fallback: string) {
+async function readPromptApiError(response: Response, fallback: string, invalidPayload: string) {
   const payload = await response.json().catch(() => null);
   const message =
     (payload && typeof payload === "object" && "error" in payload && payload.error) ||
@@ -54,7 +55,7 @@ async function readPromptApiError(response: Response, fallback: string) {
 
   if (typeof message === "string" && message.trim()) {
     if (message === "Invalid payload") {
-      return "Datele introduse nu sunt valide. Verifică titlul, conținutul, categoria și poziția.";
+      return invalidPayload;
     }
     return message;
   }
@@ -68,6 +69,7 @@ async function readPromptApiError(response: Response, fallback: string) {
 }
 
 export default function PromptEditor() {
+  const { t } = useAppTranslation();
   const [items, setItems] = useState<PromptTemplate[]>([]);
   const [draft, setDraft] = useState<Draft>(createEmptyDraft());
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -94,11 +96,11 @@ export default function PromptEditor() {
     setError(null);
     try {
       const response = await fetch("/api/admin/prompts", { cache: "no-store" });
-      if (!response.ok) throw new Error("Failed to load prompt templates");
+      if (!response.ok) throw new Error(t("admin.prompts.loadFailed"));
       const payload = (await response.json()) as { items: PromptTemplate[] };
       setItems(payload.items);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Load error");
+      setError(loadError instanceof Error ? loadError.message : t("admin.prompts.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -136,15 +138,19 @@ export default function PromptEditor() {
         body: JSON.stringify(draft)
       });
       if (!response.ok) {
-        throw new Error(await readPromptApiError(response, "Crearea template-ului a eșuat."));
+        throw new Error(
+          await readPromptApiError(
+            response,
+            t("admin.prompts.createFailed"),
+            t("admin.prompts.invalidPayload")
+          )
+        );
       }
       setDraft(createEmptyDraft());
       setIsCreateOpen(false);
       await load();
     } catch (createError) {
-      setError(
-        createError instanceof Error ? createError.message : "Crearea template-ului a eșuat."
-      );
+      setError(createError instanceof Error ? createError.message : t("admin.prompts.createFailed"));
     } finally {
       setBusyId(null);
     }
@@ -162,15 +168,19 @@ export default function PromptEditor() {
       });
 
       if (!response.ok) {
-        throw new Error(await readPromptApiError(response, "Actualizarea template-ului a eșuat."));
+        throw new Error(
+          await readPromptApiError(
+            response,
+            t("admin.prompts.updateFailed"),
+            t("admin.prompts.invalidPayload")
+          )
+        );
       }
 
       await load();
       return true;
     } catch (updateError) {
-      setError(
-        updateError instanceof Error ? updateError.message : "Actualizarea template-ului a eșuat."
-      );
+      setError(updateError instanceof Error ? updateError.message : t("admin.prompts.updateFailed"));
       return false;
     } finally {
       setBusyId(null);
@@ -178,11 +188,11 @@ export default function PromptEditor() {
   }
 
   async function deleteTemplate(id: string) {
-    const confirmed = window.confirm("Ștergi acest template?");
+    const confirmed = window.confirm(t("admin.prompts.confirmDelete"));
     if (!confirmed) return;
 
     setBusyId(id);
-    setError(null);
+    (null);
 
     try {
       const response = await fetch(`/api/admin/prompts/${id}`, {
@@ -191,12 +201,12 @@ export default function PromptEditor() {
 
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(text || "Delete failed");
+        throw new Error(text || t("admin.prompts.deleteFailed"));
       }
 
       await load();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Delete failed");
+      setError(deleteError instanceof Error ? deleteError.message : t("admin.prompts.deleteFailed"));
     } finally {
       setBusyId(null);
     }
@@ -248,9 +258,9 @@ export default function PromptEditor() {
 
   function subtitle(item: PromptTemplate) {
     if (item.category && item.category.trim().length > 0) {
-      return `Categorie: ${item.category}`;
+      return t("admin.prompts.categoryPrefix", { category: item.category });
     }
-    return "Șablon reutilizabil pentru asistentul AI";
+    return t("admin.prompts.subtitleFallback");
   }
 
   return (
@@ -259,17 +269,17 @@ export default function PromptEditor() {
         <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-[760px]">
             <h1 className="m-0 text-[2.25rem] font-bold tracking-[-0.02em] text-[#111827] md:text-[2.75rem]">
-              Prompt Templates
+              {t("admin.prompts.title")}
             </h1>
             <p className="mt-3 text-lg leading-relaxed text-[#6b7280]">
-              Gestionarea șabloanelor de prompturi pentru asistentul AI.
+              {t("admin.prompts.description")}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 xl:justify-end">
             {loading ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-[#eef2ff] px-3 py-1.5 text-sm text-[#4338ca]">
                 <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#a5b4fc] border-t-[#4338ca]" />
-                Actualizare...
+                {t("admin.prompts.refresh")}
               </span>
             ) : null}
             <Button
@@ -279,7 +289,7 @@ export default function PromptEditor() {
               onClick={toggleCreateEditor}
             >
               <span className="text-lg leading-none">+</span>
-              {isCreateOpen ? "Ascunde formularul" : "Creare template"}
+              {isCreateOpen ? t("admin.prompts.hideForm") : t("admin.prompts.createTemplate")}
             </Button>
           </div>
         </div>
@@ -288,7 +298,7 @@ export default function PromptEditor() {
 
       {isCreateOpen ? (
         <section className="rounded-[24px] border border-[#eceff5] bg-white p-5 shadow-[0_20px_48px_-44px_rgba(15,23,42,0.85)] md:p-6">
-          <h2 className="m-0 text-xl font-semibold text-[#101828]">Template nou</h2>
+          <h2 className="m-0 text-xl font-semibold text-[#101828]">{t("admin.prompts.newTitle")}</h2>
           <form
             className="mt-4 grid gap-3 md:grid-cols-2"
             onSubmit={async (event) => {
@@ -297,19 +307,19 @@ export default function PromptEditor() {
             }}
           >
             <Input
-              placeholder="Titlu"
+              placeholder={t("admin.prompts.fields.title")}
               value={draft.title}
               onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
               className="bg-white"
             />
             <Input
-              placeholder="Categorie"
+              placeholder={t("admin.prompts.fields.category")}
               value={draft.category}
               onChange={(event) => setDraft((prev) => ({ ...prev, category: event.target.value }))}
               className="bg-white"
             />
             <Textarea
-              placeholder="Conținut"
+              placeholder={t("admin.prompts.fields.content")}
               value={draft.content}
               onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
               rows={4}
@@ -332,12 +342,12 @@ export default function PromptEditor() {
                 onChange={(event) => setDraft((prev) => ({ ...prev, isActive: event.target.checked }))}
                 className="accent-orange-500"
               />
-              Activ
+              {t("admin.prompts.fields.active")}
             </label>
             <div className="mt-1 flex flex-wrap gap-2 md:col-span-2">
               <Button type="submit" size="sm" disabled={busyId === "create"}>
                 <span className="text-base leading-none">+</span>
-                Creare
+                {t("admin.prompts.create")}
               </Button>
               <Button
                 type="button"
@@ -345,7 +355,7 @@ export default function PromptEditor() {
                 size="sm"
                 onClick={resetEditor}
               >
-                Anulează
+                {t("admin.prompts.cancel")}
               </Button>
             </div>
           </form>
@@ -360,8 +370,8 @@ export default function PromptEditor() {
           }
           closeEditDialog();
         }}
-        title="Edit Prompt Template"
-        description="Quick popup pentru editarea template-ului direct peste pagină."
+        title={t("admin.prompts.editTitle")}
+        description={t("admin.prompts.editDescription")}
         panelClassName="max-w-[760px]"
       >
         <form
@@ -372,9 +382,9 @@ export default function PromptEditor() {
           }}
         >
           <label className="md:col-span-2">
-            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Title</span>
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">{t("admin.prompts.fields.title")}</span>
             <Input
-              placeholder="Title"
+              placeholder={t("admin.prompts.fields.title")}
               value={editDraft.title}
               onChange={(event) => setEditDraft((prev) => ({ ...prev, title: event.target.value }))}
               className="bg-white"
@@ -382,9 +392,9 @@ export default function PromptEditor() {
           </label>
 
           <label>
-            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Category</span>
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">{t("admin.prompts.fields.category")}</span>
             <Input
-              placeholder="Category"
+              placeholder={t("admin.prompts.fields.category")}
               value={editDraft.category}
               onChange={(event) =>
                 setEditDraft((prev) => ({ ...prev, category: event.target.value }))
@@ -394,7 +404,7 @@ export default function PromptEditor() {
           </label>
 
           <label>
-            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Order</span>
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">{t("admin.prompts.fields.order")}</span>
             <Input
               type="number"
               min={0}
@@ -408,9 +418,9 @@ export default function PromptEditor() {
           </label>
 
           <label className="md:col-span-2">
-            <span className="mb-1.5 block text-sm font-medium text-[#344054]">Content</span>
+            <span className="mb-1.5 block text-sm font-medium text-[#344054]">{t("admin.prompts.fields.content")}</span>
             <Textarea
-              placeholder="Content"
+              placeholder={t("admin.prompts.fields.content")}
               value={editDraft.content}
               onChange={(event) =>
                 setEditDraft((prev) => ({ ...prev, content: event.target.value }))
@@ -429,7 +439,7 @@ export default function PromptEditor() {
               }
               className="accent-orange-500"
             />
-            Active
+            {t("admin.prompts.fields.active")}
           </label>
 
           <div className="mt-1 flex flex-wrap items-center justify-end gap-2 md:col-span-2">
@@ -439,10 +449,10 @@ export default function PromptEditor() {
               onClick={closeEditDialog}
               disabled={editingItem ? busyId === editingItem.id : false}
             >
-              Cancel
+              {t("admin.prompts.cancel")}
             </Button>
             <Button type="submit" disabled={editingItem ? busyId === editingItem.id : false}>
-              {editingItem && busyId === editingItem.id ? "Saving..." : "Save changes"}
+              {editingItem && busyId === editingItem.id ? t("admin.prompts.saving") : t("admin.prompts.saveChanges")}
             </Button>
           </div>
         </form>
@@ -503,7 +513,7 @@ export default function PromptEditor() {
                         openEditDialog(item);
                       }}
                     >
-                      Edit
+                      {t("admin.prompts.actions.edit")}
                     </button>
                     <button
                       type="button"
@@ -513,7 +523,7 @@ export default function PromptEditor() {
                         await patchTemplate(item.id, { isActive: !item.isActive });
                       }}
                     >
-                      {item.isActive ? "Deactivate" : "Activate"}
+                      {item.isActive ? t("admin.prompts.actions.deactivate") : t("admin.prompts.actions.activate")}
                     </button>
                     <button
                       type="button"
@@ -523,7 +533,7 @@ export default function PromptEditor() {
                         await deleteTemplate(item.id);
                       }}
                     >
-                      Delete
+                      {t("admin.prompts.actions.delete")}
                     </button>
                   </div>
                 ) : null}
@@ -542,7 +552,7 @@ export default function PromptEditor() {
                     : "bg-[#f2f4f7] text-[#667085]"
                 }`}
               >
-                {item.category?.trim() || "General"}
+                {item.category?.trim() || t("admin.prompts.general")}
               </span>
               <span className="text-sm text-[#98a2b3]">{formatDate(item.updatedAt)}</span>
             </div>
@@ -550,9 +560,9 @@ export default function PromptEditor() {
         ))}
         {sortedItems.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#d0d5dd] bg-[#fcfdff] px-4 py-12 text-center lg:col-span-2">
-            <p className="m-0 text-base font-semibold text-[#344054]">Nu există template-uri definite.</p>
+            <p className="m-0 text-base font-semibold text-[#344054]">{t("admin.prompts.emptyTitle")}</p>
             <p className="mt-2 text-sm text-[#667085]">
-              Creează primul template din butonul „Creare template”.
+              {t("admin.prompts.emptyDescription")}
             </p>
           </div>
         ) : null}
