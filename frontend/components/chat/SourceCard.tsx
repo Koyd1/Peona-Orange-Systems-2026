@@ -21,6 +21,7 @@ export default function SourceCard({ source }: { source: ChatSource }) {
         <span className="text-sm font-semibold text-slate-800">
           {source.filename ?? t("chat.message.unknown")}
         </span>
+        {/* TODO: Implement similarity display if needed */}
         {typeof source.similarity === "number" ? (
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
             {t("chat.message.similarity")} {source.similarity.toFixed(3)}

@@ -51,9 +51,6 @@ export default async function LoginPage({ searchParams }: PageProps) {
           />
         </div>
         <h1 className="mb-3 text-2xl font-semibold leading-snug">{t("auth.adminPanelTitle")}</h1>
-        <p className="text-sm text-gray-400 mb-6">
-          {t("auth.adminPanelDescription")}
-        </p>
 
         <LoginForm loginAction={loginAction} serverError={params.error} />
 

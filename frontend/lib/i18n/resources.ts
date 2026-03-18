@@ -38,7 +38,6 @@ export const resources = {
       },
       auth: {
         adminPanelTitle: "Panoul de administrare",
-        adminPanelDescription: "Autentificați-vă în sistemul de administrare HR AI Assistant",
         fields: {
           email: "Email",
           password: "Parolă"
@@ -360,7 +359,6 @@ export const resources = {
       },
       auth: {
         adminPanelTitle: "Панель администрирования",
-        adminPanelDescription: "Войдите в систему администрирования HR AI Assistant",
         fields: {
           email: "Email",
           password: "Пароль"
@@ -682,7 +680,6 @@ export const resources = {
       },
       auth: {
         adminPanelTitle: "Administration panel",
-        adminPanelDescription: "Sign in to the HR AI Assistant administration system",
         fields: {
           email: "Email",
           password: "Password"

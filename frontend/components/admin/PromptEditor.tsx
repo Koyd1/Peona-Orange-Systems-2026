@@ -27,7 +27,7 @@ type Draft = {
   isActive: boolean;
 };
 
-function createEmptyDraft(order = 100): Draft {
+function createEmptyDraft(order = 1): Draft {
   return {
     title: "",
     content: "",
