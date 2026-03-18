@@ -109,7 +109,7 @@ async def create_ingest_job(
             "ingest.image_too_large",
             extra={"file_name": filename, "size_bytes": len(payload), "max_bytes": MAX_IMAGE_BYTES},
         )
-        raise HTTPException(status_code=413, detail=f"Image is too large (max {MAX_IMAGE_BYTES} bytes)")
+        raise HTTPException(status_code=413, detail=f"Image is too large (max {MAX_IMAGE_BYTES/1024/1024:.2f} MB)")
 
     file_id = str(uuid4())
     object_key = f"knowledge/{file_id}/{filename}"

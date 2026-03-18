@@ -54,8 +54,7 @@ Avoid:
 
 Your output should read as a structured textual representation of the information contained in the image."""
 
-VISION_USER_PROMPT = "Please analyze this image comprehensively and provide a detailed caption that includes all visible text and a description of the visual content."
-
+VISION_USER_PROMPT = "Extract and interpret all information from this image as structured textual data. Focus on meaning and relationships, not visual description."
 
 class ImageCaptioner:
     def __init__(self, api_key: str, model: str = "gpt-4o") -> None:
