@@ -13,6 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 
 type ServiceStatus = {
   ok: boolean;
@@ -133,25 +134,35 @@ type HealthPayload = {
 
 const POLL_MS = 30000;
 
-function asBadge(status: HealthPayload["status"] | "ok" | "warn" | "error") {
-  if (status === "ok") return { text: "OK", color: "#166534", bg: "#dcfce7" };
-  if (status === "warn") return { text: "WARN", color: "#92400e", bg: "#fef3c7" };
-  if (status === "unavailable") return { text: "N/A", color: "#475467", bg: "#f2f4f7" };
-  return { text: "ERROR", color: "#991b1b", bg: "#fee2e2" };
+type BadgeLabels = {
+  ok: string;
+  warn: string;
+  error: string;
+  unavailable: string;
+};
+
+function asBadge(
+  status: HealthPayload["status"] | "ok" | "warn" | "error",
+  labels: BadgeLabels
+) {
+  if (status === "ok") return { text: labels.ok, color: "#166534", bg: "#dcfce7" };
+  if (status === "warn") return { text: labels.warn, color: "#92400e", bg: "#fef3c7" };
+  if (status === "unavailable") return { text: labels.unavailable, color: "#475467", bg: "#f2f4f7" };
+  return { text: labels.error, color: "#991b1b", bg: "#fee2e2" };
 }
 
-function formatNumber(value: number | null | undefined) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "n/a";
+function formatNumber(value: number | null | undefined, naLabel: string) {
+  if (value === null || value === undefined || Number.isNaN(value)) return naLabel;
   return new Intl.NumberFormat("en-US").format(value);
 }
 
-function formatUsd(value: number | null | undefined) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "n/a";
+function formatUsd(value: number | null | undefined, naLabel: string) {
+  if (value === null || value === undefined || Number.isNaN(value)) return naLabel;
   return `$${value.toFixed(value >= 1 ? 2 : 4)}`;
 }
 
-function formatPct(value: number | null | undefined) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "n/a";
+function formatPct(value: number | null | undefined, naLabel: string) {
+  if (value === null || value === undefined || Number.isNaN(value)) return naLabel;
   return `${value.toFixed(1)}%`;
 }
 
@@ -202,20 +213,24 @@ function trimReason(reason: string, max = 150) {
 
 function ServiceCard({
   title,
-  body,
+  statusLabel,
+  latencyLabel,
   extra,
+  detail,
 }: {
   title: string;
-  body?: ServiceStatus;
+  statusLabel: string;
+  latencyLabel: string;
   extra?: string | null;
+  detail?: string | null;
 }) {
   return (
     <article className="rounded-2xl border border-[#e9edf5] bg-[#fbfcff] p-4">
       <h4 className="m-0 text-sm font-semibold uppercase tracking-[0.06em] text-[#98a2b3]">{title}</h4>
-      <p className="mt-2 text-lg font-bold text-[#111827]">{body?.ok ? "OK" : "FAIL"}</p>
-      <p className="m-0 text-sm text-[#667085]">Latency: {body?.latencyMs ?? "-"} ms</p>
+      <p className="mt-2 text-lg font-bold text-[#111827]">{statusLabel}</p>
+      <p className="m-0 text-sm text-[#667085]">{latencyLabel}</p>
       {extra ? <p className="m-0 mt-1 text-sm text-[#667085]">{extra}</p> : null}
-      {body?.detail ? <p className="m-0 mt-1 text-sm text-[#b54708]">{body.detail}</p> : null}
+      {detail ? <p className="m-0 mt-1 text-sm text-[#b54708]">{detail}</p> : null}
     </article>
   );
 }
@@ -223,9 +238,19 @@ function ServiceCard({
 function WindowTable({
   usage,
   quality,
+  labels,
+  naLabel,
 }: {
   usage: Record<"24h" | "7d" | "30d", UsageWindow>;
   quality: Record<"24h" | "7d" | "30d", QualityWindow>;
+  labels: {
+    window: string;
+    tokens: string;
+    avgRisk: string;
+    judged: string;
+    needsReview: string;
+  };
+  naLabel: string;
 }) {
   const rows: Array<"24h" | "7d" | "30d"> = ["24h", "7d", "30d"];
 
@@ -234,21 +259,21 @@ function WindowTable({
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead className="bg-[#fafbfe]">
           <tr className="border-b border-[#eef1f5]">
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Window</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Tokens</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Avg risk</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Judged</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Needs review</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.window}</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.tokens}</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.avgRisk}</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.judged}</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.needsReview}</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((label) => (
             <tr key={label} className="border-b border-[#eef1f5] text-[#1f2937]">
               <td className="px-4 py-3 font-medium">{label}</td>
-              <td className="px-4 py-3">{formatNumber(usage[label].totalTokens)}</td>
+              <td className="px-4 py-3">{formatNumber(usage[label].totalTokens, naLabel)}</td>
               <td className="px-4 py-3">{quality[label].avgHallScore.toFixed(3)}</td>
-              <td className="px-4 py-3">{formatNumber(quality[label].judgedSamples)}</td>
-              <td className="px-4 py-3">{formatNumber(quality[label].highRiskCount)}</td>
+              <td className="px-4 py-3">{formatNumber(quality[label].judgedSamples, naLabel)}</td>
+              <td className="px-4 py-3">{formatNumber(quality[label].highRiskCount, naLabel)}</td>
             </tr>
           ))}
         </tbody>
@@ -257,17 +282,37 @@ function WindowTable({
   );
 }
 
-function ModelTable({ rows }: { rows: UsageRow[] }) {
+function ModelTable({
+  rows,
+  labels,
+  naLabel,
+  formatLatency,
+}: {
+  rows: UsageRow[];
+  labels: {
+    headers: {
+      model: string;
+      operation: string;
+      tokens: string;
+      spend: string;
+      latency: string;
+    };
+    pricingGap: string;
+    noData: string;
+  };
+  naLabel: string;
+  formatLatency: (value: number) => string;
+}) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-[#edf0f5] bg-white">
       <table className="w-full min-w-[680px] border-collapse text-sm">
         <thead className="bg-[#fafbfe]">
           <tr className="border-b border-[#eef1f5]">
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Model</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Operation</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Tokens</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Spend</th>
-            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Latency</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.headers.model}</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.headers.operation}</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.headers.tokens}</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.headers.spend}</th>
+            <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">{labels.headers.latency}</th>
           </tr>
         </thead>
         <tbody>
@@ -276,19 +321,21 @@ function ModelTable({ rows }: { rows: UsageRow[] }) {
               <td className="px-4 py-3">{row.model}</td>
               <td className="px-4 py-3">{row.operation}</td>
               <td className="px-4 py-3">
-                {formatNumber(row.totalTokens)}
+                {formatNumber(row.totalTokens, naLabel)}
               </td>
               <td className="px-4 py-3">
-                {formatUsd(row.costTotalUsd)}
-                {row.missingPricing ? <span className="ml-2 text-xs text-[#b54708]">pricing gap</span> : null}
+                {formatUsd(row.costTotalUsd, naLabel)}
+                {row.missingPricing ? (
+                  <span className="ml-2 text-xs text-[#b54708]">{labels.pricingGap}</span>
+                ) : null}
               </td>
-              <td className="px-4 py-3">{row.avgLatencyMs ? `${row.avgLatencyMs} ms` : "n/a"}</td>
+              <td className="px-4 py-3">{row.avgLatencyMs ? formatLatency(row.avgLatencyMs) : naLabel}</td>
             </tr>
           ))}
           {rows.length === 0 ? (
             <tr>
               <td colSpan={5} className="px-6 py-10 text-center text-sm text-[#98a2b3]">
-                No model usage yet.
+                {labels.noData}
               </td>
             </tr>
           ) : null}
@@ -299,6 +346,7 @@ function ModelTable({ rows }: { rows: UsageRow[] }) {
 }
 
 export function HealthPanel() {
+  const { t } = useAppTranslation();
   const [data, setData] = useState<HealthPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -310,7 +358,7 @@ export function HealthPanel() {
       try {
         const response = await fetch("/api/health", { cache: "no-store" });
         if (!response.ok) {
-          throw new Error("Failed to load health payload");
+          throw new Error(t("admin.health.errors.loadFailed"));
         }
         const payload = (await response.json()) as HealthPayload;
         if (!cancelled) {
@@ -320,7 +368,11 @@ export function HealthPanel() {
       } catch (loadError) {
         if (!cancelled) {
           setData(null);
-          setError(loadError instanceof Error ? loadError.message : "Load error");
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : t("admin.health.errors.loadGeneric")
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -335,31 +387,51 @@ export function HealthPanel() {
     };
   }, []);
 
-  const badge = useMemo(() => asBadge(data?.status ?? "unavailable"), [data?.status]);
+  const naLabel = t("admin.health.common.na");
+  const badge = useMemo(
+    () =>
+      asBadge(data?.status ?? "unavailable", {
+        ok: t("admin.health.badge.ok"),
+        warn: t("admin.health.badge.warn"),
+        error: t("admin.health.badge.error"),
+        unavailable: t("admin.health.badge.unavailable"),
+      }),
+    [data?.status, t]
+  );
 
   const usage24h = data?.usage.windows["24h"] ?? emptyUsageWindow();
   const usage30d = data?.usage.windows["30d"] ?? emptyUsageWindow();
   const quality30d = data?.quality.windows["30d"] ?? emptyQualityWindow();
   const latestRisk = data?.quality.riskyAnswers?.[0] ?? null;
   const exactEmpty = (data?.coverage.telemetryCoverage30d.withExactUsage ?? 0) === 0;
+  const tokenSeriesLabel = t("admin.health.usage.tokenTrend.series.tokens");
+  const avgSeriesLabel = t("admin.health.quality.trend.series.average");
+  const p95SeriesLabel = t("admin.health.quality.trend.series.p95");
   const trendData = (data?.usage.trends30d ?? []).map((item) => ({
     day: item.day.slice(5),
-    Tokens: item.exactTokens,
+    [tokenSeriesLabel]: item.exactTokens,
   }));
   const qualityTrendData = (data?.quality.trends30d ?? []).map((item) => ({
     day: item.day.slice(5),
-    Average: item.avgHallScore,
-    P95: item.p95HallScore,
+    [avgSeriesLabel]: item.avgHallScore,
+    [p95SeriesLabel]: item.p95HallScore,
   }));
+  const updatedLabel = t("admin.health.panel.updated", {
+    value: data?.timestamp ? new Date(data.timestamp).toLocaleString() : naLabel,
+  });
+  const serviceOkLabel = t("admin.health.services.statusOk");
+  const serviceFailLabel = t("admin.health.services.statusFail");
 
   return (
     <section className="space-y-7">
       <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-5 py-6 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-7">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="m-0 text-[1.7rem] font-bold tracking-[-0.02em] text-[#111827]">Health monitor</h2>
+            <h2 className="m-0 text-[1.7rem] font-bold tracking-[-0.02em] text-[#111827]">
+              {t("admin.health.panel.title")}
+            </h2>
             <p className="mt-2 text-sm text-[#667085]">
-              One compact view for service status, AI usage, model spend, and answer quality.
+              {t("admin.health.panel.subtitle")}
             </p>
           </div>
           <span
@@ -378,65 +450,107 @@ export function HealthPanel() {
 
         {exactEmpty ? (
           <div className="mb-4 rounded-2xl border border-[#fed7aa] bg-[#fff7ed] px-4 py-3 text-sm text-[#9a3412]">
-            Exact telemetry is empty because no new chat has been recorded after the telemetry rollout yet.
-            Send a new message in chat after restarting the app to populate exact tokens, exact spend, and judge usage.
+            {t("admin.health.alerts.exactTelemetryEmpty")}
           </div>
         ) : null}
 
         {data?.coverage.missingPricingModels.length ? (
           <div className="mb-4 rounded-2xl border border-[#fde68a] bg-[#fffbeb] px-4 py-3 text-sm text-[#92400e]">
-            Missing pricing for: {data.coverage.missingPricingModels.join(", ")}
+            {t("admin.health.alerts.missingPricing", {
+              models: data.coverage.missingPricingModels.join(", "),
+            })}
           </div>
         ) : null}
 
-        <small className="block text-sm text-[#98a2b3]">
-          Updated: {data?.timestamp ? new Date(data.timestamp).toLocaleString() : "n/a"}
-        </small>
+        <small className="block text-sm text-[#98a2b3]">{updatedLabel}</small>
       </section>
 
       <section className="grid gap-3 md:grid-cols-3">
-        <ServiceCard title="OpenAI" body={data?.services.openai} extra={data?.services.openai.model ? `Model: ${data.services.openai.model}` : null} />
-        <ServiceCard title="Redis" body={data?.services.redis} />
         <ServiceCard
-          title="Database"
-          body={data?.services.database}
-          extra={`Chunks: ${formatNumber(data?.services.database.chunkCount)} | Messages: ${formatNumber(data?.services.database.messageCount)}`}
+          title={t("admin.health.services.openai")}
+          statusLabel={data?.services.openai?.ok ? serviceOkLabel : serviceFailLabel}
+          latencyLabel={t("admin.health.services.latency", {
+            value: data?.services.openai?.latencyMs ?? naLabel,
+          })}
+          extra={
+            data?.services.openai?.model
+              ? t("admin.health.services.model", { value: data.services.openai.model })
+              : null
+          }
+          detail={data?.services.openai?.detail ?? null}
+        />
+        <ServiceCard
+          title={t("admin.health.services.redis")}
+          statusLabel={data?.services.redis?.ok ? serviceOkLabel : serviceFailLabel}
+          latencyLabel={t("admin.health.services.latency", {
+            value: data?.services.redis?.latencyMs ?? naLabel,
+          })}
+          detail={data?.services.redis?.detail ?? null}
+        />
+        <ServiceCard
+          title={t("admin.health.services.database")}
+          statusLabel={data?.services.database?.ok ? serviceOkLabel : serviceFailLabel}
+          latencyLabel={t("admin.health.services.latency", {
+            value: data?.services.database?.latencyMs ?? naLabel,
+          })}
+          extra={t("admin.health.services.chunksMessages", {
+            chunks: formatNumber(data?.services.database.chunkCount, naLabel),
+            messages: formatNumber(data?.services.database.messageCount, naLabel),
+          })}
+          detail={data?.services.database?.detail ?? null}
         />
       </section>
 
       <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-5 py-6 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-7">
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="m-0 text-[1.35rem] font-bold text-[#111827]">Usage snapshot</h3>
-          <span className="text-sm text-[#98a2b3]">24h + 30d summary</span>
+          <h3 className="m-0 text-[1.35rem] font-bold text-[#111827]">
+            {t("admin.health.usage.snapshotTitle")}
+          </h3>
+          <span className="text-sm text-[#98a2b3]">
+            {t("admin.health.usage.snapshotSubtitle")}
+          </span>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-4">
           <StatCard
-            label="Tokens 24h"
-            value={formatNumber(usage24h.totalTokens)}
-            hint={`${formatNumber(usage24h.requests)} requests`}
+            label={t("admin.health.usage.stats.tokens24h")}
+            value={formatNumber(usage24h.totalTokens, naLabel)}
+            hint={t("admin.health.usage.stats.requests", {
+              count: formatNumber(usage24h.requests, naLabel),
+            })}
           />
           <StatCard
-            label="Spend 30d"
-            value={formatUsd(usage30d.spendUsd)}
-            hint={`${formatNumber(usage30d.totalTokens)} total tokens`}
+            label={t("admin.health.usage.stats.spend30d")}
+            value={formatUsd(usage30d.spendUsd, naLabel)}
+            hint={t("admin.health.usage.stats.totalTokens", {
+              count: formatNumber(usage30d.totalTokens, naLabel),
+            })}
           />
           <StatCard
-            label="Coverage"
-            value={formatPct(data?.coverage.telemetryCoverage30d.coveragePct)}
-            hint={`${formatNumber(data?.coverage.telemetryCoverage30d.withExactUsage)} / ${formatNumber(data?.coverage.telemetryCoverage30d.assistantMessages)} messages`}
+            label={t("admin.health.usage.stats.coverage")}
+            value={formatPct(data?.coverage.telemetryCoverage30d.coveragePct, naLabel)}
+            hint={t("admin.health.usage.stats.messages", {
+              withExact: formatNumber(data?.coverage.telemetryCoverage30d.withExactUsage, naLabel),
+              total: formatNumber(data?.coverage.telemetryCoverage30d.assistantMessages, naLabel),
+            })}
           />
           <StatCard
-            label="Judged"
-            value={formatPct(data?.coverage.judgeCoverage30d.coveragePct)}
-            hint={`${formatNumber(data?.coverage.judgeCoverage30d.judged)} judged answers`}
+            label={t("admin.health.usage.stats.judged")}
+            value={formatPct(data?.coverage.judgeCoverage30d.coveragePct, naLabel)}
+            hint={t("admin.health.usage.stats.judgedAnswers", {
+              count: formatNumber(data?.coverage.judgeCoverage30d.judged, naLabel),
+            })}
           />
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
           <div className="rounded-2xl border border-[#edf0f5] bg-[#fbfcff] p-5">
-            <h4 className="m-0 text-base font-semibold text-[#111827]">Token trend</h4>
-            <p className="m-0 mt-1 text-xs text-[#98a2b3]">Token volume over the last 30 days</p>
+            <h4 className="m-0 text-base font-semibold text-[#111827]">
+              {t("admin.health.usage.tokenTrend.title")}
+            </h4>
+            <p className="m-0 mt-1 text-xs text-[#98a2b3]">
+              {t("admin.health.usage.tokenTrend.subtitle")}
+            </p>
             <div className="mt-4 h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData}>
@@ -445,7 +559,7 @@ export function HealthPanel() {
                   <YAxis tick={{ fontSize: 11 }} stroke="#cbd5e1" />
                   <Tooltip />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-                  <Area type="monotone" dataKey="Tokens" stroke="#f97316" fill="#fed7aa" />
+                  <Area type="monotone" dataKey={tokenSeriesLabel} stroke="#f97316" fill="#fed7aa" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -455,49 +569,90 @@ export function HealthPanel() {
             <WindowTable
               usage={data?.usage.windows ?? { "24h": emptyUsageWindow(), "7d": emptyUsageWindow(), "30d": emptyUsageWindow() }}
               quality={data?.quality.windows ?? { "24h": emptyQualityWindow(), "7d": emptyQualityWindow(), "30d": emptyQualityWindow() }}
+              labels={{
+                window: t("admin.health.usage.windowTable.headers.window"),
+                tokens: t("admin.health.usage.windowTable.headers.tokens"),
+                avgRisk: t("admin.health.usage.windowTable.headers.avgRisk"),
+                judged: t("admin.health.usage.windowTable.headers.judged"),
+                needsReview: t("admin.health.usage.windowTable.headers.needsReview"),
+              }}
+              naLabel={naLabel}
             />
           </div>
         </div>
 
         <div className="mt-5">
-          <h4 className="mb-3 mt-0 text-base font-semibold text-[#111827]">Model breakdown</h4>
-          <ModelTable rows={data?.usage.models30d ?? []} />
+          <h4 className="mb-3 mt-0 text-base font-semibold text-[#111827]">
+            {t("admin.health.usage.modelBreakdown.title")}
+          </h4>
+          <ModelTable
+            rows={data?.usage.models30d ?? []}
+            labels={{
+              headers: {
+                model: t("admin.health.usage.modelBreakdown.table.headers.model"),
+                operation: t("admin.health.usage.modelBreakdown.table.headers.operation"),
+                tokens: t("admin.health.usage.modelBreakdown.table.headers.tokens"),
+                spend: t("admin.health.usage.modelBreakdown.table.headers.spend"),
+                latency: t("admin.health.usage.modelBreakdown.table.headers.latency"),
+              },
+              pricingGap: t("admin.health.usage.modelBreakdown.table.pricingGap"),
+              noData: t("admin.health.usage.modelBreakdown.table.noData"),
+            }}
+            naLabel={naLabel}
+            formatLatency={(value) => t("admin.health.common.msValue", { value })}
+          />
         </div>
       </section>
 
       <section className="rounded-[30px] border border-[#e8eaf1] bg-white px-5 py-6 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.65)] md:px-7">
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="m-0 text-[1.35rem] font-bold text-[#111827]">Quality snapshot</h3>
-          <span className="text-sm text-[#98a2b3]">30d focus</span>
+          <h3 className="m-0 text-[1.35rem] font-bold text-[#111827]">
+            {t("admin.health.quality.snapshotTitle")}
+          </h3>
+          <span className="text-sm text-[#98a2b3]">
+            {t("admin.health.quality.snapshotSubtitle")}
+          </span>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-4">
           <StatCard
-            label="Average risk"
+            label={t("admin.health.quality.stats.averageRisk")}
             value={quality30d.avgHallScore.toFixed(3)}
-            hint={`p95 ${quality30d.p95HallScore.toFixed(3)}`}
+            hint={t("admin.health.quality.stats.p95Hint", {
+              value: quality30d.p95HallScore.toFixed(3),
+            })}
           />
           <StatCard
-            label="Judged coverage"
-            value={formatPct(data?.coverage.judgeCoverage30d.coveragePct)}
-            hint={`${formatNumber(data?.coverage.judgeCoverage30d.judged)} judged answers`}
+            label={t("admin.health.quality.stats.judgedCoverage")}
+            value={formatPct(data?.coverage.judgeCoverage30d.coveragePct, naLabel)}
+            hint={t("admin.health.quality.stats.judgedAnswersHint", {
+              count: formatNumber(data?.coverage.judgeCoverage30d.judged, naLabel),
+            })}
           />
           <StatCard
-            label="Needs review"
-            value={formatNumber(quality30d.highRiskCount)}
-            hint="answers with score >= 0.85"
+            label={t("admin.health.quality.stats.needsReview")}
+            value={formatNumber(quality30d.highRiskCount, naLabel)}
+            hint={t("admin.health.quality.stats.needsReviewHint")}
           />
           <StatCard
-            label="Latest high score"
-            value={latestRisk ? latestRisk.hallScore.toFixed(3) : "n/a"}
-            hint={latestRisk ? "single answer; chart shows daily aggregates" : "no recent review-worthy answer"}
+            label={t("admin.health.quality.stats.latestHighScore")}
+            value={latestRisk ? latestRisk.hallScore.toFixed(3) : naLabel}
+            hint={
+              latestRisk
+                ? t("admin.health.quality.stats.latestHint")
+                : t("admin.health.quality.stats.latestEmpty")
+            }
           />
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_0.8fr]">
           <div className="rounded-2xl border border-[#edf0f5] bg-[#fbfcff] p-5">
-            <h4 className="m-0 text-base font-semibold text-[#111827]">Support-risk trend</h4>
-            <p className="m-0 mt-1 text-xs text-[#98a2b3]">Average and p95 support-risk score by day</p>
+            <h4 className="m-0 text-base font-semibold text-[#111827]">
+              {t("admin.health.quality.trend.title")}
+            </h4>
+            <p className="m-0 mt-1 text-xs text-[#98a2b3]">
+              {t("admin.health.quality.trend.subtitle")}
+            </p>
             <div className="mt-4 h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={qualityTrendData}>
@@ -506,19 +661,21 @@ export function HealthPanel() {
                   <YAxis tick={{ fontSize: 11 }} stroke="#cbd5e1" domain={[0, 1]} />
                   <Tooltip />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="Average" stroke="#f97316" strokeWidth={2.5} dot={false} />
-                  <Line type="monotone" dataKey="P95" stroke="#ef4444" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey={avgSeriesLabel} stroke="#f97316" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey={p95SeriesLabel} stroke="#ef4444" strokeWidth={2.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           <div className="rounded-2xl border border-[#edf0f5] bg-[#fffaf5] p-5">
-            <h4 className="m-0 text-base font-semibold text-[#111827]">Interpretation and common reasons</h4>
+            <h4 className="m-0 text-base font-semibold text-[#111827]">
+              {t("admin.health.quality.interpretation.title")}
+            </h4>
             <div className="mt-4 space-y-2 text-sm leading-6 text-[#475467]">
-              <p className="m-0">This is a support-risk score, not a truth score.</p>
-              <p className="m-0">Higher values mean the answer relies more on weak or missing support in retrieved context.</p>
-              <p className="m-0">A score like 0.8 can still be a strict grounding warning, not necessarily a true hallucination.</p>
+              <p className="m-0">{t("admin.health.quality.interpretation.point1")}</p>
+              <p className="m-0">{t("admin.health.quality.interpretation.point2")}</p>
+              <p className="m-0">{t("admin.health.quality.interpretation.point3")}</p>
             </div>
             <div className="mt-4 space-y-2">
               {(data?.quality.reasonBreakdown30d ?? []).slice(0, 4).map((item, index) => (
@@ -528,11 +685,15 @@ export function HealthPanel() {
                 >
                   <strong className="mr-2">{index + 1}.</strong>
                   <span className="break-words">{trimReason(item.reason)}</span>
-                  <span className="ml-2 whitespace-nowrap text-[#b45309]">× {item.count}</span>
+                  <span className="ml-2 whitespace-nowrap text-[#b45309]">
+                    {t("admin.health.quality.reasonCount", { count: item.count })}
+                  </span>
                 </div>
               ))}
               {(data?.quality.reasonBreakdown30d ?? []).length === 0 ? (
-                <span className="text-sm text-[#98a2b3]">No judge reasons yet.</span>
+                <span className="text-sm text-[#98a2b3]">
+                  {t("admin.health.quality.reasonsEmpty")}
+                </span>
               ) : null}
             </div>
           </div>
@@ -542,12 +703,24 @@ export function HealthPanel() {
           <table className="w-full min-w-[940px] border-collapse text-sm">
             <thead className="bg-[#fafbfe]">
               <tr className="border-b border-[#eef1f5]">
-                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Date</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Model</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Score</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Reason</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Feedback</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">Excerpt</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">
+                  {t("admin.health.quality.riskyTable.headers.date")}
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">
+                  {t("admin.health.quality.riskyTable.headers.model")}
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">
+                  {t("admin.health.quality.riskyTable.headers.score")}
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">
+                  {t("admin.health.quality.riskyTable.headers.reason")}
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">
+                  {t("admin.health.quality.riskyTable.headers.feedback")}
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-[#98a2b3]">
+                  {t("admin.health.quality.riskyTable.headers.excerpt")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -557,14 +730,14 @@ export function HealthPanel() {
                   <td className="px-4 py-3 whitespace-nowrap">{item.model}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{item.hallScore.toFixed(3)}</td>
                   <td className="max-w-[260px] break-words px-4 py-3">{item.hallReason}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{item.feedbackRating ?? "-"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{item.feedbackRating ?? naLabel}</td>
                   <td className="max-w-[420px] break-words px-4 py-3">{item.answerExcerpt}</td>
                 </tr>
               ))}
               {(data?.quality.riskyAnswers ?? []).length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#98a2b3]">
-                    No review-worthy answers found in the last 30 days.
+                    {t("admin.health.quality.riskyTable.empty")}
                   </td>
                 </tr>
               ) : null}
