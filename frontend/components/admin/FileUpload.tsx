@@ -59,8 +59,7 @@ export default function FileUpload({
       });
 
       if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body?.detail ?? body?.error ?? t("admin.fileUpload.uploadFailed"));
+        throw new Error(t("admin.fileUpload.uploadFailed"));
       }
 
       setSuccess(t("admin.fileUpload.uploaded", { name: file.name }));
@@ -68,8 +67,8 @@ export default function FileUpload({
       if (inputRef.current) {
         inputRef.current.value = "";
       }
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : t("admin.fileUpload.uploadFailed"));
+    } catch {
+      setError(t("admin.fileUpload.uploadFailed"));
     } finally {
       setIsUploading(false);
     }

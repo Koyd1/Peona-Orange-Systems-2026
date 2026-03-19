@@ -63,15 +63,12 @@ export default function SessionToggle({
           recoverToFreshSession();
           return;
         }
-        const text = await response.text();
-        throw new Error(text || t("chat.session.terminateFailed"));
+        throw new Error(t("chat.session.terminateFailed"));
       }
 
       recoverToFreshSession();
     } catch (terminateError) {
-      setError(
-        terminateError instanceof Error ? terminateError.message : t("chat.session.terminateFailed")
-      );
+      setError(t("chat.session.terminateFailed"));
       setBusy(false);
     }
   }
