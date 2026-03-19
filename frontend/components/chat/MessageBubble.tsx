@@ -59,7 +59,7 @@ export default function MessageBubble({
         setKbLoaded(true);
       } catch (loadError) {
         if (!active) return;
-        setKbError(loadError instanceof Error ? loadError.message : t("chat.message.loadSourcesFailed"));
+        setKbError(t("chat.message.loadSourcesFailed"));
         setKbLoaded(true);
       }
     }

@@ -97,15 +97,14 @@ export default function AdminKnowledgePage() {
     try {
       const response = await fetch("/api/upload", { cache: "no-store" });
       if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body?.error ?? body?.detail ?? t("admin.knowledge.loadFailed"));
+        throw new Error(t("admin.knowledge.loadFailed"));
       }
       const payload = (await response.json()) as ListResponse;
       const nextFiles = payload.items ?? [];
       setFiles((current) => (filesAreEqual(current, nextFiles) ? current : nextFiles));
-    } catch (loadError) {
+    } catch {
       if (!silent) {
-        setError(loadError instanceof Error ? loadError.message : t("admin.knowledge.loadFailed"));
+        setError(t("admin.knowledge.loadFailed"));
       }
     } finally {
       if (!silent) {
@@ -138,12 +137,11 @@ export default function AdminKnowledgePage() {
     try {
       const response = await fetch(`/api/upload/${id}`, { method: "DELETE" });
       if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body?.error ?? body?.detail ?? t("admin.knowledge.deleteFailed"));
+        throw new Error(t("admin.knowledge.deleteFailed"));
       }
       await loadFiles();
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : t("admin.knowledge.deleteFailed"));
+    } catch {
+      setError(t("admin.knowledge.deleteFailed"));
     } finally {
       setBusyId(null);
     }
@@ -158,8 +156,7 @@ export default function AdminKnowledgePage() {
         cache: "no-store"
       });
       if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body?.error ?? body?.detail ?? t("admin.knowledge.downloadFailed"));
+        throw new Error(t("admin.knowledge.downloadFailed"));
       }
 
       const blob = await response.blob();
@@ -175,8 +172,8 @@ export default function AdminKnowledgePage() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(objectUrl);
-    } catch (downloadError) {
-      setError(downloadError instanceof Error ? downloadError.message : t("admin.knowledge.downloadFailed"));
+    } catch {
+      setError(t("admin.knowledge.downloadFailed"));
     } finally {
       setBusyId(null);
     }
@@ -188,12 +185,11 @@ export default function AdminKnowledgePage() {
     try {
       const response = await fetch(`/api/upload/${id}`, { method: "POST" });
       if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body?.error ?? body?.detail ?? t("admin.knowledge.reindexFailed"));
+        throw new Error(t("admin.knowledge.reindexFailed"));
       }
       await loadFiles();
-    } catch (reindexError) {
-      setError(reindexError instanceof Error ? reindexError.message : t("admin.knowledge.reindexFailed"));
+    } catch {
+      setError(t("admin.knowledge.reindexFailed"));
     } finally {
       setBusyId(null);
     }

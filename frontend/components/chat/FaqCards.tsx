@@ -29,8 +29,8 @@ export default function FaqCards({
       try {
         const freshItems = await loadFaqItems({ force: !cached });
         setItems(freshItems);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : t("chat.faq.loadFailed"));
+      } catch {
+        setError(t("chat.faq.loadFailed"));
       } finally {
         setLoading(false);
       }

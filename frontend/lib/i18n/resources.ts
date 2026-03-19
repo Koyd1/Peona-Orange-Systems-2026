@@ -8,6 +8,9 @@ export const resources = {
         languageSwitcher: {
           ariaLabel: "Schimbă limba"
         },
+        accessibility: {
+          closeDialog: "Închide dialogul"
+        },
         actions: {
           login: "Autentificare",
           logout: "Ieșire",
@@ -132,14 +135,14 @@ export const resources = {
       admin: {
         nav: {
           backToChat: "Înapoi la chat",
-          knowledge: "Knowledge Base",
+          knowledge: "Bază de cunoștințe",
           feedback: "Feedback",
-          prompts: "Prompt Templates",
+          prompts: "Șabloane prompt",
           faq: "FAQ",
-          health: "Health"
+          health: "Stare sistem"
         },
         knowledge: {
-          title: "Knowledge Base",
+          title: "Bază de cunoștințe",
           description: "Gestionarea fișierelor și documentelor pentru asistentul AI.",
           uploadButton: "Încarcă fișierul",
           searchPlaceholder: "Caută",
@@ -174,7 +177,7 @@ export const resources = {
             size: "Mărimea fișierului",
             uploadedAt: "Data încărcării",
             status: "Statut",
-            chunks: "Chunks",
+            chunks: "Fragmente",
             actions: "Acțiuni"
           },
           status: {
@@ -185,7 +188,7 @@ export const resources = {
           },
           openActions: "Deschide acțiunile",
           actions: {
-            reindex: "Reindex",
+            reindex: "Reindexează",
             save: "Salvează",
             delete: "Șterge"
           },
@@ -197,24 +200,24 @@ export const resources = {
         feedback: {
           title: "Feedback",
           description: "Recenziile utilizatorilor despre funcționarea asistentului AI",
-          refresh: "Refresh",
+          refresh: "Actualizează",
           exportCsv: "Exportă CSV",
           loadFailed: "Nu s-au putut încărca analizele de feedback",
           negativeTitle: "Feedback negativ",
           negativeDescription: "Mesajele care au primit evaluări negative în conversațiile recente.",
           columns: {
-            date: "Date",
-            user: "User",
-            comment: "Comment",
-            message: "Message",
-            session: "Session"
+            date: "Data",
+            user: "Utilizator",
+            comment: "Comentariu",
+            message: "Mesaj",
+            session: "Sesiune"
           },
           emptyTitle: "Nu există feedback negativ",
           emptyDescription: "Utilizatorii au oferit până acum feedback pozitiv.",
           pagination: {
             showing: "Afișare {{from}}-{{to}} din {{total}}",
-            previous: "Previous",
-            next: "Next",
+            previous: "Anterioară",
+            next: "Următoarea",
             page: "Pagina {{page}} / {{totalPages}}"
           }
         },
@@ -238,18 +241,18 @@ export const resources = {
           histogramDescription: "Număr de recenzii pe zi"
         },
         prompts: {
-          title: "Prompt Templates",
+          title: "Șabloane prompt",
           description: "Gestionarea șabloanelor de prompturi pentru asistentul AI.",
           loadFailed: "Nu s-au putut încărca șabloanele de prompt",
-          createFailed: "Crearea template-ului a eșuat.",
-          updateFailed: "Actualizarea template-ului a eșuat.",
+          createFailed: "Crearea șablonului a eșuat.",
+          updateFailed: "Actualizarea șablonului a eșuat.",
           deleteFailed: "Ștergerea a eșuat",
           invalidPayload:
             "Datele introduse nu sunt valide. Verifică titlul, conținutul, categoria și poziția.",
           refresh: "Actualizare...",
           hideForm: "Ascunde formularul",
-          createTemplate: "Creare template",
-          newTitle: "Template nou",
+          createTemplate: "Creează șablon",
+          newTitle: "Șablon nou",
           fields: {
             title: "Titlu",
             category: "Categorie",
@@ -259,8 +262,8 @@ export const resources = {
           },
           create: "Creare",
           cancel: "Anulează",
-          editTitle: "Editează template-ul",
-          editDescription: "Editează rapid template-ul direct din pagină.",
+          editTitle: "Editează șablonul",
+          editDescription: "Editează rapid șablonul direct din pagină.",
           save: "Salvează",
           saving: "Se salvează...",
           saveChanges: "Salvează modificările",
@@ -273,9 +276,9 @@ export const resources = {
             delete: "Șterge"
           },
           general: "General",
-          emptyTitle: "Nu există template-uri definite.",
-          emptyDescription: "Creează primul template din butonul „Creare template”.",
-          confirmDelete: "Ștergi acest template?"
+          emptyTitle: "Nu există șabloane definite.",
+          emptyDescription: "Creează primul șablon din butonul „Creează șablon”.",
+          confirmDelete: "Ștergi acest șablon?"
         },
         faq: {
           title: "FAQ",
@@ -318,6 +321,129 @@ export const resources = {
           deleting: "Se șterge...",
           delete: "Șterge",
           confirmDelete: "Ștergi acest element FAQ?"
+        },
+        healthPage: {
+          title: "Stare sistem",
+          description:
+            "Monitorizarea serviciilor critice, costurilor AI, distribuției modelelor și riscurilor de halucinație."
+        },
+        healthPanel: {
+          badge: {
+            ok: "OK",
+            warn: "WARN",
+            unavailable: "N/A",
+            error: "ERROR",
+            loading: "..."
+          },
+          fallback: {
+            notAvailable: "n/a"
+          },
+          format: {
+            milliseconds: "{{value}} ms"
+          },
+          errors: {
+            loadFailed: "Nu s-a putut încărca monitorizarea sistemului",
+            loadGeneric: "Eroare la încărcare"
+          },
+          hero: {
+            title: "Panou de monitorizare",
+            description:
+              "O vedere compactă pentru starea serviciilor, consumul AI, costurile modelelor și calitatea răspunsurilor.",
+            emptyTelemetry:
+              "Telemetria exactă este goală deoarece nu a fost înregistrat încă niciun chat nou după activarea telemetriei. Trimite un mesaj nou în chat după repornirea aplicației pentru a popula tokenii exacți, costurile exacte și utilizarea evaluatorului.",
+            missingPricing: "Lipsește prețul pentru: {{models}}",
+            updated: "Actualizat: {{timestamp}}"
+          },
+          services: {
+            openai: "OpenAI",
+            redis: "Redis",
+            database: "Bază de date",
+            statusOk: "OK",
+            statusFail: "EȘEC",
+            latency: "Latență: {{value}} ms",
+            model: "Model: {{value}}",
+            databaseExtra: "Chunk-uri: {{chunks}} | Mesaje: {{messages}}"
+          },
+          usage: {
+            title: "Rezumat utilizare",
+            summary: "rezumat 24h + 30d",
+            cards: {
+              tokens24hLabel: "Tokeni 24h",
+              tokens24hHint: "{{value}} cereri",
+              spend30dLabel: "Cost 30d",
+              spend30dHint: "{{value}} tokeni în total",
+              coverageLabel: "Acoperire",
+              coverageHint: "{{exact}} / {{assistant}} mesaje",
+              judgedLabel: "Evaluări",
+              judgedHint: "{{value}} răspunsuri evaluate"
+            },
+            trend: {
+              title: "Evoluția tokenilor",
+              description: "Volumul tokenilor din ultimele 30 de zile",
+              series: "Tokeni"
+            },
+            windowTable: {
+              columns: {
+                window: "Fereastră",
+                tokens: "Tokeni",
+                avgRisk: "Risc mediu",
+                judged: "Evaluări",
+                needsReview: "Necesită revizie"
+              }
+            },
+            modelBreakdown: "Distribuție pe modele",
+            modelTable: {
+              columns: {
+                model: "Model",
+                operation: "Operație",
+                tokens: "Tokeni",
+                spend: "Cost",
+                latency: "Latență"
+              },
+              pricingGap: "lipsă preț",
+              noData: "Nu există încă utilizare pe modele."
+            }
+          },
+          quality: {
+            title: "Rezumat calitate",
+            summary: "ultimele 30d",
+            cards: {
+              averageRiskLabel: "Risc mediu",
+              averageRiskHint: "p95 {{value}}",
+              judgedCoverageLabel: "Acoperire evaluată",
+              judgedCoverageHint: "{{value}} răspunsuri evaluate",
+              needsReviewLabel: "Necesită revizie",
+              needsReviewHint: "răspunsuri cu scor >= 0.85",
+              latestHighScoreLabel: "Cel mai recent scor ridicat",
+              latestHighScoreHint: "răspuns singular; graficul arată agregări zilnice",
+              noLatestHighScoreHint: "nu există răspunsuri recente care necesită revizie"
+            },
+            trend: {
+              title: "Evoluția riscului de suport",
+              description: "Scorul mediu și p95 al riscului de suport pe zi",
+              averageSeries: "Medie",
+              p95Series: "P95"
+            },
+            interpretation: {
+              title: "Interpretare și motive frecvente",
+              line1: "Acesta este un scor de risc de suport, nu un scor de adevăr.",
+              line2: "Valorile mai mari înseamnă că răspunsul se bazează mai mult pe suport slab sau lipsă în contextul recuperat.",
+              line3:
+                "Un scor precum 0.8 poate fi totuși doar un avertisment strict privind sprijinul contextual slab, nu neapărat o halucinație reală.",
+              noReasons: "Nu există încă motive de evaluare."
+            },
+            riskyTable: {
+              columns: {
+                date: "Data",
+                model: "Model",
+                score: "Scor",
+                reason: "Motiv",
+                feedback: "Feedback",
+                excerpt: "Fragment"
+              },
+              empty: "Nu au fost găsite răspunsuri care necesită revizie în ultimele 30 de zile."
+            }
+          }
         }
       }
     }
@@ -328,6 +454,9 @@ export const resources = {
         brand: "Peona",
         languageSwitcher: {
           ariaLabel: "Сменить язык"
+        },
+        accessibility: {
+          closeDialog: "Закрыть диалог"
         },
         actions: {
           login: "Войти",
@@ -457,7 +586,7 @@ export const resources = {
           feedback: "Отзывы",
           prompts: "Шаблоны промптов",
           faq: "FAQ",
-          health: "Состояние"
+          health: "Состояние системы"
         },
         knowledge: {
           title: "База знаний",
@@ -495,7 +624,7 @@ export const resources = {
             size: "Размер файла",
             uploadedAt: "Дата загрузки",
             status: "Статус",
-            chunks: "Chunks",
+            chunks: "Фрагменты",
             actions: "Действия"
           },
           status: {
@@ -510,7 +639,7 @@ export const resources = {
             save: "Сохранить",
             delete: "Удалить"
           },
-          confirmDelete: "Удалить {{name}} и все индексированные чанки?",
+          confirmDelete: "Удалить {{name}} и все индексированные фрагменты?",
           emptyTitle: "Нет файлов для выбранных фильтров.",
           emptyDescription:
             "Загрузите новый документ или измените поиск/сортировку, чтобы увидеть результаты."
@@ -639,6 +768,129 @@ export const resources = {
           deleting: "Удаление...",
           delete: "Удалить",
           confirmDelete: "Удалить этот элемент FAQ?"
+        },
+        healthPage: {
+          title: "Состояние системы",
+          description:
+            "Проверяйте критические сервисы, расходы AI, распределение моделей и риски галлюцинаций с автообновлением каждые 30 секунд."
+        },
+        healthPanel: {
+          badge: {
+            ok: "OK",
+            warn: "WARN",
+            unavailable: "N/A",
+            error: "ERROR",
+            loading: "..."
+          },
+          fallback: {
+            notAvailable: "n/a"
+          },
+          format: {
+            milliseconds: "{{value}} ms"
+          },
+          errors: {
+            loadFailed: "Не удалось загрузить мониторинг системы",
+            loadGeneric: "Ошибка загрузки"
+          },
+          hero: {
+            title: "Панель мониторинга",
+            description:
+              "Компактный обзор состояния сервисов, использования AI, затрат по моделям и качества ответов.",
+            emptyTelemetry:
+              "Точная телеметрия пуста, потому что после включения телеметрии еще не было записано ни одного нового чата. Отправьте новое сообщение в чате после перезапуска приложения, чтобы заполнить точные токены, точные расходы и использование оценщика.",
+            missingPricing: "Нет прайсинга для: {{models}}",
+            updated: "Обновлено: {{timestamp}}"
+          },
+          services: {
+            openai: "OpenAI",
+            redis: "Redis",
+            database: "База данных",
+            statusOk: "OK",
+            statusFail: "СБОЙ",
+            latency: "Задержка: {{value}} ms",
+            model: "Модель: {{value}}",
+            databaseExtra: "Фрагменты: {{chunks}} | Сообщения: {{messages}}"
+          },
+          usage: {
+            title: "Сводка использования",
+            summary: "сводка 24ч + 30д",
+            cards: {
+              tokens24hLabel: "Токены 24ч",
+              tokens24hHint: "{{value}} запросов",
+              spend30dLabel: "Расходы 30д",
+              spend30dHint: "{{value}} токенов всего",
+              coverageLabel: "Покрытие",
+              coverageHint: "{{exact}} / {{assistant}} сообщений",
+              judgedLabel: "Оценено",
+              judgedHint: "{{value}} оцененных ответов"
+            },
+            trend: {
+              title: "Динамика токенов",
+              description: "Объем токенов за последние 30 дней",
+              series: "Токены"
+            },
+            windowTable: {
+              columns: {
+                window: "Окно",
+                tokens: "Токены",
+                avgRisk: "Средний риск",
+                judged: "Оценено",
+                needsReview: "Требует проверки"
+              }
+            },
+            modelBreakdown: "Разбивка по моделям",
+            modelTable: {
+              columns: {
+                model: "Модель",
+                operation: "Операция",
+                tokens: "Токены",
+                spend: "Расходы",
+                latency: "Задержка"
+              },
+              pricingGap: "нет прайсинга",
+              noData: "Использование моделей пока отсутствует."
+            }
+          },
+          quality: {
+            title: "Сводка качества",
+            summary: "фокус 30д",
+            cards: {
+              averageRiskLabel: "Средний риск",
+              averageRiskHint: "p95 {{value}}",
+              judgedCoverageLabel: "Покрытие оценки",
+              judgedCoverageHint: "{{value}} оцененных ответов",
+              needsReviewLabel: "Требует проверки",
+              needsReviewHint: "ответы со score >= 0.85",
+              latestHighScoreLabel: "Последний высокий риск",
+              latestHighScoreHint: "один ответ; график показывает дневные агрегаты",
+              noLatestHighScoreHint: "нет недавних ответов, требующих проверки"
+            },
+            trend: {
+              title: "Динамика риска поддержки",
+              description: "Средний и p95 показатель риска поддержки по дням",
+              averageSeries: "Среднее",
+              p95Series: "P95"
+            },
+            interpretation: {
+              title: "Интерпретация и частые причины",
+              line1: "Это показатель риска поддержки, а не оценка истинности.",
+              line2: "Более высокие значения означают, что ответ сильнее опирается на слабую или отсутствующую поддержку в найденном контексте.",
+              line3:
+                "Значение вроде 0.8 все еще может быть лишь строгим предупреждением о слабой опоре на контекст, а не обязательно реальной галлюцинацией.",
+              noReasons: "Причин оценки пока нет."
+            },
+            riskyTable: {
+              columns: {
+                date: "Дата",
+                model: "Модель",
+                score: "Оценка",
+                reason: "Причина",
+                feedback: "Отзыв",
+                excerpt: "Фрагмент"
+              },
+              empty: "За последние 30 дней не найдено ответов, требующих проверки."
+            }
+          }
         }
       }
     }
@@ -649,6 +901,9 @@ export const resources = {
         brand: "Peona",
         languageSwitcher: {
           ariaLabel: "Change language"
+        },
+        accessibility: {
+          closeDialog: "Close dialog"
         },
         actions: {
           login: "Log in",
@@ -778,7 +1033,7 @@ export const resources = {
           feedback: "Feedback",
           prompts: "Prompt Templates",
           faq: "FAQ",
-          health: "Health"
+          health: "System Health"
         },
         knowledge: {
           title: "Knowledge Base",
@@ -959,6 +1214,128 @@ export const resources = {
           deleting: "Deleting...",
           delete: "Delete",
           confirmDelete: "Delete this FAQ item?"
+        },
+        healthPage: {
+          title: "System Health",
+          description:
+            "Review critical services, AI spend, model distribution, and hallucination risks with automatic refresh every 30 seconds."
+        },
+        healthPanel: {
+          badge: {
+            ok: "OK",
+            warn: "WARN",
+            unavailable: "N/A",
+            error: "ERROR",
+            loading: "..."
+          },
+          fallback: {
+            notAvailable: "n/a"
+          },
+          format: {
+            milliseconds: "{{value}} ms"
+          },
+          errors: {
+            loadFailed: "Failed to load system health",
+            loadGeneric: "Load error"
+          },
+          hero: {
+            title: "Monitoring dashboard",
+            description:
+              "One compact view for service status, AI usage, model spend, and answer quality.",
+            emptyTelemetry:
+              "Exact telemetry is empty because no new chat has been recorded after telemetry was enabled. Send a new message in chat after restarting the app to populate exact tokens, exact spend, and judge usage.",
+            missingPricing: "Missing pricing for: {{models}}",
+            updated: "Updated: {{timestamp}}"
+          },
+          services: {
+            openai: "OpenAI",
+            redis: "Redis",
+            database: "Database",
+            statusOk: "OK",
+            statusFail: "FAIL",
+            latency: "Latency: {{value}} ms",
+            model: "Model: {{value}}",
+            databaseExtra: "Chunks: {{chunks}} | Messages: {{messages}}"
+          },
+          usage: {
+            title: "Usage snapshot",
+            summary: "24h + 30d summary",
+            cards: {
+              tokens24hLabel: "Tokens 24h",
+              tokens24hHint: "{{value}} requests",
+              spend30dLabel: "Spend 30d",
+              spend30dHint: "{{value}} total tokens",
+              coverageLabel: "Coverage",
+              coverageHint: "{{exact}} / {{assistant}} messages",
+              judgedLabel: "Judged",
+              judgedHint: "{{value}} judged answers"
+            },
+            trend: {
+              title: "Token trend",
+              description: "Token volume over the last 30 days",
+              series: "Tokens"
+            },
+            windowTable: {
+              columns: {
+                window: "Window",
+                tokens: "Tokens",
+                avgRisk: "Avg risk",
+                judged: "Judged",
+                needsReview: "Needs review"
+              }
+            },
+            modelBreakdown: "Model breakdown",
+            modelTable: {
+              columns: {
+                model: "Model",
+                operation: "Operation",
+                tokens: "Tokens",
+                spend: "Spend",
+                latency: "Latency"
+              },
+              pricingGap: "pricing gap",
+              noData: "No model usage yet."
+            }
+          },
+          quality: {
+            title: "Quality snapshot",
+            summary: "30d focus",
+            cards: {
+              averageRiskLabel: "Average risk",
+              averageRiskHint: "p95 {{value}}",
+              judgedCoverageLabel: "Judged coverage",
+              judgedCoverageHint: "{{value}} judged answers",
+              needsReviewLabel: "Needs review",
+              needsReviewHint: "answers with score >= 0.85",
+              latestHighScoreLabel: "Latest high score",
+              latestHighScoreHint: "single answer; chart shows daily aggregates",
+              noLatestHighScoreHint: "no recent review-worthy answer"
+            },
+            trend: {
+              title: "Support-risk trend",
+              description: "Average and p95 support-risk score by day",
+              averageSeries: "Average",
+              p95Series: "P95"
+            },
+            interpretation: {
+              title: "Interpretation and common reasons",
+              line1: "This is a support-risk score, not a truth score.",
+              line2: "Higher values mean the answer relies more on weak or missing support in retrieved context.",
+              line3: "A score like 0.8 can still be a strict grounding warning, not necessarily a true hallucination.",
+              noReasons: "No judge reasons yet."
+            },
+            riskyTable: {
+              columns: {
+                date: "Date",
+                model: "Model",
+                score: "Score",
+                reason: "Reason",
+                feedback: "Feedback",
+                excerpt: "Excerpt"
+              },
+              empty: "No review-worthy answers found in the last 30 days."
+            }
+          }
         }
       }
     }

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 
+import { useAppTranslation } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 type DialogProps = {
@@ -22,6 +23,7 @@ export function Dialog({
   children,
   panelClassName
 }: DialogProps) {
+  const { t } = useAppTranslation();
   const titleId = React.useId();
   const [mounted, setMounted] = React.useState(false);
 
@@ -102,7 +104,7 @@ export function Dialog({
             </div>
             <button
               type="button"
-              aria-label="Close dialog"
+              aria-label={t("common.accessibility.closeDialog")}
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#eadfce] bg-white text-lg text-[#667085] transition hover:border-[#e4cfb7] hover:bg-[#fff7f1] hover:text-[#101828]"
               onClick={onClose}
             >
