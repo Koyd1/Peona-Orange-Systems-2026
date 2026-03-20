@@ -35,8 +35,8 @@ export default function PromptCards({
       try {
         const freshItems = await loadPromptTemplates({ force: !cached });
         setItems(freshItems);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : t("chat.prompts.loadFailed"));
+      } catch {
+        setError(t("chat.prompts.loadFailed"));
       } finally {
         setLoading(false);
       }

@@ -22,6 +22,22 @@ type KnowledgeDoc = {
   snippet?: string | null;
 };
 
+function getSourceDownloadUrl(source: ChatSource): string | undefined {
+  if (typeof (source as { url?: string }).url === "string") {
+    return (source as { url?: string }).url;
+  }
+
+  if (typeof source.fileId === "string" && /^(https?:)?\/\//.test(source.fileId)) {
+    return source.fileId;
+  }
+
+  if (typeof source.fileId === "string") {
+    return `/api/upload/${source.fileId}/download`;
+  }
+
+  return undefined;
+}
+
 export default function MessageBubble({
   message,
   sessionId,
@@ -41,7 +57,6 @@ export default function MessageBubble({
   const showDetails = !isUser && !isStreaming;
   const showInlineFeedback = !isUser && !isStreaming && !message.id.startsWith("a-");
   const hasSources = !!message.sources && message.sources.length > 0;
-  const compactSources = hasSources ? message.sources!.slice(0, 2) : [];
 
   useEffect(() => {
     if (!detailsOpen || hasSources || kbLoaded) return;
@@ -59,7 +74,7 @@ export default function MessageBubble({
         setKbLoaded(true);
       } catch (loadError) {
         if (!active) return;
-        setKbError(loadError instanceof Error ? loadError.message : t("chat.message.loadSourcesFailed"));
+        setKbError(t("chat.message.loadSourcesFailed"));
         setKbLoaded(true);
       }
     }
@@ -75,7 +90,7 @@ export default function MessageBubble({
     return (
       <div className="flex w-full justify-end">
         <div className="flex w-full max-w-full flex-row-reverse items-start gap-3 sm:max-w-[720px] sm:gap-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#ff8d28]/50 shadow-[0_8px_18px_rgba(15,23,42,0.12)] ring-1 ring-orange-200 sm:h-12 sm:w-12">
+          <div className="flex aspect-square h-11 w-11 shrink-0 self-start items-center justify-center overflow-hidden rounded-full bg-[#ffbf8a] shadow-[0_10px_22px_rgba(229,139,58,0.22)] ring-1 ring-orange-200 sm:h-12 sm:w-12">
             <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
               <path
                 d="M12 12c2.485 0 4.5-2.015 4.5-4.5S14.485 3 12 3 7.5 5.015 7.5 7.5 9.515 12 12 12Zm0 2c-3.866 0-7 3.134-7 7h14c0-3.866-3.134-7-7-7Z"
@@ -147,14 +162,6 @@ export default function MessageBubble({
               )}
             </div>
 
-            {hasSources ? (
-              <div className="mt-4 grid gap-3">
-                {(message.sources ?? []).map((source, index) => (
-                  <SourceCard key={`${message.id}-src-${index}`} source={source} />
-                ))}
-              </div>
-            ) : null}
-
             {showDetails ? (
               <div className="mt-4 flex flex-col items-end gap-3">
                 <button
@@ -167,74 +174,54 @@ export default function MessageBubble({
                 </button>
 
                 {detailsOpen ? (
-                  <div className="w-full max-w-full rounded-2xl border border-border bg-card px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:max-w-[420px]">
-                    {compactSources.length > 0 ? (
-                      <div className="flex flex-col gap-3">
-                        {compactSources.map((source, index) => {
-                          const maybeUrl =
-                            typeof (source as { url?: string }).url === "string"
-                              ? (source as { url?: string }).url
-                              : typeof source.fileId === "string" &&
-                                /^(https?:)?\/\//.test(source.fileId)
-                              ? source.fileId
-                              : typeof source.fileId === "string"
-                              ? `/api/upload/${source.fileId}/download`
-                              : undefined;
+                  <div className="w-full max-w-full sm:max-w-[760px]">
+                    {hasSources ? (
+                      <div className="grid gap-3">
+                        {(message.sources ?? []).map((source, index) => (
+                          <SourceCard
+                            key={`${message.id}-src-${index}`}
+                            source={source}
+                            href={getSourceDownloadUrl(source)}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
 
-                          return (
-                            <div key={`${message.id}-detail-${index}`}>
-                              {maybeUrl ? (
+                    {!hasSources ? (
+                      <div className="rounded-2xl border border-border bg-card px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:max-w-[420px]">
+                        {kbLoaded && kbFiles.length > 0 ? (
+                          <div className="flex flex-col gap-3">
+                            {kbFiles.slice(0, 2).map((file) => (
+                              <div key={file.id}>
                                 <a
-                                  href={maybeUrl}
+                                  href={`/api/upload/${file.id}/download`}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="text-sm font-semibold text-slate-800 underline decoration-slate-300 underline-offset-4 hover:text-slate-900"
                                 >
-                                  {source.filename ?? t("chat.message.unknown")}
+                                  {file.filename}
                                 </a>
-                              ) : (
-                                <span className="text-sm font-semibold text-slate-800">
-                                  {source.filename ?? t("chat.message.unknown")}
-                                </span>
-                              )}
-                              {source.snippet ? (
-                                <p className="mt-1 text-xs text-slate-500 line-clamp-2">
-                                  {source.snippet}
-                                </p>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : kbLoaded && kbFiles.length > 0 ? (
-                      <div className="flex flex-col gap-3">
-                        {kbFiles.slice(0, 2).map((file) => (
-                          <div key={file.id}>
-                            <a
-                              href={`/api/upload/${file.id}/download`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-sm font-semibold text-slate-800 underline decoration-slate-300 underline-offset-4 hover:text-slate-900"
-                            >
-                              {file.filename}
-                            </a>
-                            {file.snippet ? (
-                              <p className="mt-1 text-xs text-slate-500 line-clamp-2">
-                                {file.snippet}
-                              </p>
-                            ) : null}
+                                {file.snippet ? (
+                                  <p className="mt-1 text-xs text-slate-500 line-clamp-2">
+                                    {file.snippet}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        ) : kbLoaded && kbFiles.length === 0 ? (
+                          <p className="text-xs text-slate-500">
+                            {t("chat.message.noSources")}
+                          </p>
+                        ) : kbError ? (
+                          <p className="text-xs text-red-500">{kbError}</p>
+                        ) : (
+                          <p className="text-xs text-slate-500">
+                            {t("chat.message.loadingSources")}
+                          </p>
+                        )}
                       </div>
-                    ) : kbLoaded && kbFiles.length === 0 ? (
-                      <p className="text-xs text-slate-500">
-                        {t("chat.message.noSources")}
-                      </p>
-                    ) : kbError ? (
-                      <p className="text-xs text-red-500">{kbError}</p>
-                    ) : (
-                      <p className="text-xs text-slate-500">{t("chat.message.loadingSources")}</p>
-                    )}
+                    ) : null}
                   </div>
                 ) : null}
               </div>

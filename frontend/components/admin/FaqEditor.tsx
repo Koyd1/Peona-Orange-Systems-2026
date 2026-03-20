@@ -57,12 +57,7 @@ async function readFaqApiError(response: Response, fallback: string, invalidPayl
     if (message === "Invalid payload") {
       return invalidPayload;
     }
-    return message;
-  }
-
-  const text = await response.text().catch(() => "");
-  if (text.trim()) {
-    return text;
+    return fallback;
   }
 
   return fallback;
@@ -99,8 +94,8 @@ export default function FaqEditor() {
       if (!response.ok) throw new Error(t("admin.faq.loadFailed"));
       const payload = (await response.json()) as { items: FaqItem[] };
       setItems(payload.items);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : t("admin.faq.loadFailed"));
+    } catch {
+      setError(t("admin.faq.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -149,8 +144,8 @@ export default function FaqEditor() {
       setDraft(createEmptyDraft());
       setIsCreateOpen(false);
       await load();
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : t("admin.faq.createFailed"));
+    } catch {
+      setError(t("admin.faq.createFailed"));
     } finally {
       setBusyId(null);
     }
@@ -179,8 +174,8 @@ export default function FaqEditor() {
 
       await load();
       return true;
-    } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : t("admin.faq.updateFailed"));
+    } catch {
+      setError(t("admin.faq.updateFailed"));
       return false;
     } finally {
       setBusyId(null);
@@ -200,13 +195,12 @@ export default function FaqEditor() {
       });
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || t("admin.faq.deleteFailed"));
+        throw new Error(t("admin.faq.deleteFailed"));
       }
 
       await load();
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : t("admin.faq.deleteFailed"));
+    } catch {
+      setError(t("admin.faq.deleteFailed"));
     } finally {
       setBusyId(null);
     }

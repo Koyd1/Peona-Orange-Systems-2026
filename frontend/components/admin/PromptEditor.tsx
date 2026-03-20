@@ -57,12 +57,7 @@ async function readPromptApiError(response: Response, fallback: string, invalidP
     if (message === "Invalid payload") {
       return invalidPayload;
     }
-    return message;
-  }
-
-  const text = await response.text().catch(() => "");
-  if (text.trim()) {
-    return text;
+    return fallback;
   }
 
   return fallback;
@@ -99,8 +94,8 @@ export default function PromptEditor() {
       if (!response.ok) throw new Error(t("admin.prompts.loadFailed"));
       const payload = (await response.json()) as { items: PromptTemplate[] };
       setItems(payload.items);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : t("admin.prompts.loadFailed"));
+    } catch {
+      setError(t("admin.prompts.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -149,8 +144,8 @@ export default function PromptEditor() {
       setDraft(createEmptyDraft());
       setIsCreateOpen(false);
       await load();
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : t("admin.prompts.createFailed"));
+    } catch {
+      setError(t("admin.prompts.createFailed"));
     } finally {
       setBusyId(null);
     }
@@ -179,8 +174,8 @@ export default function PromptEditor() {
 
       await load();
       return true;
-    } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : t("admin.prompts.updateFailed"));
+    } catch {
+      setError(t("admin.prompts.updateFailed"));
       return false;
     } finally {
       setBusyId(null);
@@ -200,13 +195,12 @@ export default function PromptEditor() {
       });
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || t("admin.prompts.deleteFailed"));
+        throw new Error(t("admin.prompts.deleteFailed"));
       }
 
       await load();
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : t("admin.prompts.deleteFailed"));
+    } catch {
+      setError(t("admin.prompts.deleteFailed"));
     } finally {
       setBusyId(null);
     }

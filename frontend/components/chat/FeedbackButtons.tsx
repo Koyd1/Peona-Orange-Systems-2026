@@ -50,15 +50,14 @@ export default function FeedbackButtons({
       });
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || t("chat.feedback.submitFailed"));
+        throw new Error(t("chat.feedback.submitFailed"));
       }
       setIsSaved(true);
       onSaved?.({ rating: nextRating, comment: normalizedComment });
     } catch (submitError) {
       setRating(previousRating);
       setComment(previousComment);
-      setError(submitError instanceof Error ? submitError.message : t("chat.feedback.submitFailed"));
+      setError(t("chat.feedback.submitFailed"));
     } finally {
       setBusy(false);
     }
