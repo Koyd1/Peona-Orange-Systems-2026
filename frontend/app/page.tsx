@@ -28,7 +28,7 @@ export default async function HomePage() {
           </p>
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-8 max-w-[820px] mx-auto">
-            <Card hover className="text-left p-8">
+            <Card hover className="flex h-full flex-col text-left p-8">
               <span className="inline-flex items-center justify-center w-11 h-11 bg-[#fbefe8] rounded-lg mb-5">
                 <svg
                   width="18"
@@ -48,7 +48,7 @@ export default async function HomePage() {
                 </svg>
               </span>
               <h3 className="text-xl font-semibold mb-2.5">{t("home.chatCard.title")}</h3>
-              <p className="text-sm text-gray-500 mb-7">
+              <p className="mb-7 flex-1 text-sm text-gray-500">
                 {t("home.chatCard.description")}
               </p>
               <Link href="/chat" className={buttonVariants({ fullWidth: true })}>
@@ -56,12 +56,12 @@ export default async function HomePage() {
               </Link>
             </Card>
 
-            <Card hover className="text-left p-8">
+            <Card hover className="flex h-full flex-col text-left p-8">
               <span className="inline-flex items-center justify-center w-11 h-11 bg-[#fbefe8] rounded-lg mb-5">
                 <img src="/icons/logo_mech.svg" alt="" width={22} height={22} />
               </span>
               <h3 className="text-xl font-semibold mb-2.5">{t("home.adminCard.title")}</h3>
-              <p className="text-sm text-gray-500 mb-7">
+              <p className="mb-7 flex-1 text-sm text-gray-500">
                 {t("home.adminCard.description")}
               </p>
               <Link href="/login" className={buttonVariants({ variant: "secondary", fullWidth: true })}>
