@@ -165,6 +165,13 @@ async def chat(request: ChatRequest, db: AsyncSession = Depends(get_db)) -> Stre
         # Build sources from model answer with fileId included
         model_sources_payload = []
         for doc_name, citations in parsed_sources.items():
+            if not citations or not citations.strip():
+                LOGGER.info(
+                    "chat.source_without_citations_skipped",
+                    extra={"session_id": request.session_id, "document": doc_name}
+                )
+                continue
+            
             max_similarity = filename_to_max_similarity.get(doc_name, 0.0)
             payload: dict[str, object] = {
                 "filename": doc_name,
