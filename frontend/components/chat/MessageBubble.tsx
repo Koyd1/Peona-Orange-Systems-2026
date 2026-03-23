@@ -98,7 +98,7 @@ export default function MessageBubble({
               />
             </svg>
           </div>
-          <div className="min-w-0 w-fit max-w-[calc(100%-4rem)] rounded-3xl bg-[#e58b3a] px-5 py-3 text-white shadow-[0_12px_30px_rgba(229,139,58,0.35)] sm:max-w-[760px] sm:px-6 sm:py-4">
+          <div className="min-w-0 w-fit max-w-[calc(100%-3.5rem)] rounded-3xl bg-[#e58b3a] px-5 py-3 text-white shadow-[0_12px_30px_rgba(229,139,58,0.35)] sm:max-w-[760px] sm:px-6 sm:py-4">
             <div className="text-[15px] leading-relaxed whitespace-pre-wrap break-words hyphens-auto [overflow-wrap:anywhere]">
               {message.content || "..."}
             </div>
