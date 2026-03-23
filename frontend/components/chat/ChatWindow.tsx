@@ -259,9 +259,9 @@ export default function ChatWindow({
 
         for (const event of events) {
           // ignore plain sources events, use updated_sources only
-          if (event.type === "sources") {
-              continue; 
-            }
+          // if (event.type === "sources") {
+          //     continue; 
+          //   }
           // if (event.type === "sources") {
           //   latestSources = event.data;
           //   setMessages((prev) =>
