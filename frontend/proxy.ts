@@ -1,28 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
+
+import { auth } from "@/lib/auth";
 
 function asSessionId(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-function asRole(value: unknown): "ADMIN" | "USER" {
-  return value === "ADMIN" ? "ADMIN" : "USER";
-}
-
-export async function proxy(req: NextRequest) {
+export const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
   if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
 
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET
-  });
-  const sessionId = asSessionId(token?.sessionId);
-  const role = asRole(token?.role);
+  const sessionId = asSessionId(req.auth?.sessionId);
+  const role = req.auth?.user.role === "ADMIN" ? "ADMIN" : "USER";
 
-  if (!token || !sessionId) {
+  if (!req.auth || !sessionId) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -31,7 +24,7 @@ export async function proxy(req: NextRequest) {
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/admin/:path*"]
