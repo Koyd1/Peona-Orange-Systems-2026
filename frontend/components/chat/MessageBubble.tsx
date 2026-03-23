@@ -89,7 +89,7 @@ export default function MessageBubble({
   if (isUser) {
     return (
       <div className="flex w-full justify-end">
-        <div className="flex w-full max-w-full flex-row-reverse items-start gap-3 sm:max-w-[720px] sm:gap-4">
+        <div className="flex w-full min-w-0 max-w-[840px] flex-row-reverse items-start gap-3 sm:gap-4">
           <div className="flex aspect-square h-11 w-11 shrink-0 self-start items-center justify-center overflow-hidden rounded-full bg-[#ffbf8a] shadow-[0_10px_22px_rgba(229,139,58,0.22)] ring-1 ring-orange-200 sm:h-12 sm:w-12">
             <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
               <path
@@ -98,8 +98,8 @@ export default function MessageBubble({
               />
             </svg>
           </div>
-          <div className="rounded-3xl bg-[#e58b3a] px-5 py-3 text-white shadow-[0_12px_30px_rgba(229,139,58,0.35)] sm:px-6 sm:py-4">
-            <div className="text-[15px] leading-relaxed whitespace-pre-wrap break-words hyphens-auto">
+          <div className="min-w-0 flex-1 rounded-3xl bg-[#e58b3a] px-5 py-3 text-white shadow-[0_12px_30px_rgba(229,139,58,0.35)] sm:w-[760px] sm:flex-none sm:px-6 sm:py-4">
+            <div className="text-[15px] leading-relaxed whitespace-pre-wrap break-words break-all hyphens-auto [overflow-wrap:anywhere]">
               {message.content || "..."}
             </div>
           </div>
@@ -111,7 +111,7 @@ export default function MessageBubble({
   return (
     <div className="flex w-full flex-col gap-6 sm:gap-8">
       <div className="flex w-full justify-start">
-        <div className="flex w-full max-w-full items-start gap-3 sm:max-w-[900px] sm:gap-5">
+        <div className="flex w-full min-w-0 max-w-full items-start gap-3 sm:max-w-[900px] sm:gap-5">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e58b3a] shadow-[0_8px_18px_rgba(15,23,42,0.12)] ring-1 ring-orange-200 sm:h-12 sm:w-12">
             <svg
               viewBox="0 0 44 44"
@@ -149,9 +149,9 @@ export default function MessageBubble({
               />
             </svg>
           </div>
-          <div className="w-full rounded-3xl border border-border bg-card px-5 py-3 text-slate-800 shadow-[0_12px_30px_rgba(15,23,42,0.08)] sm:px-6 sm:py-4">
+          <div className="min-w-0 w-full rounded-3xl border border-border bg-card px-5 py-3 text-slate-800 shadow-[0_12px_30px_rgba(15,23,42,0.08)] sm:px-6 sm:py-4">
             <div
-              className={`text-[15px] leading-relaxed whitespace-pre-wrap break-words hyphens-auto ${
+              className={`text-[15px] leading-relaxed whitespace-pre-wrap break-words hyphens-auto [overflow-wrap:anywhere] ${
                 isStreaming ? "text-slate-500" : ""
               }`}
             >
