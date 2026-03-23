@@ -167,7 +167,10 @@ export default function MessageBubble({
                 <button
                   type="button"
                   onClick={() => setDetailsOpen((prev) => !prev)}
-                  className="rounded-full border border-border bg-white px-4 py-1 text-xs font-semibold text-slate-600 shadow-[0_6px_14px_rgba(15,23,42,0.08)] transition hover:bg-slate-50"
+                  disabled={!hasSources}
+                  className={`rounded-full border border-border bg-white px-4 py-1 text-xs font-semibold text-slate-600 shadow-[0_6px_14px_rgba(15,23,42,0.08)] transition ${
+                    hasSources ? "hover:bg-slate-50 cursor-pointer" : "opacity-50 cursor-not-allowed"
+                  }`}
                   aria-expanded={detailsOpen}
                 >
                   {t("chat.message.details")}
