@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import AppHeader from "@/components/shared/AppHeader";
+import TransitionLink from "@/components/navigation/TransitionLink";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { getServerTranslator } from "@/lib/i18n/server";
@@ -51,9 +52,9 @@ export default async function HomePage() {
               <p className="mb-7 flex-1 text-sm text-gray-500">
                 {t("home.chatCard.description")}
               </p>
-              <Link href="/chat" className={buttonVariants({ fullWidth: true })}>
+              <TransitionLink href="/chat" skeleton="chat" className={buttonVariants({ fullWidth: true })}>
                 {t("common.actions.startConversation")}
-              </Link>
+              </TransitionLink>
             </Card>
 
             <Card hover className="flex h-full flex-col text-left p-8">
