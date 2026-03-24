@@ -474,28 +474,10 @@ export default function ChatWindow({
                 className="w-full min-h-0 flex-1 overflow-y-auto"
               >
                 <div className="mx-auto flex min-h-full w-full max-w-[1200px] flex-col gap-6 pb-4 pr-2 sm:gap-10">
-                  {historyLoading && messages.length === 0 ? (
-                    <div className="space-y-6">
-                      <div className="flex items-start gap-4 sm:gap-5">
-                        <div className="h-12 w-12 shrink-0 animate-pulse rounded-full bg-orange-200/70" />
-                        <div className="w-full max-w-[760px] animate-pulse rounded-3xl border border-border bg-white/85 px-5 py-4 sm:px-6">
-                          <div className="h-3.5 w-3/4 rounded-full bg-slate-200" />
-                          <div className="mt-3 h-3.5 w-full rounded-full bg-slate-200" />
-                          <div className="mt-3 h-3.5 w-5/6 rounded-full bg-slate-200" />
-                        </div>
-                      </div>
-                      <div className="flex items-start justify-end gap-4 sm:gap-5">
-                        <div className="w-full max-w-[640px] animate-pulse rounded-3xl bg-orange-200/65 px-5 py-4 sm:px-6">
-                          <div className="h-3.5 w-2/3 rounded-full bg-orange-100" />
-                          <div className="mt-3 h-3.5 w-11/12 rounded-full bg-orange-100" />
-                        </div>
-                        <div className="h-12 w-12 shrink-0 animate-pulse rounded-full bg-orange-200/70" />
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {!historyLoading && messages.length === 0 ? (
-                    <p className="text-sm text-slate-500">{t("chat.status.noMessages")}</p>
+                  {messages.length === 0 ? (
+                    <p className="text-sm text-slate-500">
+                      {historyLoading ? t("common.states.loading") : t("chat.status.noMessages")}
+                    </p>
                   ) : null}
                   {showGreeting ? (
                     <div className="flex items-start gap-4 sm:gap-5">

@@ -14,6 +14,7 @@ export default async function UserLayout({ children }: { children: ReactNode }) 
   return (
     <>
       <AppHeader
+        brandTransitionSkeleton="home"
         actions={
           session ? (
             <>

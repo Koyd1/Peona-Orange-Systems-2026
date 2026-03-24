@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import RouteTransitionProvider from "@/components/navigation/RouteTransitionProvider";
 import I18nProvider from "@/lib/i18n/I18nProvider";
 import { getServerTranslator } from "@/lib/i18n/server";
 import { toHtmlLang } from "@/lib/i18n/config";
@@ -24,7 +25,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang={toHtmlLang(locale)}>
       <body className={inter.className}>
-        <I18nProvider initialLocale={locale}>{children}</I18nProvider>
+        <I18nProvider initialLocale={locale}>
+          <RouteTransitionProvider>{children}</RouteTransitionProvider>
+        </I18nProvider>
       </body>
     </html>
   );

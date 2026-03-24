@@ -61,20 +61,7 @@ export default function PromptCards({
       : "whitespace-nowrap rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.08)] transition hover:border-slate-300 hover:text-slate-900";
 
   if (loading) {
-    return (
-      <div className={containerClass}>
-        {Array.from({ length: layout === "grid" ? 4 : 4 }).map((_, index) => (
-          <div
-            key={`prompt-skeleton-${index}`}
-            className={
-              layout === "grid"
-                ? "h-[56px] w-full animate-pulse rounded-2xl border border-border bg-white/70"
-                : "h-[40px] w-[170px] shrink-0 animate-pulse rounded-full border border-border bg-white/70"
-            }
-          />
-        ))}
-      </div>
-    );
+    return <p className="text-sm text-slate-400">{t("common.states.loading")}</p>;
   }
 
   return (
