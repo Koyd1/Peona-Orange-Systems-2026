@@ -32,6 +32,11 @@ Format:
 
 Document: <document name> | Citations: <citation1>; <citation2>
 
+IMPORTANT:
+- If the provided context does NOT contain enough information to answer the question, DO NOT include the [[SOURCES]] section at all.
+- DO NOT fabricate or guess any information.
+- DO NOT include any sources if the answer is not based on the context.
+
 Rules for citations:
 - A citation must be a short clear statement that reflects the document content.
 - If multiple statements come from the same document, combine them.

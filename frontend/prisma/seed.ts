@@ -56,30 +56,30 @@ async function main() {
     }
   });
 
-  const templates = [
-    {
-      title: "Отпуск",
-      content: "Какие правила оформления ежегодного отпуска и сроки согласования?",
-      category: "HR",
-      order: 10
-    },
-    {
-      title: "Онбординг",
-      content: "Составь чеклист онбординга сотрудника на первую неделю.",
-      category: "People Ops",
-      order: 20
-    },
-    {
-      title: "Оценка",
-      content: "Какие критерии performance review действуют в компании?",
-      category: "Performance",
-      order: 30
-    }
-  ];
+  // const templates = [
+  //   {
+  //     title: "Отпуск",
+  //     content: "Какие правила оформления ежегодного отпуска и сроки согласования?",
+  //     category: "HR",
+  //     order: 10
+  //   },
+  //   {
+  //     title: "Онбординг",
+  //     content: "Составь чеклист онбординга сотрудника на первую неделю.",
+  //     category: "People Ops",
+  //     order: 20
+  //   },
+  //   {
+  //     title: "Оценка",
+  //     content: "Какие критерии performance review действуют в компании?",
+  //     category: "Performance",
+  //     order: 30
+  //   }
+  // ];
 
-  for (const template of templates) {
-    await upsertPromptTemplate(template);
-  }
+  // for (const template of templates) {
+  //   await upsertPromptTemplate(template);
+  // }
 
   // eslint-disable-next-line no-console
   console.log("Seed completed");
