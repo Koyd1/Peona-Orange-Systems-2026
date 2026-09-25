@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     rag_top_k: int = 5
     rag_sim_threshold: float = 0.05
     health_openai_warn_ms: int = 1800
+    health_openai_timeout_seconds: int = 3
     health_hall_warn_threshold: float = 0.45
 
     model_config = SettingsConfigDict(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from datetime import datetime, timedelta
@@ -92,20 +93,26 @@ async def _check_openai() -> dict[str, Any]:
     if not settings.openai_api_key:
         return {"ok": False, "latencyMs": -1, "detail": "OPENAI_API_KEY is missing"}
 
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(
+        api_key=settings.openai_api_key,
+        timeout=settings.health_openai_timeout_seconds,
+    )
     started = time.perf_counter()
     try:
-        await client.embeddings.create(
-            model=settings.openai_embedding_model,
-            input=["healthcheck"],
-            dimensions=settings.openai_embedding_dim,
-        )
+        async with asyncio.timeout(settings.health_openai_timeout_seconds):
+            await client.embeddings.create(
+                model=settings.openai_embedding_model,
+                input=["healthcheck"],
+                dimensions=settings.openai_embedding_dim,
+            )
         latency_ms = int((time.perf_counter() - started) * 1000)
         return {"ok": True, "latencyMs": latency_ms, "model": settings.openai_embedding_model}
     except Exception as exc:
         latency_ms = int((time.perf_counter() - started) * 1000)
         LOGGER.warning("health.openai_check_failed", extra={"latency_ms": latency_ms, "error": str(exc)})
         return {"ok": False, "latencyMs": latency_ms, "detail": "openai_check_failed"}
+    finally:
+        await client.close()
 
 
 async def _check_redis() -> dict[str, Any]:

@@ -1,65 +1,72 @@
 # Demo Runbook
 
-Инструкция для локального запуска проекта и публикации наружу через tunnel.
+Инструкция для запуска демо-стенда и публикации наружу через `ngrok`.
 
-## Что должно быть установлено
+## Требования
 
 - Docker Desktop
 - Node.js `>= 20.9`
 - npm
 - `ngrok`
 
-## Что должно быть настроено заранее
+## Предварительная проверка
 
-В корне проекта должен существовать файл `.env`.
+В корне проекта должен быть `.env`.
 
-Минимально проверь в `.env`:
+Минимально проверь эти переменные:
 
 ```env
 DATABASE_URL=...
 DATABASE_URL_ASYNC=...
 OPENAI_API_KEY=...
+MINIO_ROOT_USER=...
 MINIO_ROOT_PASSWORD=...
+MINIO_BUCKET=...
 REDIS_PASSWORD=...
 NEXTAUTH_SECRET=...
 PUBLIC_SESSION_SECRET=...
 ADMIN_EMAIL=...
 ADMIN_PASSWORD=...
 PYTHON_BACKEND_URL=http://127.0.0.1:8000
-WEB_ORIGIN=http://localhost:3000
-NEXTAUTH_URL=http://localhost:3000
+APP_DOMAIN=localhost
 ```
 
-Если `ngrok` еще не привязан к аккаунту:
+Если `ngrok` еще не привязан к аккаунту, выполни команду со своим токеном:
 
 ```bash
-ngrok config add-authtoken 3BG9QlEBaKj3ZyigBwAFbXR1vh0_6YGgYgXC8n24n9XVpsDxd
+ngrok config add-authtoken <YOUR_NGROK_AUTHTOKEN>
+```
+
+Проверить, что `ngrok` доступен:
+
+```bash
+ngrok version
 ```
 
 ## Первый запуск
 
-Установить frontend-зависимости:
-
 ```bash
-cd frontend
+cd /Users/alexandrmoroz/Peona-Orange-Systems-2026/frontend
 npm ci
-cd ..
 ```
 
-## Запуск для демо
+## Запуск демо
 
-Открой 4 терминала.
-
-### Терминал 1: backend + redis + minio
+### 1. Поднять backend, Redis и MinIO
 
 ```bash
 cd /Users/alexandrmoroz/Peona-Orange-Systems-2026
-make dev
+docker compose up -d --build
 ```
 
-### Терминал 2: миграции и seed
+Проверка:
 
-Запускать после того, как `make dev` поднялся без ошибок.
+```bash
+docker compose ps
+curl http://127.0.0.1:8000/health
+```
+
+### 2. Применить миграции и при необходимости выполнить seed
 
 ```bash
 cd /Users/alexandrmoroz/Peona-Orange-Systems-2026
@@ -69,58 +76,89 @@ make seed
 
 `make seed` нужен, если нужен admin-пользователь из `.env`.
 
-### Терминал 3: frontend
+### 3. Собрать frontend
 
 ```bash
 cd /Users/alexandrmoroz/Peona-Orange-Systems-2026/frontend
 npm run build
-PYTHON_BACKEND_URL=http://127.0.0.1:8000 npm run start -- -H 0.0.0.0 -p 3000
 ```
 
-Локальная проверка:
+### 4. Поднять tunnel и получить публичный URL
 
-- `http://localhost:3000`
-- `http://localhost:3000/api/health`
-
-### Терминал 4: tunnel
+В отдельном терминале:
 
 ```bash
 ngrok http 3000
 ```
 
-Скопируй публичный `https://...` URL из `ngrok` и отправь его тем, кому нужен доступ.
+Скопируй публичный `https://...` URL вида `https://<name>.ngrok-free.app`.
 
-## Если логин или редиректы ломаются
+### 5. Запустить frontend с актуальным origin
 
-Иногда нужно подставить текущий `ngrok` URL в `.env`.
-
-Пример:
-
-```env
-NEXTAUTH_URL=https://example.ngrok-free.app
-WEB_ORIGIN=https://example.ngrok-free.app
-```
-
-После этого перезапусти frontend:
+Если tunnel уже поднят, перед стартом frontend подставь его URL:
 
 ```bash
 cd /Users/alexandrmoroz/Peona-Orange-Systems-2026/frontend
-PYTHON_BACKEND_URL=http://127.0.0.1:8000 npm run start -- -H 0.0.0.0 -p 3000
+NEXTAUTH_URL=https://<your-ngrok-domain>.ngrok-free.app \
+WEB_ORIGIN=https://<your-ngrok-domain>.ngrok-free.app \
+PYTHON_BACKEND_URL=http://127.0.0.1:8000 \
+npm run start -- -H 0.0.0.0 -p 3000
 ```
 
-## Быстрый чеклист перед демо
+Почему так:
 
-- `make dev` работает без ошибок
-- `make migrate` завершился успешно
-- frontend открылся на `localhost:3000`
-- `http://localhost:3000/api/health` отвечает
-- вход под `ADMIN_EMAIL` / `ADMIN_PASSWORD` работает
-- если нужен RAG, тестовый файл загружен заранее
-- `ngrok` выдал публичный `https://` URL
+- `NEXTAUTH_URL` нужен для корректного login/callback flow
+- `WEB_ORIGIN` нужен для ссылок и согласованного внешнего origin
+- `PYTHON_BACKEND_URL` должен указывать на локальный backend на хосте
+
+Если tunnel еще не запущен, для локальной проверки можно сначала поднять frontend так:
+
+```bash
+cd /Users/alexandrmoroz/Peona-Orange-Systems-2026/frontend
+NEXTAUTH_URL=http://localhost:3000 \
+WEB_ORIGIN=http://localhost:3000 \
+PYTHON_BACKEND_URL=http://127.0.0.1:8000 \
+npm run start -- -H 0.0.0.0 -p 3000
+```
+
+## Проверка перед демо
+
+Локально:
+
+```bash
+curl -I http://127.0.0.1:3000/
+curl -I http://127.0.0.1:3000/login
+curl http://127.0.0.1:3000/api/health
+```
+
+Публично через `ngrok`:
+
+```bash
+curl -I https://<your-ngrok-domain>.ngrok-free.app/
+curl -I https://<your-ngrok-domain>.ngrok-free.app/login
+curl https://<your-ngrok-domain>.ngrok-free.app/api/health
+```
+
+Ручной smoke:
+
+- главная страница открывается
+- страница `/login` открывается
+- вход под `ADMIN_EMAIL` / `ADMIN_PASSWORD` проходит
+- `/api/health` отвечает JSON
+- если нужен RAG, заранее загружен тестовый файл
+
+## Если логин или редиректы ломаются
+
+Проверь, что frontend запущен именно с текущим `ngrok` URL в:
+
+- `NEXTAUTH_URL`
+- `WEB_ORIGIN`
+
+После смены `ngrok` URL frontend нужно перезапускать.
 
 ## Остановка
 
-Остановить frontend и tunnel: `Ctrl+C` в соответствующих терминалах.
+Остановить frontend и `ngrok`: `Ctrl+C` в соответствующих терминалах.
 
 Остановить docker-сервисы:
 
@@ -129,24 +167,19 @@ cd /Users/alexandrmoroz/Peona-Orange-Systems-2026
 make stop
 ```
 
-## Типовой порядок на каждый следующий запуск
+## Типовой порядок на следующий запуск
 
 ```bash
 cd /Users/alexandrmoroz/Peona-Orange-Systems-2026
-make dev
+docker compose up -d --build
+make migrate
 ```
 
-В новом терминале:
+Дальше:
 
 ```bash
 cd /Users/alexandrmoroz/Peona-Orange-Systems-2026/frontend
-PYTHON_BACKEND_URL=http://127.0.0.1:8000 npm run start -- -H 0.0.0.0 -p 3000
+npm run build
 ```
 
-В новом терминале:
-
-```bash
-ngrok http 3000
-```
-
-Если схема БД не менялась, обычно `make migrate` и `make seed` каждый раз не нужны.
+Поднять `ngrok`, получить новый URL и стартовать frontend с актуальными `NEXTAUTH_URL` и `WEB_ORIGIN`.
