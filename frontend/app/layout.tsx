@@ -15,8 +15,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Peona — HR AI Assistant",
-  description: "HR AI Assistant Platform",
+  title: "CIVIS — Asistentul digital al Primăriei",
+  description: "Răspunsuri municipale clare, bilingve și bazate pe documente publice",
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {

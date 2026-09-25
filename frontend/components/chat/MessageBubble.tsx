@@ -90,7 +90,7 @@ export default function MessageBubble({
     return (
       <div className="flex w-full justify-end">
         <div className="flex w-full min-w-0 max-w-[840px] flex-row-reverse items-start gap-3 sm:gap-4">
-          <div className="flex aspect-square h-11 w-11 shrink-0 self-start items-center justify-center overflow-hidden rounded-full bg-[#ffbf8a] shadow-[0_10px_22px_rgba(229,139,58,0.22)] ring-1 ring-orange-200 sm:h-12 sm:w-12">
+          <div className="flex aspect-square h-11 w-11 shrink-0 self-start items-center justify-center overflow-hidden rounded-full bg-[#5ab3df] shadow-[0_10px_22px_rgba(8,125,187,0.2)] ring-1 ring-orange-200 sm:h-12 sm:w-12">
             <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
               <path
                 d="M12 12c2.485 0 4.5-2.015 4.5-4.5S14.485 3 12 3 7.5 5.015 7.5 7.5 9.515 12 12 12Zm0 2c-3.866 0-7 3.134-7 7h14c0-3.866-3.134-7-7-7Z"
@@ -98,7 +98,7 @@ export default function MessageBubble({
               />
             </svg>
           </div>
-          <div className="min-w-0 w-fit max-w-[calc(100%-3.5rem)] rounded-3xl bg-[#e58b3a] px-5 py-3 text-white shadow-[0_12px_30px_rgba(229,139,58,0.35)] sm:max-w-[760px] sm:px-6 sm:py-4">
+          <div className="min-w-0 w-fit max-w-[calc(100%-3.5rem)] rounded-3xl bg-[#087dbb] px-5 py-3 text-white shadow-[0_12px_30px_rgba(8,125,187,0.28)] sm:max-w-[760px] sm:px-6 sm:py-4">
             <div className="text-[15px] leading-relaxed whitespace-pre-wrap break-words hyphens-auto [overflow-wrap:anywhere]">
               {message.content || "..."}
             </div>
@@ -112,7 +112,7 @@ export default function MessageBubble({
     <div className="flex w-full flex-col gap-6 sm:gap-8">
       <div className="flex w-full justify-start">
         <div className="flex w-full min-w-0 max-w-full items-start gap-3 sm:max-w-[900px] sm:gap-5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e58b3a] shadow-[0_8px_18px_rgba(15,23,42,0.12)] ring-1 ring-orange-200 sm:h-12 sm:w-12">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#087dbb] shadow-[0_8px_18px_rgba(15,23,42,0.12)] ring-1 ring-orange-200 sm:h-12 sm:w-12">
             <svg
               viewBox="0 0 44 44"
               fill="none"

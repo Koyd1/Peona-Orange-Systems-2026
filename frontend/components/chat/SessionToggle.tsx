@@ -88,8 +88,8 @@ export default function SessionToggle({
         }
         className={`inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-all ${
           canAct
-            ? "border-transparent bg-[#e58b3a] text-white shadow-[0_10px_24px_rgba(229,139,58,0.35)]"
-            : "border-[#f2c39a] bg-[#fff1e4] text-[#c8772a] cursor-not-allowed"
+            ? "border-transparent bg-[#087dbb] text-white shadow-[0_10px_24px_rgba(8,125,187,0.28)]"
+            : "border-[#b8dfff] bg-[#eff8ff] text-[#08679a] cursor-not-allowed"
         }`}
       >
         <svg

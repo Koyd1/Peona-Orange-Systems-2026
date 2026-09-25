@@ -57,7 +57,7 @@ export default function PromptCards({
     layout === "grid" ? "grid gap-4 sm:grid-cols-2" : "flex gap-3 overflow-x-auto pb-1";
   const buttonClass =
     layout === "grid"
-      ? "w-full rounded-2xl border border-border bg-card px-5 py-4 text-center text-sm font-semibold text-slate-700 shadow-[0_12px_26px_rgba(15,23,42,0.08)] transition hover:border-[#e58b3a] hover:text-slate-900"
+      ? "w-full rounded-2xl border border-border bg-card px-5 py-4 text-center text-sm font-semibold text-slate-700 shadow-[0_12px_26px_rgba(15,23,42,0.08)] transition hover:border-[#087dbb] hover:text-slate-900"
       : "whitespace-nowrap rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.08)] transition hover:border-slate-300 hover:text-slate-900";
 
   if (loading) {
@@ -74,7 +74,7 @@ export default function PromptCards({
           onClick={() => onPick(item)}
           className={`${buttonClass} ${
             activeId === item.id
-              ? "border-[#e58b3a] bg-orange-50/80 text-slate-900 shadow-[0_12px_30px_rgba(229,139,58,0.22)]"
+              ? "border-[#087dbb] bg-orange-50/80 text-slate-900 shadow-[0_12px_30px_rgba(8,125,187,0.18)]"
               : ""
           }`}
         >

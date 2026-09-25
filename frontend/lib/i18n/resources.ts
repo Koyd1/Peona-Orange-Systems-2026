@@ -4,7 +4,7 @@ export const resources = {
   md: {
     translation: {
       common: {
-        brand: "Peona",
+        brand: "CIVIS",
         languageSwitcher: {
           ariaLabel: "Schimbă limba"
         },
@@ -17,7 +17,7 @@ export const resources = {
           loggingOut: "Se închide sesiunea...",
           admin: "Admin",
           backToChat: "Întoarce-te la chat",
-          startConversation: "Începe conversația",
+          startConversation: "Întreabă asistentul",
           accessAdmin: "Accesează"
         },
         states: {
@@ -25,18 +25,19 @@ export const resources = {
         }
       },
       home: {
-        title: "HR AI Assistant",
+        eyebrow: "Informații publice, explicate clar",
+        title: "Asistentul digital al Primăriei",
         description:
-          "Peona îi ajută pe candidați să găsească oportunități de carieră la Orange, răspunde la întrebări despre recrutare și oferă informații utile despre rolurile disponibile.",
+          "CIVIS găsește informația relevantă în documentele publice ale Primăriei și răspunde în română sau rusă, indicând documentul și fragmentul folosit.",
         chatCard: {
-          title: "Chat cu Peona",
+          title: "Întreabă CIVIS",
           description:
-            "Primește răspunsuri rapide la întrebări legate de posturile disponibile, etapele recrutării, beneficii și viața profesională în companie."
+            "Află ce prevăd deciziile, regulamentele și procedurile municipale. Dacă informația lipsește sau sursele se contrazic, asistentul îți va spune clar."
         },
         adminCard: {
           title: "Panou de administrare",
           description:
-            "Gestionează baza de cunoștințe, șabloanele de prompturi, vizualizează feedbackul și configurează asistentul AI."
+            "Gestionează corpusul de documente publice, șabloanele, feedbackul, calitatea răspunsurilor și costurile modelelor AI."
         }
       },
       auth: {
@@ -70,13 +71,13 @@ export const resources = {
           streamError: "Eroare la încărcarea răspunsului."
         },
         welcome: {
-          title: "Bine ai venit!",
-          subtitle: "Cum te pot ajuta astăzi?",
-          faqLabel: "FAQ:"
+          title: "Bine ai venit la CIVIS",
+          subtitle: "Cu ce întrebare despre serviciile municipale te putem ajuta?",
+          faqLabel: "Întrebări frecvente"
         },
         greeting: {
           intro:
-            "Bună ziua! 👋 Sunt asistentul HR. Vă voi ajuta să găsiți postul vacant potrivit, vă voi explica etapele recrutării și informațiile utile pentru a explora oportunitățile de carieră la Orange.",
+            "Bună ziua! 👋 Sunt CIVIS, asistentul digital al Primăriei. Caut răspunsul în documentele publice disponibile și indic sursa exactă. Dacă informația lipsește sau documentele se contrazic, vă voi avertiza.",
           question: "Cu ce vă pot ajuta?"
         },
         promptUpgrade: {
@@ -87,7 +88,7 @@ export const resources = {
           emptyInput: "Mai întâi scrie întrebarea ta."
         },
         composer: {
-          placeholder: "Scrie un mesaj...",
+          placeholder: "Întreabă despre o decizie, procedură sau serviciu municipal...",
           send: "Trimite mesajul",
           sending: "Se trimite mesajul"
         },
@@ -97,11 +98,11 @@ export const resources = {
         },
         message: {
           assistantTyping: "Asistentul scrie",
-          details: "Detalii",
-          noSources: "Nu există surse disponibile pentru acest răspuns.",
+          details: "Vezi sursele",
+          noSources: "Informația necesară nu a fost găsită în corpusul disponibil.",
           loadingSources: "Se încarcă sursele...",
           loadSourcesFailed: "Nu s-au putut încărca sursele",
-          source: "Sursă",
+          source: "Document citat",
           unknown: "necunoscut",
           similarity: "Similaritate"
         },
@@ -143,7 +144,7 @@ export const resources = {
         },
         knowledge: {
           title: "Bază de cunoștințe",
-          description: "Gestionarea fișierelor și documentelor pentru asistentul AI.",
+          description: "Corpusul controlat de decizii, regulamente și proceduri publice ale Primăriei.",
           uploadButton: "Încarcă fișierul",
           searchPlaceholder: "Caută",
           searchAriaLabel: "Caută fișiere",
@@ -325,7 +326,7 @@ export const resources = {
         healthPage: {
           title: "Stare sistem",
           description:
-            "Monitorizarea serviciilor critice, costurilor AI, distribuției modelelor și riscurilor de halucinație."
+            "Monitorizarea serviciilor, estimarea bugetului lunar pentru modele, distribuția utilizării și riscul răspunsurilor fără suport documentar."
         },
         healthPanel: {
           badge: {
@@ -451,7 +452,7 @@ export const resources = {
   ru: {
     translation: {
       common: {
-        brand: "Peona",
+        brand: "CIVIS",
         languageSwitcher: {
           ariaLabel: "Сменить язык"
         },
@@ -464,7 +465,7 @@ export const resources = {
           loggingOut: "Выход из системы...",
           admin: "Админ",
           backToChat: "Вернуться в чат",
-          startConversation: "Начать разговор",
+          startConversation: "Задать вопрос",
           accessAdmin: "Войти в админ-панель"
         },
         states: {
@@ -472,18 +473,19 @@ export const resources = {
         }
       },
       home: {
-        title: "HR AI Assistant",
+        eyebrow: "Публичная информация простым языком",
+        title: "Цифровой помощник мэрии",
         description:
-          "Peona помогает кандидатам находить карьерные возможности в Orange, отвечает на вопросы о найме и дает полезную информацию о доступных ролях.",
+          "CIVIS находит нужную информацию в публичных документах мэрии и отвечает на русском или румынском языке, указывая документ и точный фрагмент.",
         chatCard: {
-          title: "Чат с Peona",
+          title: "Спросить CIVIS",
           description:
-            "Получайте быстрые ответы на вопросы о вакансиях, этапах найма, бенефитах и профессиональной жизни в компании."
+            "Узнайте, что говорится в муниципальных решениях, регламентах и процедурах. Если данных нет или источники противоречат друг другу, помощник сообщит об этом."
         },
         adminCard: {
           title: "Админ-панель",
           description:
-            "Управляйте базой знаний, шаблонами промптов, просматривайте обратную связь и настраивайте AI-ассистента."
+            "Управляйте корпусом публичных документов, шаблонами, отзывами, качеством ответов и затратами на AI-модели."
         }
       },
       auth: {
@@ -517,13 +519,13 @@ export const resources = {
           streamError: "Не удалось загрузить ответ."
         },
         welcome: {
-          title: "Добро пожаловать!",
-          subtitle: "Чем я могу помочь сегодня?",
-          faqLabel: "FAQ:"
+          title: "Добро пожаловать в CIVIS",
+          subtitle: "Что вы хотите узнать о муниципальных услугах?",
+          faqLabel: "Частые вопросы"
         },
         greeting: {
           intro:
-            "Здравствуйте! 👋 Я HR-ассистент. Я помогу вам найти подходящую вакансию, объясню этапы найма и полезную информацию о карьерных возможностях в Orange.",
+            "Здравствуйте! 👋 Я CIVIS, цифровой помощник мэрии. Я ищу ответ в доступных публичных документах и указываю точный источник. Если информации нет или документы противоречат друг другу, я предупрежу об этом.",
           question: "Чем я могу помочь?"
         },
         promptUpgrade: {
@@ -534,7 +536,7 @@ export const resources = {
           emptyInput: "Сначала напишите ваш вопрос."
         },
         composer: {
-          placeholder: "Напишите сообщение...",
+          placeholder: "Спросите о решении, процедуре или муниципальной услуге...",
           send: "Отправить сообщение",
           sending: "Сообщение отправляется"
         },
@@ -544,11 +546,11 @@ export const resources = {
         },
         message: {
           assistantTyping: "Ассистент печатает",
-          details: "Детали",
-          noSources: "Для этого ответа нет доступных источников.",
+          details: "Показать источники",
+          noSources: "Нужная информация не найдена в доступном корпусе документов.",
           loadingSources: "Источники загружаются...",
           loadSourcesFailed: "Не удалось загрузить источники",
-          source: "Источник",
+          source: "Цитируемый документ",
           unknown: "неизвестно",
           similarity: "Сходство"
         },
@@ -590,7 +592,7 @@ export const resources = {
         },
         knowledge: {
           title: "База знаний",
-          description: "Управление файлами и документами для AI-ассистента.",
+          description: "Контролируемый корпус публичных решений, регламентов и процедур мэрии.",
           uploadButton: "Загрузить файл",
           searchPlaceholder: "Поиск",
           searchAriaLabel: "Поиск файлов",
@@ -772,7 +774,7 @@ export const resources = {
         healthPage: {
           title: "Состояние системы",
           description:
-            "Проверяйте критические сервисы, расходы AI, распределение моделей и риски галлюцинаций с автообновлением каждые 30 секунд."
+            "Контролируйте сервисы, оценку месячного бюджета моделей, распределение нагрузки и риск ответов без документального подтверждения."
         },
         healthPanel: {
           badge: {
@@ -898,7 +900,7 @@ export const resources = {
   en: {
     translation: {
       common: {
-        brand: "Peona",
+        brand: "CIVIS",
         languageSwitcher: {
           ariaLabel: "Change language"
         },
@@ -911,7 +913,7 @@ export const resources = {
           loggingOut: "Logging out...",
           admin: "Admin",
           backToChat: "Back to chat",
-          startConversation: "Start conversation",
+          startConversation: "Ask the assistant",
           accessAdmin: "Access Admin"
         },
         states: {
@@ -919,18 +921,19 @@ export const resources = {
         }
       },
       home: {
-        title: "HR AI Assistant",
+        eyebrow: "Public information, clearly explained",
+        title: "City Hall Digital Assistant",
         description:
-          "Peona helps candidates discover career opportunities at Orange, answers recruitment questions, and provides useful information about available roles.",
+          "CIVIS finds relevant information in City Hall's public documents and answers in Romanian or Russian, citing the document and exact supporting passage.",
         chatCard: {
-          title: "Chat with Peona",
+          title: "Ask CIVIS",
           description:
-            "Get quick answers about open roles, recruitment steps, benefits, and professional life at the company."
+            "Understand municipal decisions, regulations, and procedures. If information is missing or sources conflict, the assistant will say so clearly."
         },
         adminCard: {
           title: "Admin Panel",
           description:
-            "Manage the knowledge base, prompt templates, review feedback, and configure the AI assistant."
+            "Manage the public-document corpus, templates, feedback, answer quality, and AI model costs."
         }
       },
       auth: {
@@ -964,13 +967,13 @@ export const resources = {
           streamError: "Failed to load the response."
         },
         welcome: {
-          title: "Welcome!",
-          subtitle: "How can I help you today?",
-          faqLabel: "FAQ:"
+          title: "Welcome to CIVIS",
+          subtitle: "What would you like to know about municipal services?",
+          faqLabel: "Frequently asked questions"
         },
         greeting: {
           intro:
-            "Hello! 👋 I am the HR assistant. I will help you find a suitable vacancy, explain the recruitment stages, and share useful information about career opportunities at Orange.",
+            "Hello! 👋 I am CIVIS, City Hall's digital assistant. I search the available public documents and cite the exact source. If information is missing or documents conflict, I will flag it.",
           question: "How can I help you?"
         },
         promptUpgrade: {
@@ -981,7 +984,7 @@ export const resources = {
           emptyInput: "Write your question first."
         },
         composer: {
-          placeholder: "Write a message...",
+          placeholder: "Ask about a municipal decision, procedure, or service...",
           send: "Send message",
           sending: "Sending message"
         },
@@ -991,11 +994,11 @@ export const resources = {
         },
         message: {
           assistantTyping: "Assistant is typing",
-          details: "Details",
-          noSources: "No sources are available for this answer.",
+          details: "View sources",
+          noSources: "The required information was not found in the available corpus.",
           loadingSources: "Loading sources...",
           loadSourcesFailed: "Failed to load sources",
-          source: "Source",
+          source: "Cited document",
           unknown: "unknown",
           similarity: "Similarity"
         },
@@ -1037,7 +1040,7 @@ export const resources = {
         },
         knowledge: {
           title: "Knowledge Base",
-          description: "Manage files and documents for the AI assistant.",
+          description: "The controlled corpus of City Hall decisions, regulations, and public procedures.",
           uploadButton: "Upload file",
           searchPlaceholder: "Search",
           searchAriaLabel: "Search files",
@@ -1218,7 +1221,7 @@ export const resources = {
         healthPage: {
           title: "System Health",
           description:
-            "Review critical services, AI spend, model distribution, and hallucination risks with automatic refresh every 30 seconds."
+            "Monitor services, the estimated monthly model budget, usage distribution, and the risk of answers without documentary support."
         },
         healthPanel: {
           badge: {

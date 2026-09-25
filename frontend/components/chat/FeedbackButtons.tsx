@@ -159,7 +159,7 @@ export default function FeedbackButtons({
                 onChange={(event) => setComment(event.target.value)}
                 maxLength={600}
                 disabled={busy || isSaved}
-                className="w-full rounded-full border border-border bg-card px-5 py-2.5 pr-12 text-sm text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] outline-none placeholder:text-slate-400 focus:border-[#f2c39a] focus:ring-2 focus:ring-[#f2c39a]/40"
+                className="w-full rounded-full border border-border bg-card px-5 py-2.5 pr-12 text-sm text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] outline-none placeholder:text-slate-400 focus:border-[#7bc4f4] focus:ring-2 focus:ring-[#7bc4f4]/40"
               />
               <button
                 type="button"

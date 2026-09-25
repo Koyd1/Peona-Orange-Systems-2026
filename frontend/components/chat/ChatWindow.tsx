@@ -447,10 +447,10 @@ export default function ChatWindow({
             {showWelcome ? (
               <div className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col items-center justify-center gap-8 pb-6 text-center">
                 <div>
-                  <h1 className="text-4xl font-semibold text-[#e58b3a] sm:text-5xl">
+                  <h1 className="text-4xl font-semibold tracking-[-0.03em] text-[#087dbb] sm:text-5xl">
                     {t("chat.welcome.title")}
                   </h1>
-                  <p className="mt-2 text-2xl font-semibold text-[#e58b3a] sm:text-3xl">
+                  <p className="mt-2 text-2xl font-semibold text-[#087dbb] sm:text-3xl">
                     {t("chat.welcome.subtitle")}
                   </p>
                 </div>
@@ -481,7 +481,7 @@ export default function ChatWindow({
                   ) : null}
                   {showGreeting ? (
                     <div className="flex items-start gap-4 sm:gap-5">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e58b3a] shadow-[0_8px_20px_rgba(15,23,42,0.12)]">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#087dbb] shadow-[0_8px_20px_rgba(15,23,42,0.12)]">
                         <svg
                           viewBox="0 0 44 44"
                           fill="none"
@@ -557,7 +557,7 @@ export default function ChatWindow({
                     : "pointer-events-none translate-y-2 opacity-0"
                 }`}
               >
-                <div className="rounded-2xl border border-[#f3d1ad]/80 bg-gradient-to-r from-white/90 via-white/85 to-orange-50/80 px-3 py-3 shadow-[0_18px_34px_-22px_rgba(15,23,42,0.38)] backdrop-blur-[2px] sm:px-4">
+                <div className="rounded-2xl border border-[#b8dfff]/80 bg-gradient-to-r from-white/90 via-white/85 to-orange-50/80 px-3 py-3 shadow-[0_18px_34px_-22px_rgba(15,23,42,0.38)] backdrop-blur-[2px] sm:px-4">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
                       {t("chat.promptUpgrade.title")}
@@ -583,8 +583,8 @@ export default function ChatWindow({
                   inputEmptyFlash
                     ? "animate-pulse border-red-300 shadow-[0_0_0_3px_rgba(248,113,113,0.18)]"
                     : upgradeFlash
-                      ? "border-[#f0b783] shadow-[0_0_0_3px_rgba(229,139,58,0.22)]"
-                      : "border-white/60 focus-within:border-[#f2c39a] focus-within:shadow-[0_0_0_3px_rgba(242,195,154,0.28)]"
+                      ? "border-[#7bc4f4] shadow-[0_0_0_3px_rgba(8,125,187,0.18)]"
+                      : "border-white/60 focus-within:border-[#7bc4f4] focus-within:shadow-[0_0_0_3px_rgba(123,196,244,0.25)]"
                 }`}
               >
                 <button
@@ -592,7 +592,7 @@ export default function ChatWindow({
                   onClick={() => setAutoPromptPopupEnabled((prev) => !prev)}
                   className={`-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition sm:-ml-0.5 ${
                     autoPromptPopupEnabled
-                      ? "border-[#f0b783] bg-orange-50 text-[#e58b3a]"
+                      ? "border-[#7bc4f4] bg-orange-50 text-[#087dbb]"
                       : "border-border bg-white/80 text-slate-500 hover:text-slate-700"
                   }`}
                   title={
@@ -640,8 +640,8 @@ export default function ChatWindow({
                   disabled={!canSend}
                   className={`flex h-11 w-11 items-center justify-center rounded-full transition-all sm:h-12 sm:w-12 ${
                     canSend
-                      ? "bg-[#e58b3a] text-white shadow-[0_12px_26px_rgba(233,139,58,0.4)]"
-                      : "bg-[#f3d2b1] text-white/70 cursor-not-allowed"
+                      ? "bg-[#087dbb] text-white shadow-[0_12px_26px_rgba(8,125,187,0.32)]"
+                      : "bg-[#b8dfff] text-white/70 cursor-not-allowed"
                   }`}
                   aria-label={loading ? t("chat.composer.sending") : t("chat.composer.send")}
                 >

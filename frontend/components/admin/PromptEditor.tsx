@@ -460,7 +460,7 @@ export default function PromptEditor() {
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#fbefe8]">
+                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e4f4fc]">
                   <svg
                     width="24"
                     height="24"
@@ -471,7 +471,7 @@ export default function PromptEditor() {
                   >
                     <path
                       d="M7.5 8.75H16.5M7.5 12.25H12M9.8 18.25L6.4 20V16.5C5.52 16.5 4.8 15.78 4.8 14.9V6.1C4.8 5.22 5.52 4.5 6.4 4.5H17.6C18.48 4.5 19.2 5.22 19.2 6.1V14.9C19.2 15.78 18.48 16.5 17.6 16.5H11.5"
-                      stroke="#E07620"
+                      stroke="#08679A"
                       strokeWidth="1.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -542,7 +542,7 @@ export default function PromptEditor() {
               <span
                 className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${
                   item.isActive
-                    ? "bg-[#fbefe8] text-[#b54708]"
+                    ? "bg-[#e4f4fc] text-[#07537c]"
                     : "bg-[#f2f4f7] text-[#667085]"
                 }`}
               >

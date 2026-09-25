@@ -56,7 +56,7 @@ function SkeletonHeader({
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-card px-6 py-3">
       <div className="flex items-center gap-3">
-        <div className="inline-flex h-10 w-10 animate-pulse rounded-[14px] bg-[#fbefe8]" />
+        <div className="inline-flex h-10 w-10 animate-pulse rounded-[14px] bg-[#e4f4fc]" />
         <SkeletonBlock className="h-8 w-28 rounded-[12px]" />
       </div>
 
@@ -82,7 +82,7 @@ function HomeTransitionSkeleton() {
       <main className="mx-auto max-w-[1200px] px-6 py-6">
         <div className="pb-12 pt-16 text-center">
           <div className="mb-6 flex justify-center">
-            <div className="h-[104px] w-[104px] animate-pulse rounded-[30px] bg-[#fbefe8]" />
+            <div className="h-[104px] w-[104px] animate-pulse rounded-[30px] bg-[#e4f4fc]" />
           </div>
 
           <div className="mx-auto max-w-[760px] space-y-4">
@@ -95,7 +95,7 @@ function HomeTransitionSkeleton() {
             {Array.from({ length: 2 }).map((_, index) => (
               <SkeletonCard key={index} className="text-left">
                 <div className="space-y-5">
-                  <div className="inline-flex h-11 w-11 animate-pulse rounded-[14px] bg-[#fbefe8]" />
+                  <div className="inline-flex h-11 w-11 animate-pulse rounded-[14px] bg-[#e4f4fc]" />
                   <div className="space-y-3">
                     <SkeletonBlock className="h-8 w-[220px] rounded-[14px] bg-[#dfe7f5]" />
                     <SkeletonBlock className="h-5 w-full rounded-[12px]" />
